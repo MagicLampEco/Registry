@@ -22,7 +22,7 @@ xong vẫn được tiếp nhận; hồ sơ khai không đúng sự thật thì 
 | [Trace](trace.md) | `/OriLifeTrace` | OriLife agent | Nháp — chờ đội điền |
 | [Work](work.md) | `/AladinWork` | Aladin agent | Nháp — chờ đội điền |
 | [Chat](chat.md) | `/ProofChat` | ProofChat agent | Nháp — chờ đội điền |
-| [Joinnet](joinnet.md) | `/LampNetCloud/Join` | Join agent | Nháp — chờ đội điền |
+| [Join](join.md) | `/LampNetCloud/Join` | Join agent | Chờ rà — đội đã khai, còn thiếu ba mục |
 
 Bốn hồ sơ trên do Registry mở sẵn khung, đã điền phần nhận dạng và những dấu vết tích hợp rà
 được từ mã nguồn. Phần khai báo tuân thủ và tham số kỹ thuật để trống có chủ đích: chỉ đội sở
