@@ -1,0 +1,10 @@
+name    = "magiclamp/registry"
+version = "0.0.1"
+plutus  = "v3"
+license = "Apache-2.0"
+description = "Registry on-chain — sổ niêm yết platform của hệ sinh thái MagicLamp (beacon-per-platform)"
+
+[[dependencies]]
+name    = "aiken-lang/stdlib"
+version = "v3.1.0"
+source  = "github"
