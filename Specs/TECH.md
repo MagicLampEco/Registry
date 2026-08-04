@@ -8,7 +8,7 @@ của lớp Registry. Hành vi ở [FEAT](./FEAT.md), lộ trình ở [EXEC](./E
 [`onchain/lib/magiclamp/registry/platform.ak`](../onchain/lib/magiclamp/registry/platform.ak)
 (types + helper) + [`validators/registry_beacon.ak`](../onchain/validators/registry_beacon.ak)
 (minting) + [`validators/registry.ak`](../onchain/validators/registry.ak) (spend) + helper
-[`lib/magiclamp/treasury/util.ak`](../onchain/lib/magiclamp/registry/util.ak). Custody/seed của
+[`lib/magiclamp/registry/util.ak`](../onchain/lib/magiclamp/registry/util.ak). Custody/seed của
 platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tầng Registry quanh nó.
 
 ---

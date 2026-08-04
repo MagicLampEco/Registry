@@ -33,13 +33,15 @@ Bốn điều kiện dưới đây là bất biến — không có ngoại lệ 
 Người dùng cuối của dịch vụ được định danh bằng **PhoenixKey DID**, không phải tài khoản riêng
 của dịch vụ. Hệ quả bắt buộc:
 
-- **Một người = một DID.** Danh tính neo bằng sinh trắc, không cấp trùng cho cùng một người.
-  Đây là nền chống Sybil của toàn hệ: mọi cơ chế quyền biểu quyết, uy tín, phần thưởng đều
-  giả định điều này đúng.
+- **Một người = một DID** là *đích* của hệ danh tính, và là nền chống Sybil mà quyền biểu quyết,
+  uy tín, phần thưởng hướng tới. **Mức bảo đảm thật hôm nay thấp hơn đích đó** — đọc §7 trước khi
+  thiết kế bất cứ cơ chế nào dựa vào nó: hiện `did:phoenix` mới ép được ở **mức thiết bị** (khoá gốc
+  sinh trong vùng bảo mật của máy + cổng sinh trắc) và **mức chuỗi DID** (không đúc trùng anchor cho
+  cùng một DID). Một người có N thiết bị vẫn ra được N DID.
 - Dịch vụ **không tự phát hành danh tính thay thế** để lách điều kiện trên.
 - Khoá riêng thuộc về người dùng. Dịch vụ giữ hộ khoá của người dùng là vi phạm.
 
-> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (`MAGIC/SPEC/Whitepaper-MagicLamp-HeSinhThai-Vi.md §9`)
+> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md §10`)
 > — nhưng nó phải tự đăng ký như một thành phần và tự chứng minh thoả tính duy nhất một-người-một-danh-tính.
 > Một dịch vụ **thường** thì dùng PhoenixKey, không tự dựng hệ danh tính riêng.
 
@@ -49,7 +51,7 @@ của dịch vụ. Hệ quả bắt buộc:
 |---|---|---|
 | **LAMP** | Token gốc, tổng cung cố định **36 tỷ, không đốt**. Giảm lưu hành = chuyển vào Treasury, không huỷ. | Không thiết kế cơ chế đốt LAMP. Nguồn: `LAMP/Treasury/CONTRACT.md §5`. |
 | **MAGIC** | Quyền dùng dịch vụ, được cấp (Gen) chứ không mua. | **Không tạo đường-ra**: không cho phép đổi MAGIC ngược ra tài sản ngoài hệ, dưới bất kỳ hình thức nào. |
-| **CARP** | Đồng lưu thông và ổn định của hệ. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md`. |
+| **CARP** | Đồng lưu thông và ổn định của hệ. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: repo `CarpetMint` (đường dẫn cũ `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md` không còn; **file canonical đang chờ đội CARP xác nhận** — đừng trích số từ bản nào khác cho tới lúc đó). Lưu ý đừng nhầm với `LampNetCloud/Specs/Carpet/` — đó là lớp mạng P2P Carpet, không phải token CARP. |
 
 **Biến thể được phép.** Một dịch vụ có thể phát hành token riêng neo vào hệ (token của platform,
 CARP instance riêng) — nhưng phải qua đúng cổng của nó, không tự ý:
@@ -126,16 +128,33 @@ hồ sơ, để `platform_id` không trùng và sổ không bị rác. Quyền n
 nó không đụng được tiền trong kho của bất kỳ ai.
 
 Để việc kiểm duyệt không biến thành cổng đóng, hồ sơ chỉ bị từ chối theo **tiêu chí khách quan**
-dưới đây, và từ chối phải nêu rõ rơi vào mục nào:
+dưới đây, và từ chối phải nêu rõ rơi vào mục nào.
+
+**Hai cổng, đừng gộp làm một.** Kho on-chain chỉ ra đời ở bước (1), sau khi hồ sơ đã nộp ở bước (0) —
+nên tiêu chí nào đòi kho thật thì thuộc cổng niêm yết, không thuộc cổng tiếp nhận. Gộp hai cổng là tự
+khoá mình: mọi hồ sơ lần đầu đều trượt một cách máy móc.
+
+**Cổng tiếp nhận hồ sơ — áp ở bước (0):**
 
 1. `platform_id` trùng hoặc gây nhầm lẫn với một entry đã niêm yết.
-2. Không thoả một trong bốn điều kiện §2.
-3. Tham số kỹ thuật sai hoặc không đối soát được với kho thật trên chain.
-4. Không có ai chịu trách nhiệm liên hệ được.
+2. Không có ai chịu trách nhiệm liên hệ được.
+3. Khai không đúng sự thật (khác hẳn với khai chưa xong).
+
+**Khai "chưa đạt" kèm mốc dự kiến KHÔNG phải căn cứ từ chối ở bước (0).** Hồ sơ như vậy được tiếp nhận
+và mang trạng thái *đã tiếp nhận — chưa đủ điều kiện niêm yết*; nó khác hẳn *bị từ chối*. Khai thiếu
+trung thực thì nặng hơn khai chưa xong.
+
+**Cổng niêm yết — áp ở bước (2), khi kho đã có thật:**
+
+4. Không thoả một trong bốn điều kiện §2 **tại thời điểm niêm yết**.
+5. Tham số kỹ thuật sai hoặc không đối soát được với kho thật trên chain.
+
+Ràng buộc **R-BIND** on-chain đã ép sẵn thứ tự này: entry phải trỏ một kho đã lên chain, nên cổng niêm
+yết không thể bị vượt bằng cách khai khống. Nhưng lưu ý giới hạn thật của nó ở §7.
 
 **Cạnh tranh không phải là lý do từ chối.** Một dịch vụ cạnh tranh trực tiếp với thành phần
 sẵn có trong hệ vẫn được niêm yết nếu thoả bốn điều kiện — đây là cam kết ở
-`MAGIC/SPEC/Whitepaper-MagicLamp-HeSinhThai-Vi.md §9`.
+`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md §10` ("Cổng đăng ký mở — ai cũng vào, cạnh tranh bình đẳng").
 
 ## 6. Sau khi được niêm yết
 
@@ -160,5 +179,9 @@ Ba điểm dưới đây đang mở, ghi ra để bên đăng ký biết mình �
 | Quyền đăng ký | Đang là **một khoá đơn**, chưa phải multisig hay DAO | Một khoá rò là chiếm được tên. Phải chuyển thành nhiều chữ ký trước khi lên mainnet. |
 | Tính duy nhất `platform_id` | Bảo đảm bằng **kỷ luật ký**, không bằng mật mã | Bên định tuyến phí phải tự kiểm trùng, không được tin sổ một cách mù quáng. |
 | Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết. |
+| Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức thiết bị** + mức chuỗi DID; **mức người chưa ép on-chain**. Lớp ép mức người đang thiết kế, chưa phát hành. | Đừng dựng cơ chế chống Sybil chỉ dựa trên "hai DID phân biệt" — một người hai thiết bị vẫn ký chéo cho chính mình được. Tới khi lớp mức người lên, giữ rào kinh tế làm phòng thủ chính. |
+| R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho, không được coi "đã qua R-BIND" là đã kiểm. |
+| Hai thẩm quyền khác nhau | "Quyền đăng ký" thực ra là hai: quyền gộp thay đổi vào repo này (bước 0) và khoá ký `registry_authority` on-chain (bước 2). Lộ trình nhiều chữ ký hiện chỉ nói tới cái thứ hai. | Cả hai đều phải siết trước mainnet. Siết một cái mà bỏ cái kia thì cổng vẫn hở. |
+| Dịch vụ không thu asset | Chưa có đường. Ràng buộc on-chain đòi `accepted_assets` khác rỗng và `governance_ref` khác rỗng, nên một dịch vụ không thu tiền vẫn buộc dựng kho và khai ít nhất một asset mới lên sổ được. | Nếu dịch vụ của bạn không thu asset, nêu rõ trong hồ sơ — đây là khoảng trống của chuẩn, không phải lỗi của bạn. |
 
 Lộ trình đóng ba điểm này: `Specs/TECH.md` mục known-gap và `Specs/EXEC.md` §6.

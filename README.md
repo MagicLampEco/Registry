@@ -27,7 +27,7 @@ REGISTRATION-STANDARD.md   chuẩn vào hệ — tài liệu bên đăng ký đ�
 Specs/                     đặc tả đầy đủ của cơ chế (CONTRACT/FEAT/TECH/EXEC/ONBOARDING)
 Registrations/             hồ sơ đăng ký từng dịch vụ + mẫu
 onchain/                   hai validator Aiken: registry_beacon (mint) + registry (spend)
-Legacy/                    tài liệu đã lỗi thời, giữ để tra lịch sử
+Legacy/                    tài liệu đã bị thay, giữ để tra lịch sử
 ```
 
 ## Hai tầng, không lẫn quyền

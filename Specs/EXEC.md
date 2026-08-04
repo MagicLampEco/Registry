@@ -6,7 +6,7 @@ khóa) — KHÔNG mâu thuẫn. EXEC KHÔNG định nghĩa lại datum/bất bi�
 định **thứ tự deploy, onboard, tích hợp, checklist, DoD, known-gap**.
 
 Nguồn chuẩn đọc trước: [`CONTRACT.md`](./CONTRACT.md) (platform = instance Treasury + entry Registry;
-ba cửa onboard; PK1–PK7), [`Treasury/EXEC.md`](https://github.com/MagicLampNetwork/LAMP/blob/main/Treasury/EXEC.md) (mẫu lộ trình M0…M7 + custody_seed
+ba cửa onboard; PK1–PK11), [`Treasury/EXEC.md`](https://github.com/MagicLampNetwork/LAMP/blob/main/Treasury/EXEC.md) (mẫu lộ trình M0…M7 + custody_seed
 §16 + hardening v1 §17), [`onchain/validators/{registry_beacon,registry}.ak`] (đã sống).
 
 ---

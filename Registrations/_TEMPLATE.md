@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| **Trạng thái hồ sơ** | Nháp / Chờ rà / Đã duyệt / Đã niêm yết |
+| **Trạng thái hồ sơ** | Nháp / Chờ rà / Đã tiếp nhận — chưa đủ điều kiện niêm yết / Đã duyệt / Đã niêm yết / Bị từ chối |
 | **Ngày nộp** | YYYY-MM-DD |
 | **Ngày cập nhật gần nhất** | YYYY-MM-DD |
 

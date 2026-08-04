@@ -1,10 +1,17 @@
-# Onboarding một platform vào PlatformKit
+# Onboarding một platform vào Registry
 
-Guide từng bước để bất kỳ team Cardano nào đưa platform của mình vào hệ sinh thái MagicLamp:
+Hướng dẫn từng bước để bất kỳ đội Cardano nào đưa platform của mình vào hệ sinh thái MagicLamp:
 mỗi platform có một Treasury custody instance riêng + một entry trong Registry on-chain.
 
-PlatformKit là **framework dùng chung**. Nó KHÔNG quyết economics của bạn. Bạn chỉ điền config
-+ pricing; phần còn lại (schema, validator gương, builder tx, adapter) framework lo.
+Registry là **khuôn mẫu dùng chung**. Nó KHÔNG quyết economics của bạn. Bạn chỉ điền cấu hình
++ định giá; phần còn lại (schema, validator, gương off-chain, builder giao dịch, adapter) khuôn mẫu lo.
+
+> ⚠️ **Mã off-chain chưa nằm trong repo này.** Mọi đường dẫn `offchain/`, `examples/`, `scripts/` dưới
+> đây hiện còn ở repo [`MagicLampNetwork/LAMP`](https://github.com/MagicLampNetwork/LAMP), nhánh `main`,
+> thư mục `PlatformKit/` (tên cũ của lớp đăng ký này). Ví dụ: `offchain/src/types.ts` đọc tại
+> `https://github.com/MagicLampNetwork/LAMP/blob/main/PlatformKit/offchain/src/types.ts`.
+> Phần on-chain (`onchain/`) thì đã ở repo này. Việc di chuyển nốt off-chain đang chờ chốt cách gỡ phụ
+> thuộc SDK Treasury — xem `Specs/README.md`.
 
 ---
 
@@ -16,10 +23,18 @@ PlatformKit là **framework dùng chung**. Nó KHÔNG quyết economics của b�
 | Validator on-chain (registry_beacon, registry, custody) + gương off-chain (R-WF, R-BIND, U-ID, ...) | Pricing / tokenomics (PriceFn) — **định giá ở app, framework không quyết** |
 | Builder tx: `planSeed`/`buildSeedTx`, `planRegister`, `planUpdateEntry`, `onboardPlatform` | Danh sách asset chấp nhận, các bucket kế toán, `cut_bps` |
 | Adapter-interface thu phí: `eventToCollectItem`, `buildCollectFromEvents` | `governance_ref` (DAO/committee của bạn) |
-| Discover + đối soát: `discoverPlatforms`, `verifyEntryAgainstCustody` | Authority ký đăng ký (multisig trước mainnet) |
+| Discover + đối soát: `discoverPlatforms`, `verifyEntryAgainstCustody` | Bucket kế toán của bạn |
+| **Authority ký đăng ký** — một cổng CHUNG của cả hệ, không phải của riêng platform nào | — |
+
+> Đọc kỹ dòng cuối bảng: `registry_authority` là **cổng chung của hệ**, ký mọi đăng ký để `platform_id`
+> không trùng (bất biến PK3, `CONTRACT.md`). Đội đăng ký **không tự chỉ định** authority của mình — trường
+> `registryAuthority` trong cấu hình chỉ là chỗ điền lại giá trị đã công bố. Nhầm chỗ này là hiểu sai
+> chính cái van chống chiếm tên.
 
 Nguyên tắc cố định:
-- **Mỗi instance có `governance_ref` RIÊNG** (#1B) — không dùng chung gác release giữa các platform.
+- **Mỗi instance nên có `governance_ref` RIÊNG** — khuyến nghị mạnh để tách quyền chi giữa các platform,
+  phòng thủ nhiều lớp. Đây **không còn là ràng buộc bắt buộc** (`CONTRACT.md` PK6); điều bắt buộc là
+  cổng quản trị phải cam kết đúng `instance_id` của kho nó gác.
 - **Authority đăng ký PHẢI là multisig/committee trước mainnet.** Hiện registry_beacon param 1 key-hash
   (single point of failure: 1 khoá rò = chiếm tên/onboard rác). Nâng lên native/Plutus multisig (M-of-N)
   hoặc DAO gate trước khi lên mainnet.
@@ -57,7 +72,7 @@ PriceFn dịch một `FeeEvent` của bạn → `PricedItem` (asset + amount + b
 export type PriceFn = (event: FeeEvent) => PricedItem | null;
 ```
 
-- `amount` luôn **BigInt**, đơn vị nhỏ nhất (lovelace = ADA×10⁶, nanogic = MAGIC×10⁹, oil = LAMP×10⁶).
+- `amount` luôn **BigInt**, đơn vị nhỏ nhất (lovelace = ADA×10⁶, nanogic = MAGIC×10⁹, oildrop = LAMP×10⁶).
   KHÔNG dùng `Number` (chống overflow/làm tròn).
 - Trả `null` = sự kiện KHÔNG thu phí qua adapter này (bị bỏ qua).
 - **Framework trung lập với chính sách giá** — bạn tự quyết công thức (cố định / value-based / oracle).

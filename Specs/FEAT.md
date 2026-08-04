@@ -186,8 +186,12 @@ custody. Người tin (ví/app gửi value tới kho của một platform) PHẢ
 
 1. **Đối soát custody THẬT (audit #6, BẮT BUỘC trước route phí).** Gọi `verifyEntryAgainstCustody(entry,
    custodyUtxo)` — kiểm custody UTxO thật mang đúng 1 NFT authenticity `(seed_policy, instance_id)` Ở
-   `Script(custody_hash)`. On-chain R-BIND đã ép lúc ĐĂNG KÝ; nhưng reader hậu kỳ vẫn phải đối soát lại
-   (custody có thể đã được spend/đổi sau register). Chưa verify against custody thật → KHÔNG route phí.
+   `Script(custody_hash)`. **Đừng hiểu nhầm R-BIND on-chain**: nó chỉ kiểm entry TỰ NHẤT QUÁN — cả
+   `seed_policy`, `instance_id` lẫn `custody_hash` đều lấy từ chính datum người đăng ký khai, nên nó KHÔNG
+   chứng minh được kho đó là Treasury thật (kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn
+   qua R-BIND). Cổng thật lúc đăng ký là **chữ ký authority**. Vì vậy đối soát ở bước này là BẮT BUỘC, và
+   lý do không phải "custody đổi sau register" mà là "chưa từng được xác thực". Chưa đối soát với kho thật
+   → KHÔNG route phí.
 2. **Kiểm trùng `platform_id` (audit #2).** `discoverPlatforms` đánh dấu `duplicate=true` cho mọi entry
    có `platform_id` xuất hiện ≥2 lần trong lô; `findDuplicatePlatformIds` liệt kê. On-chain KHÔNG ép
    `platform_id` duy nhất (beacon không one-shot — đây là van quy trình, KHÔNG đảm bảo mật mã). Có trùng
