@@ -6,9 +6,9 @@ repo Registry), giữ nguyên văn khi di chuyển từ repo LAMP sang đây ng�
 | File | Trả lời câu hỏi |
 |---|---|
 | [CONTRACT.md](CONTRACT.md) | Interface khoá + 11 bất biến `PK1…PK11`. Cái gì KHÔNG ai được đổi. |
-| [FEAT.md](FEAT.md) | Hành vi: ba cửa onboarding, adapter thu phí, discover, vòng đời niêm yết. |
-| [TECH.md](TECH.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + known-gap. |
-| [EXEC.md](EXEC.md) | Lộ trình bootstrap M0…M6, trạng thái thật, rủi ro vận hành. |
+| [Feat-Spec.md](Feat-Spec.md) | Hành vi: ba cửa onboarding, adapter thu phí, discover, vòng đời niêm yết. |
+| [Tech-Spec.md](Tech-Spec.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + known-gap. |
+| [Exec-Spec.md](Exec-Spec.md) | Lộ trình bootstrap M0…M6, trạng thái thật, rủi ro vận hành. |
 | [ONBOARDING.md](ONBOARDING.md) | Hướng dẫn từng bước cho team muốn onboard (a→f). |
 
 Chuẩn dành cho bên đăng ký nằm ở [../REGISTRATION-STANDARD.md](../REGISTRATION-STANDARD.md) —
@@ -29,7 +29,7 @@ Bốn file này viết khi Registry còn nằm trong repo LAMP, nên đường d
 
 ## Con số test trong bốn file trên
 
-`EXEC.md` ghi các con số đo khi Registry còn nằm chung cây với Treasury (`aiken check` 137 pass
+`Exec-Spec.md` ghi các con số đo khi Registry còn nằm chung cây với Treasury (`aiken check` 137 pass
 toàn cây, `vitest` 86 pass cho off-chain). Trong repo này, phạm vi đo hẹp lại đúng phần Registry:
 **`aiken check` 30/30 pass**. Off-chain chưa di chuyển nên con số 86 vẫn thuộc về cây LAMP.
 

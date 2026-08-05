@@ -6,8 +6,8 @@ KHÔNG mâu thuẫn contract. Tham số chưa chốt đánh dấu **"tham số m
 > Spec này mô tả **hành vi nhìn thấy được** của PlatformKit: một team onboard một platform thế nào
 > (seed kho → đăng ký niêm yết → nối app thu phí), collect adapter biến sự kiện app thành `CollectItem`,
 > discover registry để tìm platform, và ai dùng SDK này. Người không-kỹ-thuật đọc cũng hiểu.
-> KHÔNG đi sâu datum/redeemer/validator (xem [TECH](./TECH.md)) hay lộ trình bootstrap (xem
-> [EXEC](./EXEC.md)).
+> KHÔNG đi sâu datum/redeemer/validator (xem [TECH](./Tech-Spec.md)) hay lộ trình bootstrap (xem
+> [EXEC](./Exec-Spec.md)).
 
 ---
 
@@ -43,10 +43,10 @@ Mục tiêu cuối: **làm LAMP có giá trị** bằng open SDK. Mỗi platform
 | Chủ đề | Thuộc |
 |---|---|
 | Custody/collect/release internals, bảo-toàn-value, split cut | [Treasury](https://github.com/MagicLampNetwork/LAMP/tree/main/Treasury) (FEAT/MATH/TECH) |
-| Datum `PlatformEntry`, redeemer registry, bất biến on-chain | [TECH](./TECH.md) |
+| Datum `PlatformEntry`, redeemer registry, bất biến on-chain | [TECH](./Tech-Spec.md) |
 | **Định giá phí** (bò ≠ gà — `animal_fee`), quy đổi LAMP↔USD/ADA | App (OriLife/PhoenixKey) + Oracle, **NGOÀI** PlatformKit |
 | Cơ chế vote / Voting Power (đích `governance_ref`) | [Governance/VotingPower](https://github.com/MagicLampNetwork/LAMP/tree/main/Governance/VotingPower) |
-| Lộ trình deploy registry, onboard PhoenixKey/OriLife, tích hợp collect | [EXEC](./EXEC.md) |
+| Lộ trình deploy registry, onboard PhoenixKey/OriLife, tích hợp collect | [EXEC](./Exec-Spec.md) |
 
 ---
 
@@ -201,7 +201,7 @@ custody. Người tin (ví/app gửi value tới kho của một platform) PHẢ
 
 > **Vì sao discover một mình KHÔNG đủ tin (first-principles):** một beacon NFT + datum chỉ chứng minh
 > "authority đã ký một đăng ký", KHÔNG chứng minh "entry này trỏ đúng custody thật ở thời điểm route phí".
-> Ba van trên đưa discover từ "thấy" sang "đủ tin để gửi tiền". (Chi tiết SDK ở `TECH.md §6.4`; mô hình
+> Ba van trên đưa discover từ "thấy" sang "đủ tin để gửi tiền". (Chi tiết SDK ở `Tech-Spec.md §6.4`; mô hình
 > tin cậy + lộ trình đóng ở `CONTRACT.md §8`.)
 >
 > ⛔ **F13 (vá lần 2 — nhấn mạnh):** `verifyEntryAgainstCustody` + dedup (`findDuplicatePlatformIds`) chỉ

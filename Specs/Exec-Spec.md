@@ -2,7 +2,7 @@
 
 **Doctype:** MagicLamp Protocol — PlatformKit Spec (EXEC)
 **Trạng thái:** 🔜 outline triển khai 2026-06-15. Bám [`CONTRACT.md`](./CONTRACT.md) (khung interface
-khóa) — KHÔNG mâu thuẫn. EXEC KHÔNG định nghĩa lại datum/bất biến (việc của [TECH](./TECH.md)) — chỉ
+khóa) — KHÔNG mâu thuẫn. EXEC KHÔNG định nghĩa lại datum/bất biến (việc của [TECH](./Tech-Spec.md)) — chỉ
 định **thứ tự deploy, onboard, tích hợp, checklist, DoD, known-gap**.
 
 Nguồn chuẩn đọc trước: [`CONTRACT.md`](./CONTRACT.md) (platform = instance Treasury + entry Registry;
@@ -26,7 +26,7 @@ Bám cách Treasury/Distribution đã làm (deploy theo bước, mỗi bước g
 - Checklist onboard + DoD (bằng chứng) + rủi ro + known-gap.
 
 ### 0.3 KHÔNG thuộc EXEC
-- Datum/redeemer/bất biến validator: [TECH](./TECH.md).
+- Datum/redeemer/bất biến validator: [TECH](./Tech-Spec.md).
 - Custody/collect/release internals + deploy custody: [`Treasury/EXEC.md`](https://github.com/MagicLampNetwork/LAMP/blob/main/Treasury/EXEC.md).
 - Định giá/oracle: app-side (OriLife `animal_fee`, PhoenixKey phí DID).
 - Sửa **backend Java PhoenixKey** (`PhoenixKeyDID/Database`) hoặc **backend OriLife** — NGOÀI ranh giới
@@ -150,7 +150,7 @@ làm sớm khi chưa nhiều platform).
 > `registry_authority` lên **multisig/committee script** (M-of-N native hoặc Plutus) — `list.has(extra_signatories,
 > authority)` đổi sang một check multisig, hoặc `registry_authority` là **script hash** một committee
 > validator (gate bằng governance_ref committee → DAO). Lộ trình: v1 committee multisig (bootstrap) →
-> DAO khi Governance chạy. (Xem `TECH.md` GAP-3.)
+> DAO khi Governance chạy. (Xem `Tech-Spec.md` GAP-3.)
 
 ### 6.2 `governance_ref` riêng từng instance (#1B — nay ĐÓNG)
 ✅ **#1B ĐÓNG (vá lần 2 F10).** Treasury `spend_spec_hash` NAY gồm `instance_id`

@@ -57,7 +57,7 @@ param-validator = bất biến đời instance; datum = DAO chỉnh):
 > **custody datum** (nguồn chân lý cho on-chain enforcement). Entry Registry giữ **bản sao niêm yết**
 > để discover/đọc nhanh KHÔNG cần spend custody. Nếu hai nơi lệch (vd DAO đổi `cut_bps` ở custody nhưng
 > chưa cập nhật entry), **custody là chuẩn**; off-chain coi entry là chỉ-mục, verify lại bằng custody
-> khi cần con số ràng buộc. (Xem `TECH.md` invariant đối soát.)
+> khi cần con số ràng buộc. (Xem `Tech-Spec.md` invariant đối soát.)
 
 **Identity 5 field bất biến** (`platform_id, instance_id, custody_hash, seed_policy, created_epoch`) —
 khóa cứng on-chain ở `UpdateEntry` (U-ID, `registry.ak`). Đổi một field này = một platform KHÁC, phải
@@ -69,7 +69,7 @@ khóa cứng on-chain ở `UpdateEntry` (U-ID, `registry.ak`). Đổi một fiel
 > instance_id, custody_hash)` trong datum phải khớp một custody đã seed THẬT trên chain. Buộc onboarding
 > đúng thứ tự: **cửa 1 (seed custody) phải submit TRƯỚC cửa 2 (register)** (§6). Đây là vá an ninh đóng
 > audit #6 ở **mức đăng ký**; người đọc registry hậu kỳ vẫn nên đối soát lại với custody thật trước khi
-> route phí (van SDK `verifyEntryAgainstCustody` — `TECH.md §6`, `FEAT.md §3`).
+> route phí (van SDK `verifyEntryAgainstCustody` — `Tech-Spec.md §6`, `Feat-Spec.md §3`).
 
 ---
 
@@ -104,7 +104,7 @@ mỗi thao tác, song song hóa hoàn toàn.
 **Đánh đổi đã cân (4 trục):** authority-curated **bền vững** hơn permissionless cho một sổ niêm yết
 (uy tín registry = uy tín các platform trong đó). Rủi ro tập trung được giảm bằng **lộ trình
 committee → DAO**: v1 authority = multisig committee bootstrap (Governance chưa thật); khi Governance
-chạy → chuyển `registry_authority` về DAO (xem `EXEC.md` known-gap). Authority CHỈ gác **niêm yết**,
+chạy → chuyển `registry_authority` về DAO (xem `Exec-Spec.md` known-gap). Authority CHỈ gác **niêm yết**,
 KHÔNG động được **value** (value ở custody, gác bởi `governance_ref` riêng từng platform — §5).
 
 > **Known-gap audit #2 — `platform_id` duy nhất là VAN QUY TRÌNH, KHÔNG bất biến mật mã.** `registry_beacon`
@@ -114,11 +114,11 @@ KHÔNG động được **value** (value ở custody, gác bởi `governance_ref
 > — `discoverPlatforms` đánh dấu `duplicate` cho mọi entry trùng id, caller route phí PHẢI kiểm trước khi
 > tin. Đây **không** phải đảm bảo mật mã. Đề xuất đóng v1.x: **one-shot `genesis_ref` per platform** (mẫu
 > `custody_seed` — consume UTxO duy nhất → asset-name duy nhất theo cơ chế) hoặc **registry-state roster**
-> (đánh đổi: thêm contention). (Xem `TECH.md` GAP-2.)
+> (đánh đổi: thêm contention). (Xem `Tech-Spec.md` GAP-2.)
 >
 > **Known-gap audit #4 — `registry_authority` hiện 1 key-hash = single point of failure.** Một khóa rò =
 > chiếm tên/onboard rác. NÊN là **multisig/committee script** (M-of-N), governance_ref committee → DAO.
-> Trước mainnet PHẢI là committee multisig, KHÔNG key đơn. (Xem `EXEC.md §6.1`, `TECH.md` GAP-3.)
+> Trước mainnet PHẢI là committee multisig, KHÔNG key đơn. (Xem `Exec-Spec.md §6.1`, `Tech-Spec.md` GAP-3.)
 
 ### 3.3 Phá vòng beacon↔registry (self-ref NFT)
 
@@ -244,13 +244,13 @@ cut_bps`, status=`Active`). **Output:** platform **discoverable**. Đây là **c
 > **R-BIND — custody phải seed + submit TRƯỚC khi register.** Tx register PHẢI **reference** custody UTxO
 > của cửa 1 (mang NFT authenticity `(seed_policy, instance_id)` Ở `Script(custody_hash)`). Vì vậy cửa 1
 > không chỉ "chạy trước" mà phải **đã submit on-chain** (custody UTxO tồn tại để reference) trước cửa 2.
-> Entry không trỏ được tới custody chưa tồn tại → không nói dối custody. (Vá an ninh — `TECH.md §3` R-BIND.)
+> Entry không trỏ được tới custody chưa tồn tại → không nói dối custody. (Vá an ninh — `Tech-Spec.md §3` R-BIND.)
 
 ### Cửa 3 — Integrate collect (nối app vào kho)
 App của platform gọi `collectToTreasury(asset, amount, app_id, category)` của custody instance mình
 (`Treasury/FEAT.md §2`). Định giá ở app (`amount` đã tính), Treasury split `cut` → bucket + receipt.
 Đây là **luồng thu** thật — kho bắt đầu nhận value. Tích hợp ở **lớp touchable** của platform
-(Frontend/SDK/mobile), KHÔNG đụng backend nội bộ platform (xem `EXEC.md`).
+(Frontend/SDK/mobile), KHÔNG đụng backend nội bộ platform (xem `Exec-Spec.md`).
 
 > Ba cửa **tách bạch + tuần tự**: seed (có kho) → register (được thấy) → integrate (bắt đầu thu). Một
 > team có thể dừng sau cửa 1 (kho riêng, không niêm yết) hoặc cửa 2 (niêm yết, chưa nối app). Cửa 3 là
@@ -267,7 +267,7 @@ App của platform gọi `collectToTreasury(asset, amount, app_id, category)` c�
   hash giữ nguyên (xem `README.md` §Di chuyển).
 - **Governance** (`Governance/VotingPower/`) — đích của `governance_ref` (gác release từng platform).
   v1 chưa thật → `registry_authority` + `governance_ref` bootstrap bằng **committee multisig**, chuyển
-  DAO khi Governance chạy (known-gap §5 + `EXEC.md`).
+  DAO khi Governance chạy (known-gap §5 + `Exec-Spec.md`).
 - **Caller app:** PhoenixKey (Frontend/SDK), OriLife (mobile/SDK), team Cardano khác (open SDK). Mỗi
   caller là một platform tự seed custody + tự là caller `collectToTreasury` của instance mình.
 
@@ -309,4 +309,4 @@ App của platform gọi `collectToTreasury(asset, amount, app_id, category)` c�
 > KHÔNG đủ tin. Người tin PHẢI (a) kiểm `duplicate`/`findDuplicatePlatformIds` (audit #2), (b) gọi
 > `verifyEntryAgainstCustody(entry, custodyUtxo)` đối soát custody THẬT trước khi route phí (audit #6
 > hậu kỳ), (c) đối với authority đơn khóa — chờ committee multisig trước mainnet (audit #4). Chi tiết +
-> lộ trình đóng ở `TECH.md` known-gap GAP-2/3/4/5 + `EXEC.md §6`.
+> lộ trình đóng ở `Tech-Spec.md` known-gap GAP-2/3/4/5 + `Exec-Spec.md §6`.

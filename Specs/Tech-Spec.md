@@ -2,7 +2,7 @@
 
 **Trạng thái:** draft 2026-06-15 (chờ anh duyệt). Bám **xương sống** [CONTRACT.md](./CONTRACT.md) —
 KHÔNG mâu thuẫn. Tài liệu này là tầng **kỹ thuật** (datum/redeemer/bất biến/validator + SDK off-chain)
-của lớp Registry. Hành vi ở [FEAT](./FEAT.md), lộ trình ở [EXEC](./EXEC.md).
+của lớp Registry. Hành vi ở [FEAT](./Feat-Spec.md), lộ trình ở [EXEC](./Exec-Spec.md).
 
 **Tái dùng nền sống cùng cây Treasury:**
 [`onchain/lib/magiclamp/registry/platform.ak`](../onchain/lib/magiclamp/registry/platform.ak)

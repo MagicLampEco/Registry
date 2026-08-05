@@ -184,4 +184,4 @@ Ba điểm dưới đây đang mở, ghi ra để bên đăng ký biết mình �
 | Hai thẩm quyền khác nhau | "Quyền đăng ký" thực ra là hai: quyền gộp thay đổi vào repo này (bước 0) và khoá ký `registry_authority` on-chain (bước 2). Lộ trình nhiều chữ ký hiện chỉ nói tới cái thứ hai. | Cả hai đều phải siết trước mainnet. Siết một cái mà bỏ cái kia thì cổng vẫn hở. |
 | Dịch vụ không thu asset | Chưa có đường. Ràng buộc on-chain đòi `accepted_assets` khác rỗng và `governance_ref` khác rỗng, nên một dịch vụ không thu tiền vẫn buộc dựng kho và khai ít nhất một asset mới lên sổ được. | Nếu dịch vụ của bạn không thu asset, nêu rõ trong hồ sơ — đây là khoảng trống của chuẩn, không phải lỗi của bạn. |
 
-Lộ trình đóng ba điểm này: `Specs/TECH.md` mục known-gap và `Specs/EXEC.md` §6.
+Lộ trình đóng ba điểm này: `Specs/Tech-Spec.md` mục known-gap và `Specs/Exec-Spec.md` §6.
