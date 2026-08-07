@@ -1,0 +1,34 @@
+# ── Hạ tầng agent riêng + bí mật: KHÔNG BAO GIỜ lên remote ──
+_Agents/
+CLAUDE.md
+.claude/
+.env
+.env.*
+*.env
+!.env.example
+*.pat
+*.pem
+*.key
+*.mnemonic
+_wt-*/
+
+# ── Phụ thuộc + kết quả build ──
+node_modules/
+dist/
+*.tsbuildinfo
+**/.vite/
+
+# npm lockfile — tự sinh, phình diff khi review (npm install/ci tái tạo được)
+**/package-lock.json
+
+# ── Aiken build artifacts ──
+**/onchain/build/
+**/onchain/plutus.json
+
+# ── Trạng thái deploy (theo môi trường, có thể chứa địa chỉ ví) ──
+**/scripts/deployed.json
+**/scripts/onboarded-instances.json
+
+# ── macOS junk ──
+.DS_Store
+**/.DS_Store
