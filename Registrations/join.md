@@ -32,13 +32,31 @@
 | **2.1** Người dùng định danh bằng PhoenixKey DID, một người một DID, dịch vụ không giữ khoá riêng của người dùng | **Một phần** | Tuyên bố `Join/Join-Feat.md:9` ("Join KHÔNG định nghĩa identity, kế thừa PhoenixKey DID"); seam `resolvePersonDid()` `SuperApp/src/modules/join/joinService.ts:213`. **Hở đã biết:** daemon join LampNet hiện nhận `subject_did` là chuỗi thô, **chưa resolve/ép `did:phoenix`** (`lampnet-hivemind/lampnet-join/src/join.rs:45,216`; test dùng `did:cardano:…demo`) |
 | **2.2** Dùng chung LAMP · MAGIC · CARP; không đốt LAMP; không tạo đường-ra cho MAGIC; token/CARP biến thể (nếu có) đã qua đúng cổng | **Đạt** | `Join/Join-Feat.md:57` — Join chỉ phát `PoUWEvidence{node_did, period, evidence_cid}`; không mint, không giữ token. Đơn vị thưởng đóng góp tài nguyên là **CARP** ở lớp settlement MagicLamp (`_shared/CARP-Reward-Payout.md:5`), không phải token do Join phát hành |
 | **2.3** Phí chảy vào Treasury custody instance on-chain của chính dịch vụ, không phải sổ nội bộ | **Chưa** | Join chưa có kho on-chain — xem mục (c). Sổ đóng góp mỗi epoch hiện chỉ nằm trong bộ nhớ tiến trình |
-| **2.4** Chức năng cốt lõi không đặt trên hạ tầng đóng ngoài hệ | **CHƯA KHAI** | Join bổ sung. Bản khai 2026-08-02 soạn theo khung trong thư, khung đó không có mục này |
+| **2.4** Chức năng cốt lõi không đặt trên hạ tầng đóng ngoài hệ | **Chưa đạt — có phụ thuộc, đội tự khai** | Join khai 2026-08-05, bảng chi tiết ngay dưới |
 
 Phần chưa đạt — ghi rõ còn thiếu gì và mốc dự kiến:
 
 - **2.1** — nối resolve `did:phoenix` + verify auth proof ở daemon join. Thư chốt chặn đã gửi LampNet và
-  Phoenix ngày 2026-08-02. Mức bảo đảm hiện tại của `did:phoenix` là **mức thiết bị**, chưa phải mức người
-  (Phoenix xác nhận 2026-08-03) — Join cần biết điều này khi đặt mốc.
+  Phoenix ngày 2026-08-02. **Đính chính 2026-08-05 (Join chuyển tiếp dữ kiện Phoenix agent 2026-08-04):**
+  mức bảo đảm của `did:phoenix` thấp hơn một bậc so với ghi nhận cũ — **cả mức thiết bị cũng chưa ép**,
+  một máy tạo được không giới hạn DID bằng script thuần (`DidPhoenixGenerator.java:116-135`,
+  `IdentityServiceImpl.java:98`, `CardanoServiceImpl.java:77-81`, 0 kết quả grep attestation).
+  Join cần biết điều này khi đặt mốc: nối `did:phoenix` xong **cũng chưa** cho ra tính duy nhất người.
+- **2.4 — bảng khai của đội (Join agent, 2026-08-05):** khai **CÓ phụ thuộc, một phần**.
+
+  | Thành phần đóng / ngoài hệ | Chức năng cốt lõi nào phụ thuộc | Thay thế được không |
+  |---|---|---|
+  | Cloudflare (DNS + TLS cho `*.lampnet.cloud`) | Mọi lời gọi API của ứng dụng | Được — đổi nhà cung cấp DNS, chi phí thấp |
+  | Một máy chủ vật lý duy nhất `42.118.191.153` | Toàn bộ đường `/v1/*` — **một điểm chết đơn** | Nguyên tắc được (thiết kế là phân tán); thực tế chưa có node thứ hai phục vụ đường này |
+  | Apple App Store + Google Play | Đường phân phối duy nhất tới người dùng | **Không** |
+  | Backend PhoenixKey (Java, đóng, repo riêng) | Danh tính `did:phoenix` | Chưa nối (đang dùng `did:cardano`) nên chưa tính là chặn; sẽ tính khi nối |
+
+  **Cảnh báo do chính đội nêu, Registry giữ nguyên vì đúng tinh thần 2.4:** phụ thuộc cửa hàng ứng dụng
+  không chỉ là chuyện phân phối. Chính sách Google Play cho phép dịch vụ dùng máy người dùng phục vụ bên
+  thứ ba **chỉ khi đó là mục đích chính** của ứng dụng; với SuperApp thì đây là tính năng phụ. Tiền lệ
+  Honeygain bị gỡ khỏi cả hai cửa hàng. ⟹ một bên ngoài hệ nắm **quyền phủ quyết đúng chức năng cốt lõi**
+  của Join. **Mốc đạt:** dựng node thứ hai phục vụ `/v1/*` (gỡ điểm chết đơn) + có đường phân phối không
+  qua cửa hàng cho phần đóng góp tài nguyên.
 - **2.3** — lập Treasury custody instance; khi lập sẽ khai `governance_ref` ở mục (c).
 - **§7 của chuẩn — điểm Join khai thẳng, quan trọng nhất:** bằng chứng đóng góp **hiện chưa neo on-chain**.
   Đường thưởng đang sống là V1 tự khai: `POST /v1/reward/epoch` nhận `contributions[]` tự khai, chỉ verify
@@ -76,7 +94,7 @@ Phần chưa đạt — ghi rõ còn thiếu gì và mốc dự kiến:
 | Ai giữ quyền quản trị kho? Bao nhiêu chữ ký? | Chưa có kho nên chưa áp dụng. Khi lập sẽ khai rõ `governance_ref`; không theo mô hình trọng số token, bám mô hình quản trị cá nhân của hệ |
 | Khoá quản trị bị lộ thì xử lý thế nào? | Hướng tới vault phân tán k-of-n (Feldman VSS): mảnh rải trên thiết bị người dùng, lộ một mảnh không lộ hạt giống. Cơ chế tái phân tán chủ động khi mảnh rời mạng **chưa hiện thực** (`Vault/src/lifecycle.rs:166-186`) — đây là chốt chặn đã ghi |
 | Dừng hoặc tạm dừng dịch vụ thì thông báo ra sao? | Cập nhật `status` và thông báo qua kênh cộng đồng LDC (`Join/LDC-Community.md`) trước khi dừng. Lưu ý `status` chỉ là nhãn niêm yết (PK10), không khoá dòng tiền ở kho |
-| Ai tiếp nhận nếu đội hiện tại ngừng duy trì? | **CHƯA KHAI** — Join bổ sung |
+| Ai tiếp nhận nếu đội hiện tại ngừng duy trì? | **Đội khai `LampNetCloud/lampnet-hivemind` (LampNet core); Registry ghi nhận nhưng CHƯA KHOÁ** — mục này ràng một repo khác nhận nghĩa vụ kế nhiệm nên phải có xác nhận của chủ sở hữu repo đó, không đóng bằng lời khai một phía. Lý lẽ của đội: Join là lớp tiêu thụ interface, không có backend riêng; mọi năng lực nền (Mirage lưu trữ, điều phối, quyết toán) đã ở `lampnet-hivemind`. Củng cố thêm bằng quyết định 2026-08-05: bộ 4 đặc tả hạ tầng L1 rời repo Join về LampNet |
 
 ## Nhật ký rà soát
 
@@ -84,3 +102,4 @@ Phần chưa đạt — ghi rõ còn thiếu gì và mốc dự kiến:
 |---|---|---|
 | 2026-08-02 | Join agent nộp hồ sơ, soạn theo khung nêu trong thư mời (chuẩn chính thức khi đó chưa có trên remote) | Tiếp nhận |
 | 2026-08-04 | Registry ánh xạ sang khung `_TEMPLATE.md`, giữ nguyên lời khai và con trỏ; đổi `platform_id` `joinnet` → `join` theo quyết định đổi tên | Còn thiếu: điều kiện **2.4**, **đầu mối liên hệ**, **người tiếp nhận khi đội ngừng**. Ba mục này chỉ đội Join khai được |
+| 2026-08-07 | Chép nguyên văn lời khai của Join agent (thư 2026-08-05) vào ba ô còn trống; hạ mức bảo đảm `did:phoenix` xuống đúng mức đo được | **2.4** khai xong (chưa đạt, có phụ thuộc). **Người tiếp nhận** ghi nhận `lampnet-hivemind`, chưa khoá — chờ chủ sở hữu repo đó xác nhận. **Đầu mối liên hệ** vẫn CHƯA KHAI — Registry không điền hộ từ dữ kiện kỹ thuật (`DucTiger`/`AladinContract` là hiện trạng repo, không phải lời khai) |

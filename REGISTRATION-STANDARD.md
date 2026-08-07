@@ -34,10 +34,17 @@ Người dùng cuối của dịch vụ được định danh bằng **PhoenixKe
 của dịch vụ. Hệ quả bắt buộc:
 
 - **Một người = một DID** là *đích* của hệ danh tính, và là nền chống Sybil mà quyền biểu quyết,
-  uy tín, phần thưởng hướng tới. **Mức bảo đảm thật hôm nay thấp hơn đích đó** — đọc §7 trước khi
-  thiết kế bất cứ cơ chế nào dựa vào nó: hiện `did:phoenix` mới ép được ở **mức thiết bị** (khoá gốc
-  sinh trong vùng bảo mật của máy + cổng sinh trắc) và **mức chuỗi DID** (không đúc trùng anchor cho
-  cùng một DID). Một người có N thiết bị vẫn ra được N DID.
+  uy tín, phần thưởng hướng tới. **Mức bảo đảm thật hôm nay thấp hơn đích đó rất nhiều** — đọc §7
+  trước khi thiết kế bất cứ cơ chế nào dựa vào nó. Đo trên mã đang sống (Phoenix agent 2026-08-04,
+  Join chuyển tiếp 2026-08-05): `did:phoenix` mới ép được ở **mức chuỗi DID** — không đúc trùng
+  anchor cho cùng một chuỗi DID. **Mức thiết bị CŨNG chưa ép**: DID là băm của entropy sinh tại
+  thời điểm gọi chứ không dẫn từ khoá phần cứng hay seed (`PhoenixKeyDID/Database` →
+  `DidPhoenixGenerator.java:116-135`, dùng `SecureRandom`); backend chỉ kiểm trùng pubkey nên phép
+  kiểm luôn qua (`IdentityServiceImpl.java:98`); không có xác thực phần cứng nào
+  (grep `attestation|appattest|play.?integrity|devicecheck` toàn repo backend = 0); phí đăng ký
+  1.2 ADA do nền tảng trả (`CardanoServiceImpl.java:77-81`). ⟹ **một máy tạo được không giới hạn
+  DID bằng script thuần, không cần điện thoại.** Đừng dựng cơ chế nào coi một DID là một người,
+  và cũng đừng coi nó là một thiết bị.
 - Dịch vụ **không tự phát hành danh tính thay thế** để lách điều kiện trên.
 - Khoá riêng thuộc về người dùng. Dịch vụ giữ hộ khoá của người dùng là vi phạm.
 
@@ -179,7 +186,7 @@ Ba điểm dưới đây đang mở, ghi ra để bên đăng ký biết mình �
 | Quyền đăng ký | Đang là **một khoá đơn**, chưa phải multisig hay DAO | Một khoá rò là chiếm được tên. Phải chuyển thành nhiều chữ ký trước khi lên mainnet. |
 | Tính duy nhất `platform_id` | Bảo đảm bằng **kỷ luật ký**, không bằng mật mã | Bên định tuyến phí phải tự kiểm trùng, không được tin sổ một cách mù quáng. |
 | Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết. |
-| Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức thiết bị** + mức chuỗi DID; **mức người chưa ép on-chain**. Lớp ép mức người đang thiết kế, chưa phát hành. | Đừng dựng cơ chế chống Sybil chỉ dựa trên "hai DID phân biệt" — một người hai thiết bị vẫn ký chéo cho chính mình được. Tới khi lớp mức người lên, giữ rào kinh tế làm phòng thủ chính. |
+| Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức chuỗi DID**. **Mức người và cả mức thiết bị đều chưa ép** — dẫn chứng ở §2.1. Chủ dự án đã chốt "một người = một DID" là **yêu cầu cứng** (2026-08-06); PhoenixKey đang thiết kế tầng personhood (neo định danh nhà nước + nullifier chống trùng tính bằng DPRF ngưỡng), **chưa phát hành**. | Đừng dựng cơ chế chống Sybil dựa trên "hai DID phân biệt" — một máy ký chéo cho chính nó bằng script được, không cần cả điện thoại thứ hai. Tới khi tầng personhood lên, **rào kinh tế là phòng thủ duy nhất** — nghĩa là rào đó phải tự đứng được mà **không** giả định danh tính đắt. Cụ thể: phần thưởng phát ra mỗi epoch phải bị chặn trên bởi một phần **nhỏ hơn 1** của lượng MAGIC thực bị tiêu cùng epoch, phần dư về Treasury. Có ràng buộc đó thì kẻ dựng cầu giả để farm luôn lỗ, kể cả khi tạo được vô hạn DID. |
 | R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho, không được coi "đã qua R-BIND" là đã kiểm. |
 | Hai thẩm quyền khác nhau | "Quyền đăng ký" thực ra là hai: quyền gộp thay đổi vào repo này (bước 0) và khoá ký `registry_authority` on-chain (bước 2). Lộ trình nhiều chữ ký hiện chỉ nói tới cái thứ hai. | Cả hai đều phải siết trước mainnet. Siết một cái mà bỏ cái kia thì cổng vẫn hở. |
 | Dịch vụ không thu asset | Chưa có đường. Ràng buộc on-chain đòi `accepted_assets` khác rỗng và `governance_ref` khác rỗng, nên một dịch vụ không thu tiền vẫn buộc dựng kho và khai ít nhất một asset mới lên sổ được. | Nếu dịch vụ của bạn không thu asset, nêu rõ trong hồ sơ — đây là khoảng trống của chuẩn, không phải lỗi của bạn. |
