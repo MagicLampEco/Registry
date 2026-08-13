@@ -1,0 +1,19 @@
+{
+  "name": "@magiclamp/registry-kit",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Registry off-chain SDK — cổng đăng ký MagicLamp: codec datum v2, builder đăng ký/cập nhật/di trú, quét sổ + ba van đối soát trước khi route phí",
+  "scripts": {
+    "test":       "vitest run",
+    "test:watch": "vitest",
+    "typecheck":  "tsc --noEmit"
+  },
+  "dependencies": {
+    "@lucid-evolution/lucid": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.41",
+    "typescript": "^5.4.0",
+    "vitest":     "^1.6.0"
+  }
+}
