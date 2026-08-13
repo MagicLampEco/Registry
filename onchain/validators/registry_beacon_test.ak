@@ -10,6 +10,7 @@
 // authority vkh đặt trong extra_signatories.
 
 use aiken/interval.{Finite, Interval, IntervalBound}
+use cardano/address.{Script}
 use cardano/assets
 use cardano/transaction.{Input, Output, Transaction, ValidityRange, placeholder}
 use magiclamp/registry/platform.{Active, Paused, PlatformEntry, RegisterPlatform}
@@ -115,8 +116,22 @@ fn custody_ref_ok() -> Input {
   custody_ref(custody_hash, seed_policy, instance_id)
 }
 
+// Input CHỨNG MINH cổng quản trị CHẠY ĐƯỢC (R-GOVLIVE): một UTxO ở Script(governance_ref)
+// bị CHI TIÊU trong chính tx đăng ký. Đặt trong hàm dựng tx DÙNG CHUNG (không sửa từng
+// test) — nếu không, MỌI ca pass cũ sẽ đỏ ngay khi thêm R-GOVLIVE và ta mất tính cô lập
+// nguyên nhân của các ca fail cũ.
+fn gov_input() -> Input {
+  util.mk_input(
+    util.mk_ref(7),
+    util.mk_output_no_datum(
+      util.script_address(governance_ref),
+      assets.from_lovelace(2_000_000),
+    ),
+  )
+}
+
 // Dựng tx đăng ký: mint NFT, outputs, reference custody, ký authority, validity_range
-// GỌN trong epoch đăng ký mặc định.
+// GỌN trong epoch đăng ký mặc định, kèm input chứng minh cổng quản trị chạy.
 fn reg_tx(
   mint    : assets.Value,
   outputs : List<Output>,
@@ -134,8 +149,21 @@ fn reg_tx_in_range(
   signers : List<ByteArray>,
   range   : ValidityRange,
 ) -> Transaction {
+  reg_tx_full(mint, outputs, refs, signers, range, [gov_input()])
+}
+
+// Bản có kiểm soát CẢ tx.inputs (dùng cho các ca R-GOVLIVE).
+fn reg_tx_full(
+  mint    : assets.Value,
+  outputs : List<Output>,
+  refs    : List<Input>,
+  signers : List<ByteArray>,
+  range   : ValidityRange,
+  inputs  : List<Input>,
+) -> Transaction {
   Transaction {
     ..placeholder,
+    inputs: inputs,
     outputs: outputs,
     reference_inputs: refs,
     mint: mint,
@@ -699,6 +727,84 @@ test register_exclusive_upper_past_boundary() fail {
         reg_epoch * util.ms_per_time_bucket,
         ( reg_epoch + 1 ) * util.ms_per_time_bucket + 1,
       ),
+    )
+  run(tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 14. R-GOVLIVE — cổng quản trị phải CHẠY ĐƯỢC ngay trong tx đăng ký.
+//     Ép 28 byte (R-WF) là guard CÚ PHÁP: 28 byte đúng độ dài vẫn có thể là hash của một
+//     script không tồn tại, hoặc script không có nhánh nào chạy được. PoC trước bản vá
+//     (`newC1` PASS): đăng ký với governance_ref như vậy ĐƯỢC NHẬN, rồi hồ sơ không sửa
+//     được (đổi governance_ref cần đồng thuận từ chính nó), không Retire được, không di
+//     trú được; authority đặt Paused rồi im lặng = "Paused vĩnh viễn" tái lập.
+// ════════════════════════════════════════════════════════════
+// 14a. Đăng ký KHÔNG có bằng chứng cổng quản trị chạy (fail) — mọi thứ khác hợp lệ.
+test register_no_governance_consent() fail {
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, entry())],
+      [custody_ref_ok()],
+      [authority],
+      bucket_range(reg_epoch),
+      [],
+    )
+  run(tx)
+}
+
+// 14b. Input ở MỘT SCRIPT KHÁC governance_ref (fail) — "có script nào đó chạy" không phải
+//      bằng chứng; phải đúng cổng mà hồ sơ khai.
+test register_governance_consent_wrong_script() fail {
+  let other =
+    util.mk_input(
+      util.mk_ref(7),
+      util.mk_output_no_datum(
+        util.script_address(#"11111111111111111111111111111111111111111111111111111111"),
+        assets.from_lovelace(2_000_000),
+      ),
+    )
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, entry())],
+      [custody_ref_ok()],
+      [authority],
+      bucket_range(reg_epoch),
+      [other],
+    )
+  run(tx)
+}
+
+// 14c. Bằng chứng qua WITHDRAWAL từ Script(governance_ref) (pass) — kiểu tích hợp thứ
+//      hai; Registry không ép cổng quản trị phải giữ state UTxO.
+test register_governance_consent_by_withdrawal() {
+  let tx =
+    Transaction {
+      ..reg_tx_full(
+        beacon_mint(platform_id, 1),
+        [entry_output(platform_id, entry())],
+        [custody_ref_ok()],
+        [authority],
+        bucket_range(reg_epoch),
+        [],
+      ),
+      withdrawals: [Pair(Script(governance_ref), 0)],
+    }
+  run(tx)
+}
+
+// 14d. Hồ sơ KHÔNG KHO cũng phải chứng minh cổng quản trị chạy (fail) — R-GOVLIVE áp cho
+//      CẢ HAI hạng, vì `governance_ref` bắt buộc ở cả hai (xem entry_well_formed).
+test register_non_custodial_no_governance_consent() fail {
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, entry_non_custodial())],
+      [],
+      [authority],
+      bucket_range(reg_epoch),
+      [],
     )
   run(tx)
 }

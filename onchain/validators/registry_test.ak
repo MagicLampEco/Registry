@@ -8,7 +8,9 @@
 //      fail, đủ hai bên pass); spec_version đổi (fail); rút bớt token/ADA (fail).
 // Phủ (MigrateEntry): di trú hồ sơ Retired (pass — chính lỗ đang vá); đổi status (fail);
 //      new_spec_version không tiến (fail); thiếu đồng thuận quản trị (fail); đích trùng
-//      chính mình (fail); đổi trường định danh (fail); đồng thuận qua withdrawal (pass).
+//      chính mình (fail); đổi trường định danh (fail); đồng thuận qua withdrawal (pass);
+//      đổi governance_ref khi di trú phải có đồng thuận CẢ ref cũ LẪN ref mới (M-GOV2:
+//      thiếu vế mới fail, thiếu vế cũ fail, đủ hai bên pass, không đổi ref pass).
 //
 // Phong cách mirror custody_seed_test.ak: placeholder tx, beacon NFT trong value,
 // authority vkh đặt trong extra_signatories.
@@ -42,6 +44,9 @@ const custody_hash: ByteArray = #"c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0
 const seed_policy: ByteArray = #"5eed5eed5eed5eed5eed5eed5eed5eed5eed5eed5eed5eed5eed5eed"
 
 const governance_ref: ByteArray = #"99999999999999999999999999999999999999999999999999999999"
+
+// Cổng quản trị MỚI (đích bàn giao ở U-GOV2).
+const new_governance_ref: ByteArray = #"88888888888888888888888888888888888888888888888888888888"
 
 const lamp_policy: ByteArray = #"1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b"
 
@@ -106,6 +111,17 @@ fn gov_input() -> Input {
     util.mk_ref(5),
     util.mk_output_no_datum(
       util.script_address(governance_ref),
+      assets.from_lovelace(2_000_000),
+    ),
+  )
+}
+
+// Input CHỨNG MINH đồng thuận của cổng quản trị MỚI (vế thứ hai của bàn giao U-GOV2).
+fn new_gov_input() -> Input {
+  util.mk_input(
+    util.mk_ref(6),
+    util.mk_output_no_datum(
+      util.script_address(new_governance_ref),
       assets.from_lovelace(2_000_000),
     ),
   )
@@ -378,13 +394,17 @@ test update_cut_bps_with_consent() {
   run(entry_in(), tx)
 }
 
-// 10e. Đổi governance_ref có CẢ HAI (pass) — đồng thuận đọc theo governance_ref CŨ
-//      (bên đương nhiệm phải đồng ý cả khi bị thay).
+// 10e. Đổi governance_ref có ĐỦ BA bên (pass) — authority + cổng quản trị CŨ (bên đương
+//      nhiệm phải đồng ý cả khi bị thay) + cổng quản trị MỚI (U-GOV2: bàn giao hai chiều,
+//      ref mới phải CHẠY ĐƯỢC ngay trong tx bàn giao). Trước đợt vá này chỉ cần ref CŨ.
 test update_governance_ref_with_consent() {
-  let e_out = PlatformEntry { ..entry_in(), governance_ref: #"88888888888888888888888888888888888888888888888888888888" }
+  let e_out = PlatformEntry { ..entry_in(), governance_ref: new_governance_ref }
   let tx =
     upd_tx(
-      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [
+        reg_input(own_ref(), platform_id, entry_in()), gov_input(),
+        new_gov_input(),
+      ],
       [reg_output(platform_id, e_out)],
       assets.zero,
       [authority],
@@ -1022,6 +1042,231 @@ test migrate_half_shape_clear_assets() fail {
       accepted_assets: [],
       cut_bps: 0,
     }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+
+// ════════════════════════════════════════════════════════════
+// 24. U-GOVSELF-OUT / M-GOVSELF-OUT — nửa còn lại của S-GOVSELF: chặn ở datum RA.
+//     Đợt trước chỉ chặn cửa nộp (R-GOVSELF) và datum VÀO (S-GOVSELF); datum RA chỉ bị
+//     `mutable_fields_valid` ép ĐỘ DÀI 28 — mà own_hash/new_registry_hash dài đúng 28.
+//     PoC tái lập trước bản vá (đã chạy, PASS): `poc_new_a1`, `poc_new_b`, `poc_new_b2`.
+// ════════════════════════════════════════════════════════════
+// 24a. Update ghi governance_ref = own_hash (fail). Đây là ca NGHIÊM TRỌNG: tx này chỉ
+//      cần authority ký + platform đồng thuận MỘT LẦN, và sau nó ô hồ sơ KHÔNG spend được
+//      bằng bất kỳ đường nào (Update lẫn Migrate đều chết ở S-GOVSELF trên datum VÀO)
+//      ⇒ beacon NFT + min-ADA khoá vĩnh viễn ⇒ phá PK5 "beacon sống suốt đời".
+//      ⚠ U-GOV2 KHÔNG bắt được ca này: entry input nằm ở Script(reg_sh) nên nó tự thoả
+//      "đồng thuận của ref mới" — đúng lý do phải có một dòng riêng cho own_hash.
+test update_gov_ref_to_own_hash_rejected() fail {
+  let e_out = PlatformEntry { ..entry_in(), governance_ref: reg_sh }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 24b. Migrate ghi governance_ref = new_registry_hash (fail) — hồ sơ brick NGAY khi tới
+//      registry mới, vì validator mới mang cùng ràng buộc S-GOVSELF.
+test migrate_gov_ref_to_new_registry_rejected() fail {
+  let e_out =
+    PlatformEntry { ..entry_in(), spec_version: 3, governance_ref: new_reg_sh }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 24c. Migrate ghi governance_ref = registry CŨ (fail) — không brick, nhưng biến "đồng
+//      thuận quản trị" thành "có ai đó tiêu một ô hồ sơ bất kỳ ở registry cũ".
+test migrate_gov_ref_to_old_registry_rejected() fail {
+  let e_out =
+    PlatformEntry { ..entry_in(), spec_version: 3, governance_ref: reg_sh }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 24d. Migrate ĐỔI governance_ref sang một ref hợp lệ khác, CÓ ĐỦ đồng thuận hai bên
+//      (pass) — xác nhận bản vá M-GOVSELF-OUT chỉ chặn ĐÚNG hai giá trị
+//      own_hash/new_registry_hash, không khoá cứng governance_ref.
+//      ⚠ Ca này TRƯỚC ĐÂY chỉ có `gov_input()` (ref cũ) và vẫn PASS — đó chính là lỗ
+//      M-GOV2. Nay phải kèm `new_gov_input()`; ca thiếu vế mới nằm ở 26a.
+test migrate_gov_ref_change_ok() {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      governance_ref: new_governance_ref,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input(), new_gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 25. U-GOV2 — BÀN GIAO HAI CHIỀU khi đổi governance_ref.
+//     Ép 28 byte là guard CÚ PHÁP, không chứng minh script sống. PoC `newC4` PASS trước
+//     bản vá: đổi governance_ref sang 28 byte bất kỳ chỉ cần đồng thuận ref CŨ ⇒ hồ sơ
+//     treo vào một cổng chưa ai chứng minh chạy được ⇒ từ đó không sửa/gỡ/di trú được.
+//     Ca ĐỦ HAI BÊN (pass) là test 10e `update_governance_ref_with_consent`.
+// ════════════════════════════════════════════════════════════
+// 25a. Thiếu đồng thuận ref MỚI (fail) — chỉ có authority + ref cũ (đúng luật CŨ).
+test update_gov_ref_handover_missing_new() fail {
+  let e_out = PlatformEntry { ..entry_in(), governance_ref: new_governance_ref }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 25b. Thiếu đồng thuận ref CŨ (fail) — bên đương nhiệm bị thay mà không được hỏi (U-GOV).
+test update_gov_ref_handover_missing_old() fail {
+  let e_out = PlatformEntry { ..entry_in(), governance_ref: new_governance_ref }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), new_gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 25c. Bàn giao qua WITHDRAWAL của ref mới (pass) — U-GOV2 nhận cả hai kiểu tích hợp,
+//      không ép cổng quản trị mới phải giữ state UTxO.
+test update_gov_ref_handover_new_by_withdrawal() {
+  let e_out = PlatformEntry { ..entry_in(), governance_ref: new_governance_ref }
+  let tx =
+    Transaction {
+      ..upd_tx(
+        [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+        [reg_output(platform_id, e_out)],
+        assets.zero,
+        [authority],
+      ),
+      withdrawals: [Pair(Script(new_governance_ref), 0)],
+    }
+  run(entry_in(), tx)
+}
+
+// 25d. KHÔNG đổi governance_ref thì KHÔNG đòi thêm gì (pass) — Retire chỉ cần ref hiện
+//      hành, U-GOV2 không phát sinh nghĩa vụ mới cho các thay đổi khác.
+test update_retire_no_extra_consent_needed() {
+  let e_out = PlatformEntry { ..entry_in(), status: Retired }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 26. M-GOV2 — BÀN GIAO HAI CHIỀU khi đổi governance_ref TRONG LÚC DI TRÚ.
+//     CÙNG MỘT LỖ với U-GOV2, đi vòng qua cửa khác: M-GOV chỉ đòi ref CŨ, M-ID không gồm
+//     `governance_ref`, M-MUT chỉ ép ĐỘ DÀI 28 ⇒ di trú ghi được một ref chưa ai chứng
+//     minh là script sống. Hồ sơ tới registry mới rồi thì KHÔNG Retire được, KHÔNG di trú
+//     tiếp được, KHÔNG đổi gov được. Bằng chứng thực thi trước bản vá: ca
+//     `migrate_gov_ref_change_ok` (24d) PASS khi tx CHỈ có đồng thuận ref cũ.
+//     Ca ĐỦ HAI BÊN (pass) là 24d sau khi sửa.
+// ════════════════════════════════════════════════════════════
+// 26a. Di trú + đổi governance_ref mà THIẾU đồng thuận ref MỚI (fail) — đúng hình dạng
+//      của ca 24d cũ (chỉ có `gov_input()`), nay phải bị chặn.
+test migrate_gov_ref_handover_missing_new() fail {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      governance_ref: new_governance_ref,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 26b. Di trú + đổi governance_ref mà THIẾU đồng thuận ref CŨ (fail) — M-GOV: bên đương
+//      nhiệm bị thay ngay trong lúc hồ sơ rời quyền tài phán mà không được hỏi.
+test migrate_gov_ref_handover_missing_old() fail {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      governance_ref: new_governance_ref,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), new_gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 26c. Bàn giao qua WITHDRAWAL của ref mới (pass) — M-GOV2 nhận cả hai kiểu tích hợp,
+//      không ép cổng quản trị mới phải giữ state UTxO.
+test migrate_gov_ref_handover_new_by_withdrawal() {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      governance_ref: new_governance_ref,
+    }
+  let tx =
+    Transaction {
+      ..upd_tx(
+        [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+        [new_reg_output(platform_id, e_out)],
+        assets.zero,
+        [authority],
+      ),
+      withdrawals: [Pair(Script(new_governance_ref), 0)],
+    }
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 26d. KHÔNG đổi governance_ref khi di trú thì KHÔNG phát sinh nghĩa vụ nào (pass) —
+//      chỉ ref CŨ (M-GOV) là đủ, M-GOV2 im lặng. Ca này chốt rằng bản vá không biến mọi
+//      cuộc di trú thành phải-có-hai-cổng-cùng-chạy.
+test migrate_gov_ref_unchanged_no_extra_consent() {
+  let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
   let tx =
     upd_tx(
       [reg_input(own_ref(), platform_id, entry_in()), gov_input()],

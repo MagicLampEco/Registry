@@ -27,9 +27,16 @@ use cardano/assets.{Value}
 use magiclamp/registry/types.{AssetKey}
 
 /// Độ dài MỌI script hash / policy id trên Cardano: 28 byte (blake2b-224).
-/// Ép độ dài này ở mọi trường "trỏ tới script/policy" chặn một lớp lỗ nguyên: giá trị
-/// rác (#"" , 1 byte, 29 byte) trỏ tới một script KHÔNG TỒN TẠI và KHÔNG THỂ tồn tại
-/// ⇒ mọi điều kiện đọc theo nó thành hằng False ⇒ hồ sơ tự khoá chết. Xem `governance_ref`.
+/// Ép độ dài này ở mọi trường "trỏ tới script/policy" loại được giá trị SAI ĐỘ DÀI
+/// (#"", 1 byte, 29 byte) — thứ không thể là script hash nên mọi điều kiện đọc theo nó
+/// thành hằng False ⇒ hồ sơ tự khoá chết. Xem `governance_ref`.
+///
+/// ⚠ ĐỌC ĐÚNG SỨC MẠNH — ĐÂY LÀ GUARD CÚ PHÁP, KHÔNG PHẢI BẰNG CHỨNG TỒN TẠI. 28 byte
+/// đúng độ dài vẫn có thể là hash của một script KHÔNG TỒN TẠI, hoặc của một script tồn
+/// tại nhưng KHÔNG CÓ nhánh chạy được (vd chỉ có `mint` + `else fail`). Kiểm bằng thực
+/// thi (PoC `newC1`/`newC4`/`newF` PASS trước bản vá đợt này). Bằng chứng "cổng quản trị
+/// CHẠY ĐƯỢC" chỉ có một cách lấy: bắt nó CHẠY THẬT trong chính tx — đó là việc của
+/// R-GOVLIVE (lúc đăng ký) và U-GOV2 (lúc bàn giao), không phải của hằng số này.
 pub const script_hash_len: Int = 28
 
 /// Phiên bản lược đồ hồ sơ hiện hành. Đăng ký mới BẮT BUỘC khai đúng số này (R-VER);
@@ -131,6 +138,11 @@ pub fn identity_preserved(a: PlatformEntry, b: PlatformEntry) -> Bool {
 /// script không tồn tại làm `governance_consented` thành hằng False vĩnh viễn ⇒ hồ sơ
 /// không Retire được, không di trú tiếp được, không đổi được ba trường quản trị. Nhánh
 /// cứu (MigrateEntry) mà thiếu ràng buộc này thì TỰ TẠO LẠI đúng cái kẹt nó sinh ra để cứu.
+///
+/// ⚠ HÀM NÀY KHÔNG ĐỦ ĐỂ CHẶN HỒ SƠ TỰ KHOÁ. `own_hash` / `new_registry_hash` dài ĐÚNG
+/// 28 byte nên qua được đây; chặn hai giá trị đó là việc của U-GOVSELF-OUT /
+/// M-GOVSELF-OUT trong `registry.ak` (chúng cần biết hash của chính validator, thứ hàm
+/// thuần này không có). Đừng đọc hàm này là "datum ra an toàn".
 ///
 /// Dùng lại `shape_*` để hồ sơ sau cập nhật vẫn thuộc đúng một hạng — cấm mọi trạng thái
 /// nửa vời. Việc CẤM CHUYỂN HẠNG ép riêng ở validator (`shape_custodial(in) ==

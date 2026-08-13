@@ -28,6 +28,14 @@
 //             LÀ registry, thì `governance_consented` bên spend (quét tx.inputs tìm input
 //             ở Script(governance_ref), mà ô hồ sơ luôn ở đó) thành hằng True vĩnh viễn ⇒
 //             authority một mình Retire / đổi cut_bps / di trú được. Chặn ngay từ cửa nộp.
+//   R-GOVLIVE entry.governance_ref phải CHẠY ĐƯỢC ngay trong chính tx đăng ký (spend một
+//             input ở Script(governance_ref) hoặc withdrawal từ đó). Ép 28 byte
+//             (R-WF) là guard CÚ PHÁP, KHÔNG chứng minh script tồn tại và có nhánh chạy
+//             được. Kiểm bằng thực thi (PoC `newC1` PASS trước bản vá): đăng ký với
+//             governance_ref là 28 byte bất kỳ được NHẬN, và sau đó hồ sơ không sửa được
+//             (đổi governance_ref cần đồng thuận từ chính nó), không Retire được, không di
+//             trú được; authority đặt `Paused` rồi im lặng là tái lập đúng "Paused vĩnh
+//             viễn" mà nhánh hồi sinh U-REVIVE sinh ra để đóng.
 //   R-VALUE   ô hồ sơ chỉ mang beacon NFT + ADA, KHÔNG token lạ.
 //   R-EPOCH   created_epoch == Ô THỜI GIAN của CHÍNH tx đăng ký (validity_range gọn 1 ô).
 //             ⚠ "ô 5 ngày kể từ mốc Unix", KHÔNG phải epoch Cardano — xem util.ak.
@@ -104,6 +112,35 @@ validator registry_beacon(registry_authority: ByteArray, registry_hash: ByteArra
     // thoả `governance_consented` vĩnh viễn — chặn ngay tại cửa nộp, đừng để lọt vào sổ
     // rồi mới phát hiện (hồ sơ đã lọt thì spend cũng chặn, nhưng khi đó nó KẸT).
     expect entry.governance_ref != registry_hash
+
+    // R-GOVLIVE: bắt cổng quản trị CHẠY THẬT ngay lúc đăng ký. Đây là điểm DUY NHẤT trong
+    // vòng đời hồ sơ mà ta có đòn bẩy: sau khi đã lên sổ, MỌI đường sửa/gỡ/di trú đều đi
+    // qua chính `governance_ref` ⇒ một ref chết là hồ sơ chết mà không ai gỡ được. Ép 28
+    // byte không thay được kiểm này: 28 byte đúng độ dài vẫn có thể là hash của script
+    // không tồn tại, hoặc script không có nhánh nào chạy được.
+    // ⚠ Giới hạn kế thừa từ `governance_consented` (xem util.ak): nó chứng minh "script
+    // ĐÃ CHẠY", KHÔNG chứng minh "script phê duyệt ĐÚNG việc này", và cũng không loại
+    // được script có nhánh permissionless. Ràng buộc đó nằm ở CHUẨN ĐĂNG KÝ, không ở đây.
+    //
+    // ⚠⚠ XUNG ĐỘT ĐÃ BIẾT, CỐ Ý KHÔNG VÁ BẰNG MÃ — R-GOVLIVE ⟂ R-MINT-2.
+    // R-GOVLIVE bắt cổng quản trị chạy TRONG CHÍNH tx đăng ký; R-MINT-2 ngay trên kia cấm
+    // tx đăng ký gánh policy mint NÀO KHÁC ngoài beacon. Hệ quả: một validator quản trị mà
+    // nhánh đồng thuận của nó CẦN mint/burn — mẫu rất phổ thông, ví dụ đốt NFT đề xuất khi
+    // thực thi quyết định — thì VĨNH VIỄN không đăng ký được. Kiểm bằng thực thi: PoC
+    // `poc_register_gov_needs_mint_blocked` FAIL đúng tại dòng
+    // `list.length(assets.policies(tx.mint)) == 1` của R-MINT-2, KHÔNG phải tại R-GOVLIVE.
+    // KHÔNG nới R-MINT-2: nó là guard least-authority thật (beacon không được ngầm cấp
+    // quyền đồng-mint token lạ trong cùng tx). Hai ĐƯỜNG VÒNG hợp lệ, cả hai đều chỉ cần
+    // phía cổng quản trị làm, không cần đổi mã ở đây:
+    //   (1) withdraw-0: cổng quản trị lộ một staking-script validator; tx đăng ký gắn
+    //       withdrawal 0 lovelace từ Script(governance_ref). `governance_consented` nhận
+    //       kiểu này (xem util.ak) và withdrawal KHÔNG đụng `tx.mint` ⇒ R-MINT-2 im lặng.
+    //   (2) một nhánh SPEND KHÔNG MINT của chính script quản trị: cổng quản trị giữ một
+    //       redeemer "chứng thực đăng ký" chỉ tiêu-và-tái-tạo UTxO của mình, không đúc,
+    //       không đốt.
+    // Nghĩa vụ này thuộc CHUẨN ĐĂNG KÝ (đội đăng ký phải chứng minh cổng quản trị của mình
+    // có ít nhất một trong hai đường), Registry agent đưa vào REGISTRATION-STANDARD.md.
+    expect util.governance_consented(tx, entry.governance_ref)
 
     // R-VALUE: ô hồ sơ chỉ mang beacon NFT + ADA. Chặn nhét token lạ vào ô hồ sơ
     // (rác sổ, và về sau là đường lách kế toán khi ô hồ sơ có giữ giá trị).

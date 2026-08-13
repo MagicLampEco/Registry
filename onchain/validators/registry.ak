@@ -32,11 +32,33 @@
 //             governance_ref + accepted_assets + cut_bps); lỏng một trường là platform
 //             tự mở lại KÈM đổi cut_bps — đi vòng qua đúng ràng buộc vừa dựng.
 //   U-SINGLE  ĐÚNG 1 entry input + 1 entry output theo SCRIPT HASH (chống double-sat).
+//             ⚠ GIỚI HẠN ĐÃ BIẾT, CỐ Ý KHÔNG VÁ: đếm theo PAYMENT credential, KHÔNG so
+//             stake credential. Đó là chủ ý (đếm theo payment-hash là cách chống
+//             double-satisfaction qua stake credential — bài học audit C1/C2/M1
+//             Distribution, xem util.ak đầu file). Hệ quả đo được (PoC `newD` PASS): ô hồ
+//             sơ tiếp tục có thể mang stake credential KHÁC ô cũ — ai đẩy được một tx hợp
+//             lệ (vd hồi sinh bằng đồng thuận quản trị) thì gắn stake credential của mình
+//             vào ô hồ sơ. Thiệt hại nhỏ vì sổ KHÔNG giữ giá trị (PK1): chỉ min-ADA của ô
+//             hồ sơ bị đổi quyền uỷ thác, không rút được gì. ⚠ Nếu bản sau đặt TIỀN CỌC
+//             đăng ký vào chính ô hồ sơ thì phải cân lại chỗ này.
 //   U-NFT     beacon NFT (entry_in.beacon_policy, platform_id) bảo toàn ở in & out.
 //   U-ID      identity bất biến 6 field (thêm beacon_policy so với v1).
 //   U-VER     spec_version KHÔNG đổi (đổi phiên bản phải đi đường MigrateEntry).
 //   U-MUT     field khả biến sau cập nhật vẫn hợp lệ (governance_ref đúng 28 byte,
 //             và entry vẫn thuộc ĐÚNG MỘT hạng hình dạng — không nửa vời).
+//   U-GOVSELF-OUT `entry_out.governance_ref != own_hash`. ĐÂY LÀ NỬA CÒN LẠI của
+//             S-GOVSELF: đợt trước chỉ chặn ở datum VÀO và ở cửa nộp, còn datum RA chỉ bị
+//             `mutable_fields_valid` ép ĐỘ DÀI 28 — mà `own_hash` dài đúng 28. Hệ quả đã
+//             dựng lại bằng thực thi (PoC `poc_new_a1` PASS trước bản vá): authority ký +
+//             platform cho đồng thuận MỘT LẦN là ghi được `entry_out.governance_ref =
+//             own_hash`; tx đó ĐƯỢC NHẬN, và từ giây đó ô hồ sơ KHÔNG spend được bằng bất
+//             kỳ đường nào (Update chết ở S-GOVSELF, Migrate cũng chết ở đúng dòng đó)
+//             ⇒ beacon NFT + min-ADA khoá vĩnh viễn ⇒ phá thẳng PK5 "beacon sống suốt đời".
+//   U-GOV2    ĐỔI `governance_ref` = BÀN GIAO HAI CHIỀU: đòi đồng thuận của CẢ ref cũ LẪN
+//             ref mới. Chỉ đòi ref cũ thì bên đương nhiệm (hoặc authority cùng bên, xem
+//             giả định v1 ở util.ak) chỉ định được một cổng quản trị mà KHÔNG AI chứng
+//             minh được nó chạy ⇒ hồ sơ mất đường đồng thuận về sau. Không đổi ref thì
+//             không đòi gì thêm.
 //   U-SHAPE   KHÔNG đổi hạng: `shape_custodial(in) == shape_custodial(out)`. Chuyển
 //             có-kho ↔ không-kho = đổi bản chất dịch vụ ⇒ phải đăng ký mới.
 //   U-MINT-0  KHÔNG mint/burn (update không đụng beacon supply).
@@ -49,19 +71,42 @@
 //   M-SIG/M-GOV   authority ký VÀ platform đồng thuận (di trú = ra khỏi quyền tài phán
 //                 của validator này, platform phải đồng ý).
 //   M-DEST        new_registry_hash ĐÚNG 28 BYTE và ≠ own_hash; đúng 1 input ở own_hash;
-//                 đúng 1 output ở Script(new_registry_hash). LỖ ĐÃ CHẶN (28 byte):
-//                 `is_at_script` chỉ so bytes, nên di trú tới `#"00"` là "hợp lệ" ⇒ beacon
-//                 NFT + min-ADA bay tới một địa chỉ script KHÔNG TỒN TẠI và KHÔNG THỂ tồn
-//                 tại ⇒ mất beacon vĩnh viễn, phá thẳng PK5 "beacon sống suốt đời".
+//                 đúng 1 output ở Script(new_registry_hash). Ràng buộc 28 byte loại được
+//                 rác ĐỘ DÀI SAI (`#"00"`, `#""`): `is_at_script` chỉ so bytes, nên thiếu
+//                 nó thì beacon NFT + min-ADA bay tới một địa chỉ không thể là script.
+//                 ⚠ ĐỌC ĐÚNG SỨC MẠNH: đây CHỈ là kiểm ĐỘ DÀI, KHÔNG phải "đích là một
+//                 script hash THẬT". Kiểm bằng thực thi (PoC `newF` PASS): di trú tới
+//                 `Script(beacon_policy)` — một script chỉ có `mint` + `else fail`, không
+//                 có handler `spend` — vẫn được nhận, và hồ sơ ở đó KHÔNG BAO GIỜ tiêu
+//                 được nữa. Validator KHÔNG thể tự đối chiếu hash đích với blueprint (nó
+//                 không biết mã của script đích); việc đó thuộc QUY TRÌNH DUYỆT DI TRÚ —
+//                 người duyệt phải so `new_registry_hash` với hash trong `plutus.json` của
+//                 bản registry mới TRƯỚC khi ký, không có lớp mã nào thay được bước đó.
 //   M-MINT-0      không mint/burn.  M-ID  6 field định danh bất biến.
 //   M-STATUS      status KHÔNG đổi — nếu không, di trú thành đường Retire trá hình.
 //   M-VER         new_spec_version > cũ, và datum out khai đúng new_spec_version.
+//   M-GOVSELF-OUT `entry_out.governance_ref` ≠ new_registry_hash VÀ ≠ own_hash. Biến thể
+//                 thứ hai của cùng lỗ U-GOVSELF-OUT (PoC `poc_new_b` PASS trước bản vá):
+//                 ghi `governance_ref = new_registry_hash` thì hồ sơ brick NGAY khi tới
+//                 registry mới, vì validator mới mang cùng ràng buộc S-GOVSELF. Vế
+//                 `≠ own_hash` (PoC `poc_new_b2`) chặn chiều còn lại: trỏ cổng quản trị về
+//                 registry CŨ không brick nhưng biến "đồng thuận" thành "có ai đó tiêu một
+//                 ô hồ sơ bất kỳ ở registry cũ" — thủ tục rỗng.
 //   M-MUT         field khả biến của datum ĐÍCH vẫn hợp lệ. LỖ ĐÃ CHẶN: thiếu dòng này,
 //                 di trú ghi được `governance_ref = #""`, `cut_bps = 99999`,
 //                 `accepted_assets = []` ⇒ ở registry MỚI không script nào có hash rỗng ⇒
 //                 `governance_consented` không bao giờ thoả ⇒ hồ sơ VĨNH VIỄN không
 //                 Retire được, không di trú tiếp được. Chính là "hồ sơ kẹt vĩnh viễn" mà
 //                 nhánh Migrate sinh ra để vá — nhánh cứu tự tạo lại cái nó cứu.
+//   M-GOV2        ĐỔI `governance_ref` KHI DI TRÚ = BÀN GIAO HAI CHIỀU, y hệt U-GOV2 ở
+//                 nhánh Update. M-GOV chỉ đòi ref CŨ, M-ID không gồm `governance_ref`,
+//                 M-MUT chỉ ép ĐỘ DÀI 28 ⇒ trước bản vá, di trú là cửa sau đi vòng qua
+//                 đúng ràng buộc U-GOV2 vừa dựng: ghi `governance_ref` = 28 byte bất kỳ
+//                 chưa ai chứng minh là script sống. Hồ sơ tới registry mới rồi thì
+//                 KHÔNG Retire được, KHÔNG di trú tiếp được, KHÔNG đổi gov được — vì mọi
+//                 đường đó đều đòi đồng thuận của chính cái ref chết ấy. Kiểm bằng thực
+//                 thi: ca `migrate_gov_ref_change_ok` PASS trước bản vá chính là lỗ đó.
+//                 Không đổi ref thì KHÔNG phát sinh nghĩa vụ nào thêm.
 //   M-SHAPE       KHÔNG đổi hạng hình dạng (như U-SHAPE).
 //   M-NFT         beacon NFT có ở cả input lẫn output.   M-VALUE  như U-VALUE.
 //   KHÔNG ép U-TERMINAL: hồ sơ Retired PHẢI di trú được — đó chính là lỗ đang vá
@@ -132,6 +177,12 @@ validator registry(registry_authority: ByteArray) {
         expect entry_out.spec_version == entry_in.spec_version
         // U-MUT: field khả biến hợp lệ (gov 28 byte + đúng một hạng hình dạng).
         expect platform.mutable_fields_valid(entry_out)
+        // U-GOVSELF-OUT: nửa còn lại của S-GOVSELF. `mutable_fields_valid` chỉ ép ĐỘ DÀI
+        // 28, mà own_hash dài đúng 28 ⇒ thiếu dòng này thì một tx hợp lệ (authority ký +
+        // platform đồng thuận một lần) ghi được `governance_ref = own_hash` và ô hồ sơ
+        // KHOÁ VĨNH VIỄN — không đường Update nào, không đường Migrate nào (cả hai chết ở
+        // S-GOVSELF trên datum VÀO).
+        expect entry_out.governance_ref != own_hash
         // U-SHAPE: không đổi hạng có-kho ↔ không-kho.
         expect platform.shape_custodial(entry_in) == platform.shape_custodial(entry_out)
 
@@ -171,6 +222,16 @@ validator registry(registry_authority: ByteArray) {
             util.governance_consented(tx, entry_in.governance_ref),
           }
 
+        // U-GOV2: ĐỔI governance_ref = BÀN GIAO HAI CHIỀU. Ref cũ đã bị U-GOV đòi (đổi
+        // governance_ref nằm trong `governed_fields_changed`); dòng này đòi thêm ref MỚI
+        // phải CHẠY ĐƯỢC ngay trong tx bàn giao. Không có nó, "đồng thuận quản trị" của
+        // mọi việc SAU đó treo vào một hash chưa ai chứng minh là script sống — ép 28 byte
+        // là guard cú pháp, không phải bằng chứng tồn tại (PoC `newC4` PASS trước bản vá).
+        expect or {
+            entry_out.governance_ref == entry_in.governance_ref,
+            util.governance_consented(tx, entry_out.governance_ref),
+          }
+
         True
       }
 
@@ -207,6 +268,21 @@ validator registry(registry_authority: ByteArray) {
         // M-MUT: datum ĐÍCH vẫn hợp lệ. Thiếu dòng này, nhánh cứu tự ghi ra hồ sơ khoá
         // chết (gov rỗng / cut_bps ngoài dải / accepted rỗng) ở registry mới.
         expect platform.mutable_fields_valid(entry_out)
+        // M-GOVSELF-OUT: cùng lỗ với U-GOVSELF-OUT, hai biến thể.
+        //  · == new_registry_hash ⇒ hồ sơ BRICK NGAY khi tới registry mới (validator mới
+        //    mang cùng ràng buộc S-GOVSELF trên datum VÀO).
+        //  · == own_hash ⇒ không brick, nhưng cổng đồng thuận về sau chỉ còn nghĩa "có ai
+        //    đó tiêu một ô hồ sơ bất kỳ ở registry CŨ" — thủ tục rỗng.
+        expect entry_out.governance_ref != new_registry_hash
+        expect entry_out.governance_ref != own_hash
+        // M-GOV2: ĐỔI governance_ref khi di trú = BÀN GIAO HAI CHIỀU (cùng luật với
+        // U-GOV2). M-GOV trên kia đã đòi ref CŨ; dòng này đòi thêm ref MỚI phải CHẠY ĐƯỢC
+        // ngay trong tx di trú. Thiếu nó, Migrate là cửa sau đi vòng qua U-GOV2: cùng một
+        // việc "trỏ hồ sơ vào một cổng quản trị chưa ai chứng minh sống", chỉ khác cửa vào.
+        expect or {
+            entry_out.governance_ref == entry_in.governance_ref,
+            util.governance_consented(tx, entry_out.governance_ref),
+          }
         // M-SHAPE: không đổi hạng có-kho ↔ không-kho.
         expect platform.shape_custodial(entry_in) == platform.shape_custodial(entry_out)
 
