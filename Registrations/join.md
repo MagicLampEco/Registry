@@ -34,6 +34,7 @@
     "custody_hash": "",
     "seed_policy": "",
     "governance_ref": "",
+    "governance_ref_tinh_chat": "",
     "accepted_assets": [],
     "cut_bps": 0,
     "thu_o_dau": "Không thu asset ở tầng Join. Thưởng đóng góp tài nguyên trả bằng CARP ở lớp settlement MagicLamp (_shared/CARP-Reward-Payout.md:5) — không phải token do Join hay LampNet phát hành.",
@@ -117,7 +118,17 @@ Honeygain bị gỡ khỏi cả hai cửa hàng. ⟹ một bên ngoài hệ nắ
 > có một bên **đồng thuận được**. Từ bản v2 của validator, chuyển một hồ sơ sang `Retired` (trạng thái cuối,
 > không hồi sinh) đòi chữ ký quyền đăng ký **và** đồng thuận quản trị của chính platform đó. Hồ sơ không khai
 > `governance_ref` là hồ sơ mà quyền đăng ký **một mình xoá vĩnh viễn được**. Ô này bảo vệ đội khai, không
-> phải bảo vệ sổ. Đây là ô duy nhất còn chặn — khai xong là niêm yết được ngay ở `L1`.
+> phải bảo vệ sổ.
+>
+> **Và nó phải là một script CHẠY ĐƯỢC, không phải một hash cho có.** Giao dịch đăng ký buộc phải chứng minh
+> cổng quản trị chạy — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. Đây
+> không phải thủ tục: khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú
+> được nữa, và đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Bốn tính chất bắt buộc (G1–G4) ở
+> [`../REGISTRATION-STANDARD.md`](../REGISTRATION-STANDARD.md) §2.3 — đọc **G4** trước khi chọn: nếu nhánh
+> đồng thuận của script cần mint/burn token thì hồ sơ không đăng ký được, phải dùng withdrawal-0 hoặc một
+> nhánh spend không mint.
+>
+> Đây là ô duy nhất còn chặn `L1` ngoài trục danh tính.
 
 ## (d) Lời khẳng định và hạng chứng thực
 

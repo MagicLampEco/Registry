@@ -48,6 +48,8 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | Chưa audit ngoài | bắt buộc trước mainnet | `Specs/Math-Spec.md` §14 L7 |
 | `registry_authority` chưa chốt ngưỡng multisig | chưa có committee thật | `Specs/Math-Spec.md` §14 L2 |
 | Chưa đo kích thước script và ExUnit | chưa đặt ngưỡng | `Specs/Tech-Spec.md` §22.F bảng chỉ tiêu |
+| **Hai gương off-chain còn TUỲ CHỌN trong khi ràng buộc on-chain là VÔ ĐIỀU KIỆN** — `RegisterParams.registryHash?` và `UpdateOptions.ownRegistryHash?`. Bỏ trống thì R-GOVSELF / S-GOVSELF-vào / U-GOVSELF-ra **không chạy** ở tầng off-chain. Hai đường gọi thật (`scripts/03_register_platform.ts` và `onboard`) đều truyền, nên **hôm nay không hỏng** — nhưng một bên tích hợp thứ ba vẫn dựng được tx mà chain từ chối. | Bỏ dấu `?` là đúng, nhưng nó buộc sửa ~10 chỗ gọi trong test cùng lúc; để riêng một đợt thay vì làm cuối phiên | `grep -n 'registryHash?: string\|ownRegistryHash?: string' offchain/src/registrationBuilder.ts` (phải trả 2 dòng; sửa xong thì trả 0) |
+| Bốn ràng buộc on-chain chưa có gương off-chain nào: `R-VALUE`, `U-SINGLE`, `U-MINT-0`, `M-MINT-0` | ba cái sau là ràng buộc tầng-tx trên nhánh Update/Migrate mà repo chưa có script dựng; `R-VALUE` thì `entryValue` trả đúng nhưng không hàm nào chặn bên gọi nhét token lạ | `grep -rn 'R-VALUE\|U-SINGLE\|U-MINT-0\|M-MINT-0' offchain/ scripts/ tests/` |
 
 ---
 

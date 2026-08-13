@@ -37,8 +37,8 @@
       "gate": "soft",
       "codes": {
         "CU-0": { "rank": 0, "label": "có thu, nhưng còn nằm ở sổ nội bộ", "needs": ["moc_du_kien"] },
-        "CU-1": { "rank": 2, "label": "có thu, kho Treasury custody instance on-chain đã dựng", "needs": ["instance_id", "custody_hash", "seed_policy", "governance_ref", "accepted_assets", "cut_bps"] },
-        "CU-N": { "rank": 2, "label": "KHÔNG thu asset ở tầng này — hồ sơ không kho", "needs": ["governance_ref", "thu_o_dau"], "_doc": "Lấp khoảng trống issue #5 mục 3. Hình dạng on-chain: custody_hash / seed_policy / instance_id RỖNG, accepted_assets RỖNG, cut_bps = 0. Hạng ngang CU-1 vì không thu tiền không phải là thiếu sót." }
+        "CU-1": { "rank": 2, "label": "có thu, kho Treasury custody instance on-chain đã dựng", "needs": ["instance_id", "custody_hash", "seed_policy", "governance_ref", "governance_ref_tinh_chat", "accepted_assets", "cut_bps"] },
+        "CU-N": { "rank": 2, "label": "KHÔNG thu asset ở tầng này — hồ sơ không kho", "needs": ["governance_ref", "governance_ref_tinh_chat", "thu_o_dau"], "_doc": "Lấp khoảng trống issue #5 mục 3. Hình dạng on-chain: custody_hash / seed_policy / instance_id RỖNG, accepted_assets RỖNG, cut_bps = 0. Hạng ngang CU-1 vì không thu tiền không phải là thiếu sót." }
       }
     },
 
@@ -54,6 +54,14 @@
         "IN-3": { "rank": 3, "label": "không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi", "needs": [] }
       }
     }
+  },
+
+  "governance_ref_yeu_cau": {
+    "_doc": "Bốn tính chất mà script khai ở governance_ref PHẢI có. Ba cái đầu là ràng buộc thật — vi phạm là hồ sơ tự khoá chết hoặc cổng đồng thuận thành thủ tục rỗng. Bên đăng ký khai vào pointers.governance_ref_tinh_chat.",
+    "G1": "phải là script hash 28 byte, và phải là một script CHẠY ĐƯỢC — giao dịch đăng ký buộc phải chứng minh nó chạy (chi tiêu một input ở Script(governance_ref), hoặc mang một withdrawal từ đó). Khai một hash chết là đăng ký được rồi không bao giờ Retire, đổi tham số hay di trú được nữa.",
+    "G2": "KHÔNG được là hash của chính validator registry — nếu không thì cổng đồng thuận tự thoả vĩnh viễn và quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, và đích di trú.",
+    "G3": "KHÔNG nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). Registry chỉ ép được 'script đó CHẠY trong giao dịch', KHÔNG ép được 'script đó phê duyệt ĐÚNG thay đổi này' — nên nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. Đây là giả định load-bearing: an toàn của cổng đồng thuận = an toàn của script mà chính bên đăng ký khai.",
+    "G4": "nếu nhánh đồng thuận của script cần MINT hoặc BURN token (mẫu phổ thông: đốt NFT đề xuất khi thực thi) thì nó xung đột với ràng buộc least-authority của cổng đúc — giao dịch đăng ký không được gánh policy mint ngoài. Hai đường vòng hợp lệ: dùng withdrawal-0, hoặc một nhánh spend không mint."
   },
 
   "evidence_tiers": {

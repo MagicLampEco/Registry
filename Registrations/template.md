@@ -38,6 +38,7 @@
     "custody_hash": "",
     "seed_policy": "",
     "governance_ref": "",
+    "governance_ref_tinh_chat": "",
     "accepted_assets": [],
     "cut_bps": 0,
 

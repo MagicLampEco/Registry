@@ -109,6 +109,22 @@ phải là thiếu sót. `CU-N` vẫn **bắt buộc khai `governance_ref`**, v�
 xem §6, chuyển sang `Retired` đòi đồng thuận của chính platform, nên hồ sơ không có `governance_ref`
 là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô đó bảo vệ bên đăng ký.
 
+#### Bốn tính chất bắt buộc của `governance_ref` — đọc trước khi chọn script
+
+Đây là ô dễ khai sai nhất, và khai sai thì hậu quả **không đảo ngược được**. Nguồn máy đọc:
+`Registrations/codes.json` mục `governance_ref_yeu_cau`.
+
+| | Yêu cầu | Vi phạm thì sao |
+|---|---|---|
+| **G1** | Phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. |
+| **G2** | **Không** được là hash của chính validator registry. | Cổng đồng thuận tự thoả vĩnh viễn ⇒ quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, đích di trú. |
+| **G3** | **Không** nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). | Registry chỉ ép được *"script đó **chạy** trong giao dịch"*, **không** ép được *"script đó **phê duyệt đúng** thay đổi này"*. Nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. **Đây là giả định load-bearing: an toàn của cổng đồng thuận bằng đúng an toàn của script mà chính bên đăng ký khai.** |
+| **G4** | Nếu nhánh đồng thuận cần **mint/burn** token — mẫu phổ thông là đốt NFT đề xuất khi thực thi — thì nó xung đột với ràng buộc least-authority của cổng đúc: giao dịch đăng ký không được gánh policy mint ngoài. | Hồ sơ **không đăng ký được**. Hai đường vòng hợp lệ: dùng **withdrawal-0**, hoặc một **nhánh spend không mint**. |
+
+**Đổi `governance_ref` là bàn giao hai chiều**: cần đồng thuận của **cả** cổng cũ **lẫn** cổng mới,
+ở cả thao tác cập nhật lẫn di trú. Một chiều thôi là mở lại đúng ca G1 — bàn giao sang một cổng
+chết.
+
 ### 2.4 Không phụ thuộc hạ tầng đóng ngoài hệ · trục `infra`
 
 Chức năng cốt lõi đặt trên một dịch vụ bên thứ ba mà hệ không kiểm soát và người dùng không thoát
