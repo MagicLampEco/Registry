@@ -19,15 +19,19 @@
 //        bằng dữ liệu thật, và dựng tx đăng ký (KHÔNG submit).
 
 import {
-  NETWORK, MS_PER_EPOCH, posixMsToEpoch,
+  NETWORK, MS_PER_TIME_BUCKET, txValidityForTimeBucket, validityFitsOneBucket,
   makeLucidOrNull, walletPkh,
   resolveCustodyHash, resolveSeedPolicy,
-  loadRegistry, saveRegistered, explorerTx,
+  loadRegistry, saveRegistered, explorerTx, applyRegistry,
   evaluateLiveGuards, warnLiveBlocked,
   loadRegisteredList, checkGovernanceRefCollision, warnGovernanceRefCollision,
   appendRegisteredList,
+  resolveGovernanceConsent, governanceConsentConfigured, scriptRewardAddress,
 } from "./config.js";
-import { planRegister, type CustodyRef, type EpochWindow } from "../offchain/src/registrationBuilder.js";
+import {
+  planRegister,
+  type CustodyRef, type TimeBucketWindow, type GovernanceProof,
+} from "../offchain/src/registrationBuilder.js";
 import { onboardPlatform } from "../offchain/src/onboard.js";
 import type { PlanSeedFn } from "../offchain/src/treasuryShapes.js";
 import type { PlatformConfig } from "../offchain/src/types.js";
@@ -59,7 +63,9 @@ function buildConfig(
   const common = {
     lampPolicy:        DEV_LAMP_POLICY,
     registryAuthority: opts.registryAuthority,
-    msPerEpoch:        MS_PER_EPOCH,
+    // examples/ còn khai theo tên cũ `msPerEpoch` (thư mục đó ngoài phạm vi sửa đợt này).
+    // GIÁ TRỊ thì đã đúng: hằng ô thời gian của on-chain, không còn lấy theo mạng.
+    msPerEpoch:        MS_PER_TIME_BUCKET,
     reservedMinAda:    2_000_000n,
     genesisRef:        opts.genesisRef,
     seedPolicy:        opts.seedPolicy,
@@ -96,33 +102,63 @@ async function main(): Promise<void> {
   console.log(`=== Registry bước 3: đăng ký '${name}' vào sổ ===\n`);
 
   const registry = await loadRegistry();
+
+  // registry.json là ẢNH CHỤP của bước 2. Sửa validator on-chain rồi `aiken build` là hash
+  // ĐỔI ⇒ ảnh chụp cũ trỏ vào một địa chỉ registry KHÔNG còn là bản đang dùng, và beacon_policy
+  // (apply cả registry_hash) cũng lệch theo. Đối chiếu lại với blueprint HIỆN TẠI, không tin
+  // ảnh chụp. Thứ tự apply nằm ở config.applyRegistry: registry TRƯỚC → hash → beacon SAU.
+  const fresh = await applyRegistry(registry.registryAuthority);
+  if (fresh.registryHash !== registry.registryHash
+      || fresh.beaconPolicy !== registry.beaconPolicy) {
+    throw new Error(
+      `registry.json LỆCH với onchain/plutus.json hiện tại:\n`
+      + `  registry hash:  ${registry.registryHash} (ảnh chụp) != ${fresh.registryHash} (build hiện tại)\n`
+      + `  beacon policy:  ${registry.beaconPolicy} (ảnh chụp) != ${fresh.beaconPolicy} (build hiện tại)\n`
+      + `Validator đã đổi sau lần chạy bước 2. Chạy lại 'npm run deploy-registry' để apply-param `
+      + `lại (registry TRƯỚC, rồi registry_beacon với registry_hash MỚI) trước khi đăng ký.`,
+    );
+  }
+
   const custody  = resolveCustodyHash();
   const seed     = resolveSeedPolicy();
   const custodyOutRef = parseOutRef(process.env.CUSTODY_UTXO ?? "");
 
-  // R-EPOCH: validity_range của tx đăng ký phải nằm GỌN trong MỘT epoch, và created_epoch
-  // bằng đúng epoch đó. Nên cửa sổ tính từ lúc chạy bị CẮT về cuối epoch hiện tại nếu ttl
-  // trót vượt biên — tx trải biên epoch sẽ hỏng on-chain, cắt sớm ở đây rẻ hơn.
+  // R-EPOCH: validity_range của tx đăng ký phải nằm GỌN trong MỘT Ô THỜI GIAN, và
+  // created_epoch bằng đúng ô đó. Ràng buộc on-chain ĐỌC validity_range, nên tx KHÔNG đặt ttl
+  // sẽ trượt (cận vô hạn → `get_finite` trả None). Ở đây tính cửa sổ THẬT rồi đặt xuống tx.
   const nowMs = BigInt(Date.now());
   const ttlMs = BigInt(process.env.TX_TTL_MS ?? "3600000");   // mặc định 1 giờ.
-  const epochNow = posixMsToEpoch(nowMs);
-  const epochEnd = posixMsToEpoch(nowMs + ttlMs);
-  if (epochEnd !== epochNow) {
+  const validity = txValidityForTimeBucket(nowMs, ttlMs);
+  if (validity.truncated) {
     console.warn(
-      `Cửa sổ hiệu lực ${ttlMs}ms trải qua biên epoch (${epochNow} → ${epochEnd}) — cắt về `
-      + `epoch ${epochNow}. Đợi sang epoch mới rồi chạy lại nếu cần cửa sổ dài hơn.\n`,
+      `Cửa sổ hiệu lực ${ttlMs}ms trải qua biên ô thời gian — cắt còn `
+      + `${validity.validTo - validity.validFrom}ms (hết ô ${validity.bucket}). Đợi sang ô mới `
+      + `rồi chạy lại nếu cần cửa sổ dài hơn.\n`,
     );
   }
-  const epochWindow: EpochWindow = { from: epochNow, to: epochNow };
+  if (!validityFitsOneBucket(validity)) {
+    throw new Error(
+      `TTL: cửa sổ [${validity.validFrom}, ${validity.validTo}) không nằm gọn trong ô `
+      + `${validity.bucket} — R-EPOCH sẽ trượt. Còn ${validity.msLeftInBucket}ms của ô này.`,
+    );
+  }
+  const timeBucketWindow: TimeBucketWindow = { from: validity.bucket, to: validity.bucket };
   const createdEpoch = process.env.CREATED_EPOCH
     ? BigInt(process.env.CREATED_EPOCH)
-    : epochWindow.from;
+    : timeBucketWindow.from;
 
   const guard = evaluateLiveGuards([
     { name: "registry_authority", value: registry.registryAuthority, placeholder: registry.authoritySource !== "env" },
     { name: "custody_hash",       value: custody.value, placeholder: custody.source !== "env" },
     { name: "seed_policy",        value: seed.value,    placeholder: seed.source !== "env" },
     { name: "custody_utxo",       value: process.env.CUSTODY_UTXO ?? "", placeholder: custodyOutRef === null },
+    // R-GOVLIVE: không có cách nối cổng quản trị vào tx thì tx đăng ký chắc chắn bị từ chối.
+    // Van này chặn ngay, thay vì để dựng ra một tx chết.
+    {
+      name: "governance_consent",
+      value: (process.env.GOVERNANCE_CONSENT_KIND ?? "").trim(),
+      placeholder: !governanceConsentConfigured(),
+    },
   ]);
   let dry = !guard.allowLive;
 
@@ -134,7 +170,10 @@ async function main(): Promise<void> {
   console.log(`custody_hash:       ${custody.value}  (${custody.source})`);
   console.log(`seed_policy:        ${seed.value}  (${seed.source})`);
   console.log(`custody UTxO:       ${custodyOutRef ? `${custodyOutRef.txHash}#${custodyOutRef.outputIndex}` : "(chưa cấp)"}`);
-  console.log(`created_epoch:      ${createdEpoch}  (cửa sổ [${epochWindow.from}, ${epochWindow.to}])\n`);
+  console.log(`ms_per_time_bucket: ${MS_PER_TIME_BUCKET}  (ô 5 ngày kể từ mốc Unix — HẰNG mọi mạng)`);
+  console.log(`created_epoch:      ${createdEpoch}  (ô ${timeBucketWindow.from})`);
+  console.log(`validity_range:     invalid_before=${validity.validFrom}  invalid_hereafter=${validity.validTo}`);
+  console.log(`                    (biên trên LOẠI TRỪ; tx PHẢI đặt cả hai, nếu không R-EPOCH trượt)\n`);
   warnLiveBlocked(guard);
 
   const config = buildConfig(name, {
@@ -149,6 +188,36 @@ async function main(): Promise<void> {
     checkGovernanceRefCollision(registered, config.instanceId, config.governanceRef),
     config.governanceRef,
   );
+
+  // ── R-GOVLIVE: bằng chứng cổng quản trị chạy thật trong CHÍNH tx đăng ký ────
+  // Cấu hình đủ (env) → bằng chứng THẬT, và phần dựng tx bên dưới nối đúng thứ này vào.
+  // Chưa cấu hình → KHÔ: khai theo đường mặc định `withdrawal` và NÓI RÕ đây là LỜI KHAI,
+  // không phải bằng chứng — van ở trên đã chặn chế độ THẬT rồi.
+  const govConsent = resolveGovernanceConsent(config.governanceRef);
+  const govKind = govConsent?.kind ?? "withdrawal";
+  const governanceProof: GovernanceProof = govKind === "spend"
+    ? {
+        spends: [{
+          scriptHash: config.governanceRef,
+          ...(govConsent?.utxo ?? {}),
+        }],
+      }
+    : { withdrawals: [{ scriptHash: config.governanceRef, amountLovelace: 0n }] };
+
+  console.log("── R-GOVLIVE (cổng quản trị phải CHẠY trong tx đăng ký) ──");
+  console.log(`Đường đồng thuận:   ${govKind}${govConsent ? "" : "  (KHAI — chưa cấu hình env)"}`);
+  console.log(`governance_ref:     ${config.governanceRef}`);
+  if (govConsent?.kind === "spend") {
+    console.log(`Ô quản trị chi tiêu: ${govConsent.utxo!.txHash}#${govConsent.utxo!.outputIndex}`);
+    console.log("⚠ Nhánh spend đó KHÔNG được mint/burn — R-MINT-2 cấm tx đăng ký mang policy");
+    console.log("  mint nào khác beacon. Cần mint thì đổi sang withdraw-0.");
+  } else if (govConsent) {
+    console.log(`Reward address:     ${scriptRewardAddress(config.governanceRef)} (rút 0 lovelace)`);
+  } else {
+    console.log("Đặt GOVERNANCE_CONSENT_KIND + GOVERNANCE_SCRIPT_CBOR + GOVERNANCE_REDEEMER");
+    console.log("(+ GOVERNANCE_UTXO nếu kind=spend) để dựng tx THẬT. Thiếu là tx bị từ chối 100%.");
+  }
+  console.log();
 
   // ── Ô kho để đối soát R-BIND ────────────────────────────────
   // THẬT: đọc UTxO kho trên chuỗi (dữ liệu thật). KHÔ: dựng value KỲ VỌNG và nói rõ đó là
@@ -191,7 +260,11 @@ async function main(): Promise<void> {
         beaconPolicy: registry.beaconPolicy,
         custodyHash: custody.value,
         seedPolicy: seed.value,
-        createdEpoch, epochWindow,
+        createdEpoch, timeBucketWindow,
+        governanceProof,
+        // R-GOVSELF: đường onboard trước đây KHÔNG truyền registryHash nên bỏ qua kiểm này —
+        // hai đường vào cùng một builder mà ép khác nhau. Nay truyền cả hai đường.
+        registryHash: registry.registryHash,
         ...(custodyOutRef ? { custodyOutRef } : {}),
       }).register
     : planRegister({
@@ -199,8 +272,10 @@ async function main(): Promise<void> {
         beaconPolicy: registry.beaconPolicy,
         custodyHash: custody.value,
         seedPolicy: seed.value,
-        createdEpoch, epochWindow,
+        createdEpoch, timeBucketWindow,
         custodyUtxo: custodyRef,
+        registryHash: registry.registryHash,
+        governanceProof,
       });
 
   if (injectedPlanSeed) {
@@ -225,8 +300,29 @@ async function main(): Promise<void> {
       (await rawValidator("registry_beacon.registry_beacon.mint")).compiledCode,
       [registry.registryAuthority, registry.registryHash],
     );
+    // R-GOVLIVE: KHÔNG dựng tx nếu không nối được cổng quản trị — tx đó bị từ chối chắc chắn.
+    if (!govConsent) {
+      throw new Error(
+        "REG-GOVLIVE: thiếu cấu hình cổng quản trị (GOVERNANCE_CONSENT_KIND / "
+        + "GOVERNANCE_SCRIPT_CBOR / GOVERNANCE_REDEEMER [+ GOVERNANCE_UTXO]). Dựng tx mà không "
+        + "có input/withdrawal ở Script(governance_ref) là dựng một tx chắc chắn trượt.",
+      );
+    }
+    const govScript = { type: "PlutusV3" as const, script: govConsent.scriptCbor };
+    // R-BIND: hồ sơ CÓ KHO phải mang ô kho làm REFERENCE INPUT. Trước đây `custodyRef` chỉ đi vào
+    // `planRegister` để kiểm giấy tờ rồi dừng ở đó — plan xanh, `.complete()` xanh, in "OK", và
+    // node từ chối lúc submit. Kiểm toán dựng lại được bằng PoC + đối chứng đột biến. Dựng một tx
+    // chắc chắn trượt còn tệ hơn không dựng, nên chặn ở đây thay vì để nó đi tới `.complete()`.
+    const canCustody = register.custodial ?? true;
+    if (canCustody && !custodyOutRef) {
+      throw new Error(
+        "REG-BIND: hồ sơ CÓ KHO nhưng thiếu CUSTODY_UTXO — không nối được reference input của ô "
+        + "kho. Validator ép `custody_bound`, nên tx dựng ra sẽ bị từ chối lúc submit. Hồ sơ KHÔNG "
+        + "KHO (custody rỗng, không asset, cut_bps 0) thì không cần ô này.",
+      );
+    }
     try {
-      const tx = await lucid.newTx()
+      let txb = lucid.newTx()
         .mintAssets({ [nftUnit]: 1n }, register.mintRedeemerCbor)
         .attach.MintingPolicy(beaconValidator)
         .pay.ToAddressWithData(
@@ -235,9 +331,50 @@ async function main(): Promise<void> {
           { [nftUnit]: 1n },
         )
         .addSignerKey(register.requiredSigner)
-        .complete();
+        // R-EPOCH đọc validity_range: KHÔNG đặt hai mốc này thì cận là vô hạn ⇒ validator
+        // hỏng ở `expect Some(...)`. Cửa sổ đã được cắt cho nằm gọn trong ô `created_epoch`.
+        .validFrom(Number(validity.validFrom))
+        .validTo(Number(validity.validTo));
+
+      // R-BIND — chỉ hồ sơ CÓ KHO mới cần; hồ sơ KHÔNG KHO thì validator bỏ qua ràng buộc này.
+      if (canCustody) {
+        const [cu] = await lucid.utxosByOutRef([
+          { txHash: custodyOutRef!.txHash, outputIndex: custodyOutRef!.outputIndex },
+        ]);
+        if (!cu) {
+          throw new Error(
+            `REG-BIND: không tìm thấy ô kho ${custodyOutRef!.txHash}#${custodyOutRef!.outputIndex}`,
+          );
+        }
+        txb = txb.readFrom([cu]);
+      }
+
+      // R-GOVLIVE — nối phần cổng quản trị vào ĐÚNG một trong hai đường mà validator nhận.
+      if (govConsent.kind === "spend") {
+        const [gu] = await lucid.utxosByOutRef([govConsent.utxo!]);
+        if (!gu) {
+          throw new Error(
+            `không tìm thấy ô quản trị ${govConsent.utxo!.txHash}#${govConsent.utxo!.outputIndex}`,
+          );
+        }
+        const { getAddressDetails: addrDetails } = await import("@lucid-evolution/lucid");
+        const guHash = addrDetails(gu.address).paymentCredential?.hash ?? "";
+        if (guHash.toLowerCase() !== config.governanceRef.toLowerCase()) {
+          throw new Error(
+            `ô quản trị nằm ở Script(${guHash}), KHÁC governance_ref (${config.governanceRef}) — `
+            + `R-GOVLIVE sẽ trượt`,
+          );
+        }
+        txb = txb.collectFrom([gu], govConsent.redeemerCbor).attach.SpendingValidator(govScript);
+      } else {
+        txb = txb
+          .withdraw(scriptRewardAddress(config.governanceRef), 0n, govConsent.redeemerCbor)
+          .attach.WithdrawalValidator(govScript);
+      }
+
+      const tx = await txb.complete();
       void tx;
-      console.log("Dựng tx đăng ký OK (chưa ký/submit).");
+      console.log("Dựng tx đăng ký OK (chưa ký/submit) — đã nối R-GOVLIVE.");
     } catch (e) {
       console.log(`Dựng tx cần authority ký + min-ADA: ${e instanceof Error ? e.message : e}`);
     }

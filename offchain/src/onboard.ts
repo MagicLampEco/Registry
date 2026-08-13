@@ -20,7 +20,8 @@
 import type { PlatformConfig } from "./types.js";
 import type { CustodyDatum, LedgerEntry, PlanSeedFn, SeedPlanLike } from "./treasuryShapes.js";
 import {
-  planRegister, type CustodyRef, type EpochWindow, type RegisterPlan,
+  planRegister, type CustodyRef, type TimeBucketWindow, type RegisterPlan,
+  type GovernanceProof,
 } from "./registrationBuilder.js";
 
 export interface OnboardParams {
@@ -38,10 +39,22 @@ export interface OnboardParams {
   custodyHash: string;
   /** seed_policy = policy id của custody_seed đã apply genesis_ref. */
   seedPolicy: string;
-  /** epoch đăng ký (created_epoch) ≥ 0. */
+  /** ô thời gian đăng ký (vào trường `created_epoch`) ≥ 0. */
   createdEpoch: bigint;
-  /** Cửa sổ epoch của tx đăng ký (R-EPOCH) — cấp vào thì created_epoch bị ép nằm trong. */
-  epochWindow?: EpochWindow;
+  /** Cửa sổ ô thời gian của tx đăng ký (R-EPOCH) — cấp vào thì created_epoch bị ép nằm trong. */
+  timeBucketWindow?: TimeBucketWindow;
+
+  /**
+   * R-GOVLIVE — bằng chứng cổng quản trị của platform CHẠY THẬT trong tx BƯỚC 2 (đăng ký).
+   * BẮT BUỘC: ràng buộc on-chain vô điều kiện, thiếu là tx đăng ký bị từ chối 100%.
+   */
+  governanceProof: GovernanceProof;
+
+  /**
+   * script hash validator registry đích — cấp vào thì ép thêm R-GOVSELF
+   * (`governance_ref != registry_hash`). Bỏ trống thì bước đăng ký bỏ qua kiểm đó.
+   */
+  registryHash?: string;
 
   /** Sổ kế toán genesis (thường rỗng — kho bắt đầu trống, chỉ có ADA giữ min-UTxO). */
   genesisLedger?: LedgerEntry[];
@@ -113,7 +126,10 @@ export function onboardPlatform(params: OnboardParams): OnboardPlan {
     seedPolicy: seed.seedPolicy,   // <-- phụ thuộc từ bước 1
     createdEpoch,
     custodyUtxo,                   // <-- R-BIND: kho từ bước SEED
-    ...(params.epochWindow !== undefined ? { epochWindow: params.epochWindow } : {}),
+    governanceProof: params.governanceProof,   // <-- R-GOVLIVE
+    ...(params.timeBucketWindow !== undefined
+      ? { timeBucketWindow: params.timeBucketWindow } : {}),
+    ...(params.registryHash !== undefined ? { registryHash: params.registryHash } : {}),
   });
 
   // Kiểm chéo: entry.instance_id phải khớp instance_id của kho (cùng một instance).

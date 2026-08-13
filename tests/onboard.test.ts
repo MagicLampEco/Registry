@@ -12,6 +12,7 @@ import { oriLifeConfig } from "../examples/orilife.js";
 import { exampleConfig, makeExamplePriceFn } from "../examples/_template.js";
 import { eventToCollectItem } from "../offchain/src/collectAdapter.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 const seedPolicy = "56".repeat(28);
 
@@ -19,7 +20,7 @@ const cfg = phoenixKeyConfig({
   lampPolicy: "ab".repeat(28),
   magicPolicy: "cd".repeat(28),
   registryAuthority: "ef".repeat(28),
-  msPerEpoch: 86_400_000n,
+  msPerEpoch: MS_PER_TIME_BUCKET,
   reservedMinAda: 2_000_000n,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
 });
@@ -31,6 +32,9 @@ const onboardArgs = (config: typeof cfg) => ({
   custodyHash:  "34".repeat(28),
   seedPolicy,
   createdEpoch: 7n,
+  // R-GOVLIVE: bước 2 (đăng ký) chỉ hợp lệ khi cổng quản trị của platform chạy thật trong
+  // chính tx đó. `config.governanceRef` là placeholder của examples/ nên proof bám theo nó.
+  governanceProof: { spends: [{ scriptHash: config.governanceRef }] },
 });
 
 describe("onboardPlatform — 2 bước", () => {
@@ -57,7 +61,7 @@ describe("onboardPlatform — 2 bước", () => {
       ...onboardArgs(cfg),
       custodyOutRef: { txHash: "ab".repeat(32), outputIndex: 2 },
     });
-    const ref = plan.register.custodyRef;
+    const ref = plan.register.custodyRef!;
     expect(ref.value[`${seedPolicy}|${cfg.instanceId.toLowerCase()}`]).toBe(1n);
     expect(ref.scriptHash).toBe("34".repeat(28));
     expect(ref.txHash).toBe("ab".repeat(32));
@@ -71,9 +75,9 @@ describe("onboardPlatform — 2 bước", () => {
   });
 
   it("R-EPOCH chảy qua onboard: cửa sổ lệch epoch → ném REG-EPOCH", () => {
-    expect(() => onboardPlatform({ ...onboardArgs(cfg), epochWindow: { from: 8n, to: 8n } }))
+    expect(() => onboardPlatform({ ...onboardArgs(cfg), timeBucketWindow: { from: 8n, to: 8n } }))
       .toThrow(/REG-EPOCH/);
-    const ok = onboardPlatform({ ...onboardArgs(cfg), epochWindow: { from: 7n, to: 7n } });
+    const ok = onboardPlatform({ ...onboardArgs(cfg), timeBucketWindow: { from: 7n, to: 7n } });
     expect(ok.register.entry.created_epoch).toBe(7n);
   });
 
@@ -104,13 +108,14 @@ describe("onboardPlatform — 2 bước", () => {
     const ori = oriLifeConfig({
       lampPolicy: "ab".repeat(28),
       registryAuthority: "ef".repeat(28),
-      msPerEpoch: 86_400_000n,
+      msPerEpoch: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       genesisRef: { transaction_id: "ee".repeat(32), output_index: 1n },
     });
     const plan = onboardPlatform({
       config: ori, planSeed: fakePlanSeed, beaconPolicy: "12".repeat(28),
       custodyHash: "34".repeat(28), seedPolicy, createdEpoch: 3n,
+      governanceProof: { spends: [{ scriptHash: ori.governanceRef }] },
     });
     expect(entryWellFormed(plan.register.entry)).toBe(true);
     expect(plan.register.entry.cut_bps).toBe(700n);
@@ -121,13 +126,14 @@ describe("onboardPlatform — 2 bước", () => {
   it("_template: exampleConfig dựng plan hợp lệ + PriceFn sinh CollectItem", () => {
     const tpl = exampleConfig({
       registryAuthority: "ef".repeat(28),
-      msPerEpoch: 86_400_000n,
+      msPerEpoch: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       genesisRef: { transaction_id: "dd".repeat(32), output_index: 0n },
     });
     const plan = onboardPlatform({
       config: tpl, planSeed: fakePlanSeed, beaconPolicy: "12".repeat(28),
       custodyHash: "34".repeat(28), seedPolicy, createdEpoch: 1n,
+      governanceProof: { spends: [{ scriptHash: tpl.governanceRef }] },
     });
     expect(entryWellFormed(plan.register.entry)).toBe(true);
     expect(plan.register.entry.platform_id).toBe(asciiToHex("ExamplePlatform"));

@@ -22,6 +22,7 @@
 import { Data } from "@lucid-evolution/lucid";
 import type { PlatformEntry, PlatformStatus } from "./types.js";
 import { decodePlatformEntry } from "./registryDatum.js";
+import { shapeNonCustodial } from "./registrationBuilder.js";
 
 /** Hình dạng UTxO tối thiểu (tập con của lucid UTxO) — đủ để quét thuần. */
 export interface QueryUtxo {
@@ -196,6 +197,15 @@ export function findDuplicatePlatformIds(
 export function verifyEntryAgainstCustody(
   entry: PlatformEntry, custodyUtxo: QueryUtxo,
 ): { ok: boolean; reason?: string } {
+  // Hạng KHÔNG KHO: ba trường custody rỗng HẾT ⇒ không có kho để đối soát, và cũng không có
+  // chỗ nào để route phí tới. Nói thẳng lý do, đừng để người đọc tưởng "kho sai NFT".
+  if (shapeNonCustodial(entry)) {
+    return {
+      ok: false,
+      reason: "hồ sơ KHÔNG KHO (instance_id/custody_hash/seed_policy rỗng, accepted_assets rỗng, "
+        + "cut_bps=0) — dịch vụ này KHÔNG thu asset qua hệ, không có kho để route phí tới",
+    };
+  }
   const qty = quantityOf(custodyUtxo.assets, entry.seed_policy, entry.instance_id);
   if (qty !== 1n) {
     return {

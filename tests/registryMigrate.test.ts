@@ -10,6 +10,7 @@ import {
 import { registryRedeemerFromCbor } from "../offchain/src/registryDatum.js";
 import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 const BEACON_POLICY = "12".repeat(28);
 const CUSTODY_HASH  = "34".repeat(28);
@@ -17,6 +18,8 @@ const SEED_POLICY   = "56".repeat(28);
 const AUTHORITY     = "ab".repeat(28);
 const OWN_HASH      = "77".repeat(28);
 const NEW_HASH      = "88".repeat(28);
+const GOV_REF       = "cc".repeat(28);
+const GOV_PROOF     = { spends: [{ scriptHash: GOV_REF }] };
 
 const cfg = (): PlatformConfig => ({
   platformId: asciiToHex("TestPlat"),
@@ -24,8 +27,8 @@ const cfg = (): PlatformConfig => ({
   acceptedAssets: [{ policy: "", name: "" }],
   buckets: [{ id: 0n, label: "ops" }],
   cutBps: 300n,
-  governanceRef: "cc".repeat(28),
-  msPerEpoch: 86_400_000n,
+  governanceRef: GOV_REF,
+  msPerTimeBucket: MS_PER_TIME_BUCKET,
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
@@ -42,6 +45,7 @@ const entry = (over: Partial<PlatformEntry> = {}): PlatformEntry => ({
       value: { [`${SEED_POLICY}|${asciiToHex("test-instance-v1")}`]: 1n, "|": 2_000_000n },
       scriptHash: CUSTODY_HASH,
     },
+    governanceProof: GOV_PROOF,          // R-GOVLIVE.
   }).entry,
   ...over,
 });

@@ -7,12 +7,13 @@ import {
 import { entryWellFormed, planRegister } from "../offchain/src/registrationBuilder.js";
 import { eventToCollectItem } from "../offchain/src/collectAdapter.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 const opts = {
   lampPolicy: "ab".repeat(28),
   magicPolicy: "cd".repeat(28),
   registryAuthority: "ef".repeat(28),
-  msPerEpoch: 86_400_000n,
+  msPerEpoch: MS_PER_TIME_BUCKET,
   reservedMinAda: 2_000_000n,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
 };
@@ -42,6 +43,8 @@ describe("phoenixKeyConfig hợp lệ", () => {
         value: { [`${seedPolicy}|${cfg.instanceId.toLowerCase()}`]: 1n, "|": 2_000_000n },
         scriptHash: "34".repeat(28),
       },
+      // R-GOVLIVE: cổng quản trị của platform phải chạy thật trong tx đăng ký.
+      governanceProof: { spends: [{ scriptHash: cfg.governanceRef }] },
     });
     expect(entryWellFormed(plan.entry)).toBe(true);
     expect(plan.entry.platform_id).toBe(asciiToHex("PhoenixKey"));

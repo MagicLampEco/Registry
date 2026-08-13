@@ -11,6 +11,7 @@ import { planRegister } from "../offchain/src/registrationBuilder.js";
 import { platformEntryToCbor } from "../offchain/src/registryDatum.js";
 import type { PlatformEntry } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 const BEACON = "12".repeat(28);
 const CUSTODY_HASH = "34".repeat(28);
@@ -37,13 +38,15 @@ function mkEntry(name: string, status: PlatformEntry["status"] = "Active"): Plat
       buckets: [{ id: 0n, label: "ops" }],
       cutBps: 300n,
       governanceRef: "cc".repeat(28),
-      msPerEpoch: 86_400_000n,
+      msPerTimeBucket: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       registryAuthority: "ab".repeat(28),
       genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
     },
     beaconPolicy: BEACON, custodyHash: CUSTODY_HASH, seedPolicy: SEED_POLICY,
     createdEpoch: 1n,
+    // R-GOVLIVE: cổng quản trị chạy thật trong tx đăng ký (gương util.governance_consented).
+    governanceProof: { spends: [{ scriptHash: "cc".repeat(28) }] },
     custodyUtxo: {
       value: { [`${SEED_POLICY}|${asciiToHex(`${name}-inst`)}`]: 1n, "|": 2_000_000n },
       scriptHash: CUSTODY_HASH,

@@ -11,7 +11,7 @@
 // registry_hash) → beacon_policy. Ngược chiều bản cũ, để cổng đúc ép được địa chỉ đích.
 
 import {
-  NETWORK, MS_PER_EPOCH,
+  NETWORK, MS_PER_TIME_BUCKET,
   resolveRegistryAuthority, applyRegistry,
   evaluateLiveGuards, warnLiveBlocked,
   saveRegistry, type RegistryState,
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   const dry = !guard.allowLive;
 
   console.log(`Mạng:               ${NETWORK}`);
-  console.log(`ms_per_epoch:       ${MS_PER_EPOCH}`);
+  console.log(`ms_per_time_bucket: ${MS_PER_TIME_BUCKET}  (ô 5 ngày kể từ mốc Unix — HẰNG cho mọi mạng, KHÔNG phải epoch Cardano)`);
   console.log(`Chế độ:             ${dry ? "KHÔ (apply tham số, không dựng tx)" : "THẬT (sổ chỉ có tham số — không có tx triển khai riêng)"}`);
   console.log(`registry_authority: ${authority}  (${source})\n`);
   warnLiveBlocked(guard);

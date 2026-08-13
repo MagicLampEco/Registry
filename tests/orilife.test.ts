@@ -6,6 +6,7 @@ import {
 } from "../examples/orilife.js";
 import { eventToCollectItem } from "../offchain/src/collectAdapter.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 // Ca tham chiếu tính từ animal_fee.estimate_fee (lifecycle=1, batch_daily, demand=1.0):
 //   cattle declared 0     → 0.14   (theo SÀN 400 USD)
@@ -95,7 +96,7 @@ describe("oriLifeConfig", () => {
     const cfg = oriLifeConfig({
       lampPolicy: "ab".repeat(28),
       registryAuthority: "cd".repeat(28),
-      msPerEpoch: 86_400_000n,
+      msPerEpoch: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
     });

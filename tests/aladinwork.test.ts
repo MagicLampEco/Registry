@@ -7,6 +7,7 @@ import {
 import { usdToOildrop } from "../examples/orilife.js";
 import { eventToCollectItem } from "../offchain/src/collectAdapter.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
+import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
 // Ca tham chiếu (demand=1.0, anchorTier=batch_daily → tier_mult=1.0):
 //   tree.identify  → 0.004                       (phẳng base)
@@ -86,7 +87,7 @@ describe("aladinWorkConfig", () => {
     const cfg = aladinWorkConfig({
       lampPolicy: "ab".repeat(28),
       registryAuthority: "cd".repeat(28),
-      msPerEpoch: 86_400_000n,
+      msPerEpoch: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
     });
@@ -98,7 +99,7 @@ describe("aladinWorkConfig", () => {
   it("cutBps override được (Aladin/DAO chốt)", () => {
     const cfg = aladinWorkConfig({
       lampPolicy: "ab".repeat(28), registryAuthority: "cd".repeat(28),
-      msPerEpoch: 86_400_000n, reservedMinAda: 2_000_000n,
+      msPerEpoch: MS_PER_TIME_BUCKET, reservedMinAda: 2_000_000n,
       genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
       cutBps: 800n,
     });

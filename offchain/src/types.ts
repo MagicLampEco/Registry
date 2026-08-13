@@ -26,6 +26,29 @@ export interface AssetKey {
 /** Phiên bản lược đồ hồ sơ hiện hành. Gương `SPEC_VERSION_V2` trong platform.ak. */
 export const SPEC_VERSION_V2 = 2n;
 
+/**
+ * Độ dài MỌI script hash / policy id Cardano: 28 byte (blake2b-224) = 56 ký tự hex.
+ * Gương `platform.script_hash_len` (onchain/lib/magiclamp/registry/platform.ak:40, đọc 2026-08-14).
+ * Off-chain giữ bytes dưới dạng HEX nên độ dài đối chiếu là 56 ký tự.
+ */
+export const SCRIPT_HASH_BYTES = 28;
+export const SCRIPT_HASH_HEX_LEN = 56;
+
+/**
+ * Độ dài MỘT Ô THỜI GIAN của quy ước Registry = 5 ngày = 432_000_000 ms.
+ *
+ * ⚠ ĐÂY KHÔNG PHẢI ĐỘ DÀI EPOCH CARDANO, và KHÔNG phụ thuộc mạng. On-chain nó là HẰNG
+ * (`util.ms_per_time_bucket`, onchain/lib/magiclamp/registry/util.ak:116, đọc 2026-08-14),
+ * không phải tham số validator. `posix_ms / 432_000_000` là chỉ số "ô 5 ngày kể từ mốc Unix":
+ * tại mốc Shelley hàm trả 3694, biên ô lật sớm hơn biên epoch thật ~251.091 s ≈ 2,9 ngày;
+ * trên Preview (epoch 1 ngày) sai số là 5×.
+ *
+ * ⛔ LỖI CŨ ĐÃ VÁ: off-chain từng lấy giá trị THEO MẠNG (Preview/Preprod 86_400_000). Vì
+ * on-chain là hằng 432_000_000 cho mọi mạng, mọi `created_epoch` tính trên Preview lệch 5×
+ * so với `util.current_time_bucket(tx)` ⇒ R-EPOCH trượt 100% ở mạng thử.
+ */
+export const MS_PER_TIME_BUCKET = 432_000_000n;
+
 /** Vòng đời một platform trong sổ — Constr theo thứ tự khai báo platform.ak. */
 export type PlatformStatus = "Active" | "Paused" | "Retired";
 
@@ -87,8 +110,21 @@ export interface PlatformConfig {
   /** seed_policy nếu đã biết trước (hex). Trống → lấy từ tham số truyền vào lúc đăng ký. */
   seedPolicy?: string;
 
-  /** POSIX ms ↔ epoch (gương ms_per_epoch on-chain). */
-  msPerEpoch: bigint;
+  /**
+   * Độ dài một Ô THỜI GIAN theo ms — gương `util.ms_per_time_bucket` (HẰNG 432_000_000,
+   * KHÔNG theo mạng, KHÔNG phải độ dài epoch Cardano). Bỏ trống → dùng `MS_PER_TIME_BUCKET`.
+   * Trường này chỉ là ghi chú cấu hình: không hàm nào trong SDK đọc nó để tính ô thời gian
+   * (dùng `timeBucketOf` trong registrationBuilder.ts, luôn theo hằng).
+   */
+  msPerTimeBucket?: bigint;
+
+  /**
+   * @deprecated TÊN CŨ NÓI SAI ĐƠN VỊ (không phải epoch Cardano — xem `MS_PER_TIME_BUCKET`).
+   * Còn giữ vì `examples/**` vẫn khai theo tên này và thư mục đó nằm NGOÀI phạm vi ghi của
+   * đợt sửa này. Xoá cùng lượt sửa `examples/` (4 file: phoenixkey, orilife, aladinwork,
+   * _template).
+   */
+  msPerEpoch?: bigint;
   /** lovelace giữ cho min-UTxO seed (≥ 0, KHÔNG ghi sổ). */
   reservedMinAda: bigint;
 

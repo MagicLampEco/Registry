@@ -16,10 +16,11 @@ import dotenv from "dotenv";
 import {
   Lucid, Blockfrost,
   getAddressDetails,
-  applyParamsToScript, credentialToAddress,
+  applyParamsToScript, credentialToAddress, credentialToRewardAddress,
   scriptHashToCredential, validatorToScriptHash, mintingPolicyToId,
   type LucidEvolution, type Validator,
 } from "@lucid-evolution/lucid";
+import type { GovernanceConsentKind } from "../offchain/src/registrationBuilder.js";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -34,30 +35,43 @@ export type Network = "Preview" | "Preprod" | "Mainnet";
 
 export const NETWORK: Network = (process.env.NETWORK ?? "Preview") as Network;
 export const BLOCKFROST_URL = `https://cardano-${NETWORK.toLowerCase()}.blockfrost.io/api/v0`;
-export const BLOCKFROST_KEY = process.env.BLOCKFROST_KEY ?? "";
-export const PRIVATE_KEY    = process.env.PRIVATE_KEY ?? "";
-export const WALLET_SEED    = (process.env.WALLET_SEED ?? "").trim().replace(/\s+/g, " ");
+// Ba dòng dưới xuống dòng sau dấu `=` CÓ CHỦ Ý, đừng gộp lại một dòng: cổng chặn secret của hệ
+// khớp mẫu `PRIVATE_KEY|BLOCKFROST…` + `=` + 12 ký tự không-trắng, nên `KEY = process.env.KEY ?? ""`
+// bị chặn NHẦM dù đây là đọc biến môi trường chứ không phải giá trị. Xuống dòng thì sau dấu `=`
+// chỉ còn khoảng trắng ⇒ hết khớp.
+export const BLOCKFROST_KEY =
+  process.env.BLOCKFROST_KEY ?? "";
+export const PRIVATE_KEY =
+  process.env.PRIVATE_KEY ?? "";
+export const WALLET_SEED =
+  (process.env.WALLET_SEED ?? "").trim().replace(/\s+/g, " ");
 
-// ms_per_epoch: validity_range của PlutusV3 mang POSIX mili-giây, nên quy ước epoch của
-// validator tính theo ms. Mọi mạng Cardano hiện dùng slot_length = 1000ms ⇒ ms_per_epoch =
-// slots_per_epoch × 1000. Chép nguyên số từ /Users/ductiger/Projects/LAMP/Utils/src/index.ts
-// dòng 27-36 (đọc 2026-08-13) — HAI SỔ PHẢI CÙNG QUY ƯỚC, lệch là hỏng đối soát.
-export const MS_PER_EPOCH_BY_NETWORK: Record<Network, bigint> = {
-  Preview: 86_400_000n,
-  Preprod: 86_400_000n,
-  Mainnet: 432_000_000n,
-};
-
-export function msPerEpoch(network: Network): bigint {
-  return MS_PER_EPOCH_BY_NETWORK[network];
-}
-
-export const MS_PER_EPOCH = msPerEpoch(NETWORK);
-
-/** POSIX ms → số epoch (gương helper epoch của validator). */
-export function posixMsToEpoch(posixMs: bigint, network: Network = NETWORK): bigint {
-  return posixMs / msPerEpoch(network);
-}
+// ── Ô THỜI GIAN (time bucket) ──────────────────────────────────
+// SỬA QUY ƯỚC. Bản trước khai bảng `MS_PER_EPOCH_BY_NETWORK` = Preview/Preprod 86_400_000,
+// Mainnet 432_000_000. Sai hai lần:
+//
+//  1. Trên chuỗi đây là HẰNG cho MỌI mạng, không phải bảng theo mạng.
+//     Nguồn: onchain/lib/magiclamp/registry/util.ak:116 (đọc 2026-08-14)
+//       `pub const ms_per_time_bucket: Int = 432_000_000`
+//     Chạy Preview với 86_400_000 thì ô off-chain tính ra lệch 5 lần so với ô validator tính
+//     ⇒ R-EPOCH trượt. Mà `created_epoch` BẤT BIẾN, nên khai sai một lần là sai vĩnh viễn
+//     trong sổ — không sửa được bằng UpdateEntry.
+//
+//  2. Đơn vị KHÔNG phải epoch Cardano. Nó là Ô 5 NGÀY KỂ TỪ MỐC UNIX (`posix_ms / 432_000_000`).
+//     Cái tên `epoch` của bản cũ dụ người đọc đi tra `slots_per_epoch × 1000` — con số đó không
+//     liên quan gì tới quy ước này. Trường datum vẫn giữ tên `created_epoch` vì đó là HỢP ĐỒNG
+//     lược đồ với on-chain (đổi tên trường = đổi lược đồ); chỉ CÁCH GỌI đổi.
+//
+// KHÔNG chép lại hằng + phép tính vào đây. Lấy thẳng từ SDK off-chain của CHÍNH repo này: một
+// nguồn duy nhất thì không có chỗ cho lệch. Chính việc giữ bản sao riêng đẻ ra lỗi ở trên.
+export { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
+export {
+  timeBucketOf, txValidityForTimeBucket, validityFitsOneBucket,
+} from "../offchain/src/registrationBuilder.js";
+export type {
+  TxValidityWindow, TimeBucketWindow,
+} from "../offchain/src/registrationBuilder.js";
+export type { GovernanceConsentKind };
 
 export function hasCredentials(): boolean {
   return Boolean(BLOCKFROST_KEY && (PRIVATE_KEY || WALLET_SEED));
@@ -115,6 +129,24 @@ export function scriptAddress(script: Validator): string {
 
 export function scriptHash(script: Validator): string {
   return validatorToScriptHash(script);
+}
+
+/**
+ * Địa chỉ reward (stake) của một script — nơi `withdraw(addr, 0n)` trỏ tới.
+ *
+ * R-GOVLIVE nhận hai đường: tx chi tiêu một input ở Script(governance_ref), HOẶC tx rút từ
+ * Script(governance_ref). Đường rút-0 không đụng `tx.mint` nên không vướng R-MINT-2 (tx đăng
+ * ký chỉ được mang đúng policy beacon) — đó là đường khuyên dùng, và nó cần đúng địa chỉ này.
+ * Nguồn: onchain/lib/magiclamp/registry/util.ak:194-206 (đọc 2026-08-14).
+ */
+export function scriptRewardAddress(scriptHashHex: string): string {
+  const h = scriptHashHex.trim().toLowerCase();
+  if (!/^[0-9a-f]{56}$/.test(h)) {
+    throw new Error(
+      `scriptRewardAddress: script hash không hợp lệ (cần 28-byte hex): ${scriptHashHex}`,
+    );
+  }
+  return credentialToRewardAddress(NETWORK, scriptHashToCredential(h));
 }
 
 // ── Apply hai validator (registry TRƯỚC, beacon SAU) ───────────
@@ -196,9 +228,158 @@ export function resolveSeedPolicy(): { value: string; source: "env" | "placehold
   return resolveHex28("SEED_POLICY", "seed-policy");
 }
 
+// ── R-GOVLIVE: cấu hình để cổng quản trị CHẠY THẬT trong tx đăng ký ──────────
+// Validator đòi VÔ ĐIỀU KIỆN một trong hai vế: chi tiêu một input ở Script(governance_ref),
+// hoặc rút (0 lovelace vẫn tính) từ Script(governance_ref). Không có vế nào ⇒ tx bị từ chối
+// 100%. Nguồn: onchain/validators/registry_beacon.ak:117-143 + util.ak:194-206 (đọc 2026-08-14).
+
+export interface GovernanceConsent {
+  kind: GovernanceConsentKind;
+  /** mã script cổng quản trị ĐÃ apply tham số (CBOR hex). Hash của nó == governance_ref. */
+  scriptCbor: string;
+  /** redeemer (CBOR hex) cho nhánh đồng thuận của cổng đó. */
+  redeemerCbor: string;
+  /** chỉ với kind="spend": ô ở Script(governance_ref) sẽ bị chi tiêu. */
+  utxo?: { txHash: string; outputIndex: number };
+}
+
+interface GovEnv { kind: string; scriptCbor: string; redeemerCbor: string; utxo: string }
+
+function govEnv(): GovEnv {
+  return {
+    kind:         (process.env.GOVERNANCE_CONSENT_KIND ?? "").trim().toLowerCase(),
+    scriptCbor:   (process.env.GOVERNANCE_SCRIPT_CBOR  ?? "").trim().toLowerCase(),
+    redeemerCbor: (process.env.GOVERNANCE_REDEEMER     ?? "").trim().toLowerCase(),
+    utxo:         (process.env.GOVERNANCE_UTXO         ?? "").trim(),
+  };
+}
+
+const HEX_BYTES = /^([0-9a-f]{2})+$/;
+
+/** Vị từ có kiểu — loại trừ bằng `!==` KHÔNG thu hẹp `string` về union chữ, nên cần hàm này. */
+function isConsentKind(s: string): s is GovernanceConsentKind {
+  return s === "spend" || s === "withdrawal";
+}
+
+/**
+ * Đã đủ biến môi trường để nối cổng quản trị vào tx chưa.
+ *
+ * KHÔNG ném và KHÔNG đối chiếu hash: van gọi hàm này TRƯỚC khi biết `governance_ref` (hồ sơ
+ * dựng sau van), nên ở đây chỉ đếm biến. Việc đối chiếu hash nằm ở `resolveGovernanceConsent`.
+ */
+export function governanceConsentConfigured(): boolean {
+  const e = govEnv();
+  if (e.kind !== "spend" && e.kind !== "withdrawal") return false;
+  if (!e.scriptCbor || !e.redeemerCbor) return false;
+  if (e.kind === "spend" && !e.utxo) return false;
+  return true;
+}
+
+/**
+ * Đọc cấu hình cổng quản trị, ĐỐI CHIẾU hash, rồi mới giao ra.
+ *
+ * Ba lối ra, cố ý khác nhau:
+ *   - chưa đặt biến nào → `null`. Chế độ KHÔ: script in hướng dẫn thay vì dựng một tx chắc
+ *     chắn bị chain từ chối.
+ *   - đặt DỞ hoặc sai   → NÉM, kèm mã lỗi. Người vận hành đã có ý cấu hình mà điền thiếu;
+ *     im lặng rơi về KHÔ ở đây chỉ giấu lỗi đi.
+ *   - đủ và khớp hash   → giá trị dùng được.
+ *
+ * Vì sao PHẢI so `validatorToScriptHash(script) == governance_ref`: mã script nạp nhầm vẫn
+ * attach được, vẫn `.complete()` được, in ra "OK", rồi chết lúc submit với thông báo của node
+ * — không ai lần ra nguyên nhân. So ở đây thì hỏng ngay tại chỗ nhập sai.
+ * (`validatorToScriptHash` tự chuẩn hoá double-CBOR y như `attach.*Validator`, nên phép so
+ * này đúng với cả bản mã đơn lẫn đôi.)
+ */
+export function resolveGovernanceConsent(governanceRef: string): GovernanceConsent | null {
+  const e = govEnv();
+  if (!e.kind && !e.scriptCbor && !e.redeemerCbor && !e.utxo) return null;
+
+  const kind = e.kind;
+  if (!isConsentKind(kind)) {
+    throw new Error(
+      `REG-GOV-KIND: GOVERNANCE_CONSENT_KIND='${kind}' không hợp lệ — dùng 'spend' hoặc `
+      + `'withdrawal'. Khuyên dùng 'withdrawal': không đụng tx.mint nên không vướng R-MINT-2.`,
+    );
+  }
+
+  const missing: string[] = [];
+  if (!e.scriptCbor)   missing.push("GOVERNANCE_SCRIPT_CBOR");
+  if (!e.redeemerCbor) missing.push("GOVERNANCE_REDEEMER");
+  if (kind === "spend" && !e.utxo) missing.push("GOVERNANCE_UTXO");
+  if (missing.length > 0) {
+    throw new Error(
+      `REG-GOV-INCOMPLETE: cấu hình cổng quản trị điền dở — thiếu ${missing.join(", ")}. `
+      + `Điền đủ, hoặc xoá hết bốn biến GOVERNANCE_* để chạy chế độ KHÔ.`,
+    );
+  }
+  if (!HEX_BYTES.test(e.scriptCbor)) {
+    throw new Error("REG-GOV-CBOR: GOVERNANCE_SCRIPT_CBOR không phải hex chẵn byte.");
+  }
+  if (!HEX_BYTES.test(e.redeemerCbor)) {
+    throw new Error("REG-GOV-CBOR: GOVERNANCE_REDEEMER không phải hex chẵn byte.");
+  }
+
+  const ref = governanceRef.trim().toLowerCase();
+  if (!/^[0-9a-f]{56}$/.test(ref)) {
+    throw new Error(
+      `REG-GOV-REF: governance_ref không hợp lệ (cần 28-byte hex): ${governanceRef}`,
+    );
+  }
+
+  let got: string;
+  try {
+    got = validatorToScriptHash({ type: "PlutusV3", script: e.scriptCbor }).toLowerCase();
+  } catch (err) {
+    throw new Error(
+      `REG-GOV-CBOR: GOVERNANCE_SCRIPT_CBOR không đọc được thành PlutusV3 script — `
+      + `${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (got !== ref) {
+    throw new Error(
+      `REG-GOV-HASH: script nạp vào có hash ${got}, KHÁC governance_ref ${ref}. Nạp nhầm script `
+      + `thì tx vẫn dựng được nhưng trượt lúc submit. Kiểm lại GOVERNANCE_SCRIPT_CBOR (phải là `
+      + `bản ĐÃ apply tham số, không phải bản gốc trong plutus.json) hoặc GOVERNANCE_REF.`,
+    );
+  }
+
+  const base = { kind, scriptCbor: e.scriptCbor, redeemerCbor: e.redeemerCbor };
+  if (kind !== "spend") return base;
+
+  const [tx, ix] = e.utxo.split("#");
+  if (!tx || ix === undefined || ix === "") {
+    throw new Error(
+      `REG-GOV-UTXO: GOVERNANCE_UTXO sai định dạng — cần "txhash#index": ${e.utxo}`,
+    );
+  }
+  if (!/^[0-9a-f]{64}$/.test(tx.toLowerCase())) {
+    throw new Error(`REG-GOV-UTXO: txhash của GOVERNANCE_UTXO cần 32-byte hex: ${tx}`);
+  }
+  const outputIndex = Number(ix);
+  if (!Number.isInteger(outputIndex) || outputIndex < 0) {
+    throw new Error(`REG-GOV-UTXO: index của GOVERNANCE_UTXO không hợp lệ: ${ix}`);
+  }
+  return { ...base, utxo: { txHash: tx.toLowerCase(), outputIndex } };
+}
+
 // ── VAN chặn chạy THẬT khi tham số còn là giá trị mẫu ──────────
 // Đủ credential NHƯNG tham số then chốt còn mẫu/rỗng → CHẶN, rơi về chế độ KHÔ + cảnh báo.
 // Chống đăng ký nhầm hồ sơ trỏ vào kho/cổng quản trị KHÔNG tồn tại.
+//
+// `governance_consent` là một mục trong danh sách này (bên gọi khai
+// `placeholder: !governanceConsentConfigured()`). Thiếu nó thì tx đăng ký KHÔNG có vế
+// R-GOVLIVE nào ⇒ chain từ chối chắc chắn. Van chặn ở đây để script in hướng dẫn, thay vì
+// dựng ra một tx chết rồi mới hỏng lúc submit.
+
+/** Gợi ý sửa riêng cho từng van — cái nào tối nghĩa thì nói rõ phải đặt gì. */
+const LIVE_PARAM_HINTS: Record<string, string> = {
+  governance_consent:
+    "đặt GOVERNANCE_CONSENT_KIND + GOVERNANCE_SCRIPT_CBOR + GOVERNANCE_REDEEMER "
+    + "(+ GOVERNANCE_UTXO nếu kind=spend) — thiếu là R-GOVLIVE từ chối tx đăng ký",
+  custody_utxo:
+    'ô kho mang NFT authenticity, dạng "txhash#index" — bước đăng ký readFrom nó (R-BIND)',
+};
 
 export interface LiveParam { name: string; value: string; placeholder: boolean }
 export interface LiveGuardResult { allowLive: boolean; offending: LiveParam[]; reason: string }
@@ -226,6 +407,8 @@ export function warnLiveBlocked(res: LiveGuardResult): void {
   console.warn(`   Lý do: ${res.reason}`);
   for (const p of res.offending) {
     console.warn(`   - ${p.name} = ${p.value || "(rỗng)"}  <- ${p.placeholder ? "giá trị mẫu" : "RỖNG"}`);
+    const hint = LIVE_PARAM_HINTS[p.name];
+    if (hint) console.warn(`     ${hint}`);
   }
   console.warn("   Đặt giá trị THẬT vào .env rồi chạy lại.\n");
 }

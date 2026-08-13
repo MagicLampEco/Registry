@@ -5,18 +5,28 @@ import { describe, it, expect } from "vitest";
 import {
   planRegister, planUpdateEntry, entryWellFormed,
   identityPreserved, mutableFieldsValid, verifyCustodyBinding,
-  valuePreserved, epochInWindow, changesRequireGovernance,
+  valuePreserved, timeBucketInWindow, changesRequireGovernance,
+  shapeCustodial, shapeNonCustodial, entryShapeValid, isScriptHash28,
+  governanceRefNotSelf, timeBucketOf, txValidityForTimeBucket, validityFitsOneBucket,
 } from "../offchain/src/registrationBuilder.js";
 import { decodePlatformEntry } from "../offchain/src/registryDatum.js";
 import { Data } from "@lucid-evolution/lucid";
 import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
-import { SPEC_VERSION_V2 } from "../offchain/src/types.js";
+import { SPEC_VERSION_V2, MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
 
 const BEACON_POLICY = "12".repeat(28);
 const CUSTODY_HASH  = "34".repeat(28);
 const SEED_POLICY   = "56".repeat(28);
 const AUTHORITY     = "ab".repeat(28);
+const GOV_REF       = "cc".repeat(28);
+
+/**
+ * R-GOVLIVE: tx đăng ký PHẢI làm cổng quản trị chạy thật. Mọi ca đăng ký hợp lệ dưới đây đều
+ * mang bằng chứng này — thiếu nó thì validator từ chối, nên "plan dựng được" mà không có nó
+ * là lời khai sai.
+ */
+const GOV_PROOF = { spends: [{ scriptHash: GOV_REF, txHash: "ee".repeat(32), outputIndex: 0 }] };
 
 const baseConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig => ({
   platformId: asciiToHex("TestPlat"),
@@ -24,8 +34,8 @@ const baseConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig => ({
   acceptedAssets: [{ policy: "", name: "" }],
   buckets: [{ id: 0n, label: "ops" }],
   cutBps: 300n,
-  governanceRef: "cc".repeat(28),
-  msPerEpoch: 86_400_000n,
+  governanceRef: GOV_REF,
+  msPerTimeBucket: MS_PER_TIME_BUCKET,
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
@@ -47,6 +57,7 @@ const regParams = (cfg: PlatformConfig) => ({
   seedPolicy: SEED_POLICY,
   createdEpoch: 10n,
   custodyUtxo: okCustody(cfg),
+  governanceProof: GOV_PROOF,
 });
 
 describe("planRegister — đường xuôi", () => {
@@ -63,8 +74,8 @@ describe("planRegister — đường xuôi", () => {
     expect(plan.requiredSigner).toBe(AUTHORITY);
     const back: PlatformEntry = decodePlatformEntry(Data.from(plan.entryDatumCbor));
     expect(back).toEqual(plan.entry);
-    expect(plan.custodyRef.scriptHash).toBe(CUSTODY_HASH);
-    expect(plan.custodyRef.txHash).toBe("dd".repeat(32));
+    expect(plan.custodyRef!.scriptHash).toBe(CUSTODY_HASH);
+    expect(plan.custodyRef!.txHash).toBe("dd".repeat(32));
   });
 
   it("config.seedPolicy ưu tiên hơn tham số seedPolicy", () => {
@@ -109,24 +120,24 @@ describe("planRegister — R-WF từ chối", () => {
 
 describe("planRegister — R-EPOCH (created_epoch == epoch của CHÍNH tx đăng ký)", () => {
   it("cửa sổ gọn trong đúng epoch đó → qua", () => {
-    const plan = planRegister({ ...regParams(baseConfig()), epochWindow: { from: 10n, to: 10n } });
+    const plan = planRegister({ ...regParams(baseConfig()), timeBucketWindow: { from: 10n, to: 10n } });
     expect(plan.entry.created_epoch).toBe(10n);
   });
   it("khai epoch 0 để ra vẻ lâu đời nhất hệ → REG-EPOCH (lỗ cũ đã bịt)", () => {
     expect(() => planRegister({
-      ...regParams(baseConfig()), createdEpoch: 0n, epochWindow: { from: 10n, to: 10n },
+      ...regParams(baseConfig()), createdEpoch: 0n, timeBucketWindow: { from: 10n, to: 10n },
     })).toThrow(/REG-EPOCH/);
   });
   it("validity_range trải qua biên epoch → REG-EPOCH (không cho đóng băng epoch)", () => {
     expect(() => planRegister({
-      ...regParams(baseConfig()), epochWindow: { from: 9n, to: 11n },
+      ...regParams(baseConfig()), timeBucketWindow: { from: 9n, to: 11n },
     })).toThrow(/REG-EPOCH/);
   });
-  it("epochInWindow: chỉ đúng khi cửa sổ gọn 1 epoch VÀ epoch bằng đúng nó", () => {
-    expect(epochInWindow(10n, { from: 10n, to: 10n })).toBe(true);
-    expect(epochInWindow(10n, { from: 9n, to: 11n })).toBe(false);
-    expect(epochInWindow(10n, { from: 11n, to: 9n })).toBe(false);
-    expect(epochInWindow(9n, { from: 10n, to: 10n })).toBe(false);
+  it("timeBucketInWindow: chỉ đúng khi cửa sổ gọn 1 ô VÀ ô bằng đúng nó", () => {
+    expect(timeBucketInWindow(10n, { from: 10n, to: 10n })).toBe(true);
+    expect(timeBucketInWindow(10n, { from: 9n, to: 11n })).toBe(false);
+    expect(timeBucketInWindow(10n, { from: 11n, to: 9n })).toBe(false);
+    expect(timeBucketInWindow(9n, { from: 10n, to: 10n })).toBe(false);
   });
 });
 
@@ -135,7 +146,8 @@ describe("planRegister — R-BIND từ chối (ràng buộc kho)", () => {
     const cfg = baseConfig();
     const { custodyUtxo, ...rest } = regParams(cfg);
     void custodyUtxo;
-    // @ts-expect-error — cố tình bỏ custodyUtxo để kiểm fail-fast.
+    // custodyUtxo nay TUỲ CHỌN ở kiểu (hồ sơ KHÔNG KHO không cần) — nhưng hồ sơ CÓ KHO thiếu
+    // nó vẫn phải hỏng ngay.
     expect(() => planRegister(rest)).toThrow(/REG-BIND/);
   });
 
