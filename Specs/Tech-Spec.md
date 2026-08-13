@@ -1,6 +1,22 @@
-# PlatformKit — TECH (kiến trúc on-chain Aiken + off-chain SDK)
+# Registry — Tech-Spec (kiến trúc on-chain Aiken + off-chain SDK)
 
-**Trạng thái:** draft 2026-06-15 (chờ anh duyệt). Bám **xương sống** [CONTRACT.md](./CONTRACT.md) —
+| Trường | Giá trị |
+|---|---|
+| Phiên bản | v1.0.1 |
+| Trạng thái | `DRAFT` |
+| Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
+| Loại dự án | **F — Blockchain / Smart Contract** (phụ lục §22.F bắt buộc) |
+| Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13 |
+| Người duyệt | **chưa ai duyệt** |
+| Cập nhật cuối | 2026-08-13 |
+| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
+
+> ⚠ **Chuẩn StandardSpec: phía sau chỉ được bắt đầu khi phía trước ĐÃ DUYỆT.** Bản này chưa duyệt,
+> và SDK off-chain đã dựng xong trên nền nó. Ghi ra, không đánh dấu duyệt hộ ai.
+
+> **Tên cũ của lớp này là "PlatformKit"** (khi nó còn sống trong repo LAMP). Tên hiện hành: **Registry**.
+
+Bám **xương sống** [CONTRACT.md](./CONTRACT.md) —
 KHÔNG mâu thuẫn. Tài liệu này là tầng **kỹ thuật** (datum/redeemer/bất biến/validator + SDK off-chain)
 của lớp Registry. Hành vi ở [FEAT](./Feat-Spec.md), lộ trình ở [EXEC](./Exec-Spec.md).
 
@@ -28,7 +44,7 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
   Registry **trỏ tới** custody nhưng KHÔNG enforce kế toán của nó.
 - **`custody_seed`** (cửa 1 onboard): minting policy của Treasury (`Treasury/EXEC.md §16`). Registry
   nhận `instance_id/custody_hash/seed_policy` đầu ra của nó làm input đăng ký.
-- **Định giá / oracle**: app-side, NGOÀI PlatformKit.
+- **Định giá / oracle**: app-side, NGOÀI Registry.
 - **Đếm phiếu / VP** (đích `governance_ref`): `Governance/VotingPower/*`.
 
 ### Bất biến cốt lõi (nhắc lại — sai là hỏng)
@@ -36,6 +52,25 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 - Beacon-per-platform (PK2): mỗi platform một NFT name=`platform_id` dưới **một** policy chung.
 - Authority gác **niêm yết**, KHÔNG gác **value** (PK3); value gác bởi `governance_ref` riêng (PK6).
 - Retire = status, NO-BURN (PK5): beacon sống suốt đời, vòng đời chỉ tiến.
+
+---
+
+> ⛔ **CẢNH BÁO PHIÊN BẢN — mục §1 đến §5 dưới đây mô tả lược đồ v1, đang lỗi thời.** Đợt sửa
+> validator **v2** đã đổi những thứ sau; chưa chép vào các mục đó:
+>
+> | Đổi gì | v1 (mô tả ở §1–§5) | v2 (mã trên đĩa) |
+> |---|---|---|
+> | Số trường datum | 9 | **11** — thêm `spec_version` (đầu) và `beacon_policy` |
+> | Chiều tham số | `registry(authority, beacon_policy)`, `registry_beacon(authority)` | **đảo**: `registry(authority)`, `registry_beacon(authority, registry_hash)` |
+> | R-OUT-1 | chỉ cấm ví thường | ép **đúng** `Script(registry_hash)` |
+> | Định danh bất biến | 5 trường | **6** — thêm `beacon_policy` |
+> | Redeemer spend | chỉ `UpdateEntry` | thêm **`MigrateEntry`** (constr 1) |
+> | `→ Retired` / đổi `cut_bps`… | một chữ ký authority là đủ | đòi **thêm** đồng thuận quản trị (U-GOV) |
+> | Ràng buộc mới | — | R-POLICY, R-VER, R-VALUE, R-EPOCH, U-VER, U-VALUE, M-* |
+>
+> Phát biểu hình thức của trạng thái **sau** v2: [`Math-Spec.md`](./Math-Spec.md) §5 và §7. Mục §9 và
+> §22.F ở cuối tài liệu này đã viết theo v2. Việc chép v2 vào §1–§5 là **việc còn treo** — ghi ở
+> [`../DevStatus.md`](../DevStatus.md), không ghi ở đây.
 
 ---
 
@@ -353,7 +388,7 @@ order §2 (9 field, status enum 0/1/2). Lệch thứ tự phá decode (cùng quy
 | **PK11 app_id vô danh (F8)** | KHÔNG neo on-chain (chưa receipt_root) | **reconcile (an toàn VP):** VP không tin app_id từ Collect tới khi receipt thực thi (chống bịa C1). |
 
 **Tổng hợp 4 trục:**
-- **(a) Dài hạn — open SDK:** PlatformKit là khuôn để **mọi** team Cardano dựng platform tương tự
+- **(a) Dài hạn — open SDK:** Registry là khuôn để **mọi** team Cardano dựng platform tương tự
   MagicLamp mà không fork → mỗi platform một caller `collectToTreasury` → cầu LAMP.
 - **(b) First-principles — beacon:** discover = "tập UTxO mang một policy" thay vì danh bạ ai-đó-vận-hành;
   duy nhất id bằng kỷ luật ký (Cardano không ép unique asset-name) thay vì state trung tâm.
@@ -401,7 +436,7 @@ order §2 (9 field, status enum 0/1/2). Lệch thứ tự phá decode (cùng quy
 
 ## 8. Phản hồi vá audit lần 2 (vòng 2026-06-15)
 
-Đợt vá thứ hai chạm PlatformKit: 1 lỗ on-chain (F5), 2 reconcile (F7, F8), 1 known-gap nhấn mạnh (F13),
+Đợt vá thứ hai chạm Registry: 1 lỗ on-chain (F5), 2 reconcile (F7, F8), 1 known-gap nhấn mạnh (F13),
 + hệ quả #1B đóng (F10). Code đã áp; spec này mô tả lại.
 
 | Lỗ | Mức | Sửa gì | Mã | Nơi | Code |
@@ -411,3 +446,148 @@ order §2 (9 field, status enum 0/1/2). Lệch thứ tự phá decode (cùng quy
 | **F8** | reconcile | `app_id` (CollectItem redeemer) vô danh on-chain; CustodyDatum không có `receipt_root`. VP/uy tín KHÔNG tin app_id từ Collect tới khi receipt thực thi (chống bịa C1). receipt = v1.x / bỏ lời hứa. | PK11 | CONTRACT PK11, §6.3 note | (Treasury types.ak — chưa có receipt) |
 | **F10** | — (đóng) | #1B ĐÓNG ở Treasury (`spend_spec_hash` gồm instance_id). PK6 governance_ref riêng → từ ràng-buộc-an-toàn thành KHUYẾN NGHỊ tách quyền. GAP-6 hết là gap an toàn. Governance build-side PHẢI commit đúng instance_id. | PK6 | CONTRACT §5/PK6, §7 GAP-6 | (Treasury release.ak) |
 | **F13** | known-gap | `verifyEntryAgainstCustody` + dedup chỉ là VAN SDK — người tích hợp PHẢI gọi TRƯỚC khi route phí (SDK không ép được). Bỏ qua = route phí tới custody giả / entry trùng. | — | §6.4 note, CONTRACT §8 | registryQuery (SDK) |
+
+---
+
+## 9. Mô hình đe doạ hệ thống (STRIDE — mức hệ thống)
+
+> Khác **mức mật mã / giao thức**: phân tích kẻ tấn công ở tầng validator nằm ở
+> [`Math-Spec.md`](./Math-Spec.md) §8 (bảng T1–T15). Mục này là mức **hệ thống**: hạ tầng, chuỗi
+> cung ứng, vận hành, ranh giới tích hợp — thứ mà không validator nào chặn được.
+
+### 9.1 Kiểm kê tài sản
+
+| Tài sản | Loại | Độ nhạy | Mất thì sao |
+|---|---|---|---|
+| Khoá `registry_authority` | bí mật | **Nghiêm trọng** | Chiếm tên platform, onboard rác, gỡ niêm yết dịch vụ thật |
+| Khoá cổng quản trị `governance_ref` từng platform | bí mật | **Nghiêm trọng** | Đồng thuận giả ⇒ đổi được cổng chi tiền của platform đó |
+| Script hash `registry` + policy `registry_beacon` | định danh công khai | Cao | Sai một ký tự = định tuyến phí sai địa chỉ |
+| Datum `PlatformEntry` của từng hồ sơ | dữ liệu công khai | Trung bình | Bịa hồ sơ ⇒ định tuyến phí tới kho giả |
+| Bộ ánh xạ `platform_id → kho` mà SDK dựng | dữ liệu dẫn xuất | Cao | Nguồn duy nhất bên tích hợp dựa vào |
+| Toàn bộ giá trị trong kho | giá trị | **Nghiêm trọng** | KHÔNG nằm trong Registry — thuộc Treasury (PK1) |
+
+### 9.2 STRIDE theo thành phần
+
+| Thành phần | S (giả danh) | T (sửa lén) | R (chối bỏ) | I (lộ tin) | D (từ chối dịch vụ) | E (leo quyền) |
+|---|---|---|---|---|---|---|
+| `registry_beacon` (đúc) | R-SIG chặn kẻ không có `A` | R-POLICY/R-NAME/R-VER/R-EPOCH khoá lời tự khai | mọi đăng ký có chữ ký `A` trên chuỗi ⇒ chối không được | sổ vốn công khai — không có gì để lộ | không có UTxO chung ⇒ không chặn nhau được (T-INDEP) | R-MINT-2 chặn gánh mint policy lạ |
+| `registry` (chi tiêu) | U-SIG/M-SIG | U-ID/M-ID + U-VALUE/M-VALUE | chữ ký trên chuỗi | — | U-SINGLE chặn gộp nhiều hồ sơ một tx | U-GOV/M-GOV chặn một bên tự quyết việc không đảo ngược |
+| SDK off-chain | — | **chuỗi cung ứng npm** — xem 9.3 | — | biến môi trường chứa khoá | — | bên tích hợp bỏ qua van ⇒ tự hại |
+| Người vận hành `A` | phishing / kỹ nghệ xã hội | — | — | rò khoá | — | **khoá đơn = leo quyền toàn phần** |
+| Đường chỉ mục (Blockfrost/Kupo) | nhà cung cấp trả dữ liệu sai | dữ liệu chỉ mục cũ | — | lộ mẫu truy vấn | nhà cung cấp chết ⇒ không quét được sổ | — |
+
+### 9.3 Bề mặt tấn công
+
+- **Bên ngoài:** bất kỳ ai cũng dựng được giao dịch tới hai validator. Cổng duy nhất là chữ ký.
+- **Chuỗi cung ứng:** SDK off-chain phụ thuộc `lucid` + thư viện CBOR. Một bản phát hành bị chèn mã
+  đọc được biến môi trường của bên tích hợp. Ghim phiên bản + kiểm chữ ký gói là bắt buộc.
+- **Chỉ mục:** `discoverPlatforms` tin nhà cung cấp chỉ mục. Nhà cung cấp trả thiếu một hồ sơ trùng
+  `platform_id` ⇒ van khử trùng ở §6.4 mất tác dụng mà không báo lỗi. Nên đối chiếu ít nhất hai nguồn
+  trước khi định tuyến phí.
+- **Nội bộ:** người giữ khoá `A`. Hiện là một khoá đơn — xem `Math-Spec.md` §14 L2.
+
+### 9.4 Ranh giới tin cậy
+
+```
+   [ bên tích hợp ]  ──đọc──▶  [ chỉ mục ]  ──▶  [ sổ on-chain ]
+        │                          ▲                    ▲
+        │ tin: SDK + 3 van §6.4    │ KHÔNG tin          │ tin: ledger
+        ▼                          │                    │
+   [ kho của platform ] ◀──────────┴────────────────────┘
+        ▲  gác bởi governance_ref RIÊNG — KHÔNG phải registry_authority
+```
+
+Ba đường cắt: (1) `registry_authority` ⊥ giá trị; (2) sổ ⊥ kho (không bên nào đọc bên kia on-chain);
+(3) chỉ mục ⊥ sự thật (chỉ mục là tiện ích, không phải nguồn chân lý).
+
+### 9.5 Giới hạn đã chấp nhận
+
+| Đe doạ | Xử lý | Vì sao chấp nhận |
+|---|---|---|
+| Trùng `platform_id` | van quy trình + van SDK | đóng thật đòi one-shot `genesis_ref`, đánh đổi `platform_id` mất tính đọc được (`Math-Spec.md` §14 L1) |
+| `A` là khoá đơn | phải thành multisig trước mainnet | chưa có committee thật |
+| Kho tự dựng vẫn qua R-BIND | đối soát ở bên đọc | validator không phân biệt được kho Treasury thật (`Math-Spec.md` §14 L3) |
+| UTxO tự dựng ở địa chỉ registry | vô hại, chấp nhận | ledger không chạy validator lúc tạo UTxO (`Math-Spec.md` §8 T2) |
+| An ninh vật lý nơi giữ khoá | **ngoài phạm vi** | thuộc quy trình vận hành, không thuộc spec này |
+
+---
+
+## 22. Phụ lục dành cho dự án blockchain
+
+### §22.F Blockchain / Smart Contract (Type F)
+
+**Ngăn xếp**
+
+| Chuỗi | Ngôn ngữ | Công cụ | Kiểm thử |
+|---|---|---|---|
+| Cardano (eUTxO) | [Aiken](https://aiken-lang.org/) | `aiken check`, `aiken build` | kiểm thử đơn vị trong chính cây `onchain/` |
+| Off-chain | TypeScript | `lucid`, `vitest` | `offchain/` |
+
+**Chiến lược nâng cấp.** Cardano không có proxy — nâng cấp = **script mới + di trú datum**. Đây chính
+là lý do v2 thêm nhánh `MigrateEntry`:
+
+| Kiểu đổi | Hồi tố được không | Giá phải trả |
+|---|---|---|
+| Đổi một trường trong datum | **được** | một chữ ký cho mỗi hồ sơ |
+| Đổi tham số validator | **không** — đổi script hash, tức đổi địa chỉ | phải di trú từng hồ sơ qua `MigrateEntry` |
+
+Hôm nay chưa có hồ sơ nào trên chuỗi nên chưa phải trả giá. Ghi ra để đợt sau không quên.
+
+**Quyền nâng cấp.** `registry_authority` + đồng thuận `governance_ref` của chính platform (M-SIG +
+M-GOV). Không có nút dừng khẩn cấp, và **cố ý không có**: `status` là nhãn niêm yết, không phải van
+khoá tiền (PK10). Ai muốn dừng dòng tiền phải dừng ở kho, qua cổng quản trị của kho.
+
+**Oracle.** Registry **không dùng oracle**. Định giá nằm ở app (cửa 3). Ghi ra vì đây là câu hỏi
+người audit luôn hỏi.
+
+**Tối ưu phí / ExUnit.**
+
+- Không có UTxO trung tâm ⇒ mỗi thao tác O(1) theo số platform (T-INDEP). Đây là khoản tiết kiệm lớn
+  nhất, và nó là quyết định kiến trúc chứ không phải tinh chỉnh.
+- R-BIND dùng **reference input** (đọc kho, không tiêu) ⇒ không tranh chấp UTxO kho.
+- `accepted_assets` là danh sách trong datum: dài ra thì mọi lần chi tiêu hồ sơ đắt lên. Hiện chưa đặt
+  trần — xem "còn thiếu" dưới đây.
+- Nên công bố script dưới dạng **reference script** khi deploy, để giao dịch không phải mang cả mã.
+
+**Bố cục lưu trữ (datum).** Thứ tự trường `PlatformEntry` là **hợp đồng liên bên** (Plutus Data mã hoá
+theo vị trí). Thêm trường **chỉ được nối vào cuối**, và chỉ kèm tăng `spec_version` + một đường di trú.
+Chèn giữa hay đổi thứ tự = phá mọi bên đang decode.
+
+**Lỗ hổng thường gặp — đối chiếu**
+
+| Lỗ | Có áp cho Registry không | Phòng bằng gì |
+|---|---|---|
+| Double satisfaction | **có** | U-SINGLE; M-DEST (đúng 1 input ở script này) |
+| Token dust / nhét token lạ vào UTxO | **có** | R-VALUE, U-VALUE, M-VALUE |
+| Rút cạn ADA khỏi UTxO | **có** | U-VALUE `lovelace(out) ≥ lovelace(in)` |
+| Đặt hồ sơ ở script lạ để thoát quyền tài phán | **có** (đã từng lọt ở v1) | R-OUT-1 v2 ép đúng `Script(registry_hash)` |
+| Datum khai gian (`beacon_policy`, `created_epoch`) | **có** | R-POLICY, R-EPOCH |
+| Gánh mint policy ngoài trong cùng tx | **có** | R-MINT-2 |
+| Reentrancy | **không** — mô hình eUTxO không có lời gọi lại | — |
+| Tràn số nguyên | **thấp** — `Int` của Plutus là số nguyên lớn | dải `cut_bps` vẫn ép ở R-WF/U-MUT |
+| Front-running / MEV | **thấp** — không có định giá, không có thứ tự sinh lợi | chữ ký `A` bắt buộc |
+| Replay chữ ký | **không** — chữ ký Cardano gắn với thân giao dịch | — |
+| Nhạy với tái tổ chức chuỗi | **có** | chờ đủ số block xác nhận trước khi coi đăng ký là chắc |
+
+**Quy trình audit**
+
+| Bậc | Công cụ | Nhịp | Hiện trạng |
+|---|---|---|---|
+| Kiểm tra tĩnh | `aiken check` | mỗi PR | có |
+| Kiểm thử đơn vị | kiểm thử trong cây `onchain/` | mỗi PR | có — số liệu ở [`../DevStatus.md`](../DevStatus.md), KHÔNG chép số vào đây |
+| So script hash trước/sau | `aiken build` + đọc `plutus.json` | mỗi lần đụng validator | bắt buộc theo `CLAUDE.md` |
+| Chứng minh cơ giới hoá | — | — | **chưa có** (`Math-Spec.md` §14 L6) |
+| Audit ngoài | bên thứ ba | trước mainnet | **chưa có** (`Math-Spec.md` §14 L7) |
+| Giám sát on-chain | — | — | **chưa dựng** |
+
+**Chỉ tiêu phi chức năng đặc thù blockchain**
+
+| Chỉ tiêu | Mục tiêu | Đo chưa |
+|---|---|---|
+| Kích thước script (`registry`, `registry_beacon`) | vừa giới hạn giao dịch Cardano | **chưa đo** — chạy `aiken build` rồi đọc `plutus.json` |
+| ExUnit mỗi giao dịch đăng ký | chưa đặt ngưỡng | **chưa đo** |
+| ExUnit mỗi giao dịch cập nhật | chưa đặt ngưỡng | **chưa đo** |
+| Số block chờ trước khi tin một đăng ký | chưa chốt | **chưa chốt** |
+
+Bốn dòng "chưa đo" là **thiếu sót có thật**, không phải chỗ trống hình thức. Đặt ngưỡng rồi mới nói
+được câu "đủ rẻ".

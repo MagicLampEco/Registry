@@ -1,17 +1,32 @@
 # Onboarding một platform vào Registry
 
+| Trường | Giá trị |
+|---|---|
+| Phiên bản | v1.0.1 |
+| Trạng thái | `DRAFT` |
+| Tầng phạm vi | `L1` (hạ tầng / nền tảng) — tài liệu hướng dẫn, không phải một trong bốn spec |
+| Người viết | Registry agent |
+| Người duyệt | **chưa ai duyệt** |
+| Cập nhật cuối | 2026-08-13 |
+| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
+
+> Tệp này trước đây tên `ONBOARDING.md`. Đổi thành `onboarding.md` ngày 2026-08-13 cho khớp quy ước
+> tên tệp (viết hoa toàn bộ chỉ dành cho từ viết tắt).
+
 Hướng dẫn từng bước để bất kỳ đội Cardano nào đưa platform của mình vào hệ sinh thái MagicLamp:
 mỗi platform có một Treasury custody instance riêng + một entry trong Registry on-chain.
 
 Registry là **khuôn mẫu dùng chung**. Nó KHÔNG quyết economics của bạn. Bạn chỉ điền cấu hình
 + định giá; phần còn lại (schema, validator, gương off-chain, builder giao dịch, adapter) khuôn mẫu lo.
 
-> ⚠️ **Mã off-chain chưa nằm trong repo này.** Mọi đường dẫn `offchain/`, `examples/`, `scripts/` dưới
-> đây hiện còn ở repo [`MagicLampNetwork/LAMP`](https://github.com/MagicLampNetwork/LAMP), nhánh `main`,
-> thư mục `PlatformKit/` (tên cũ của lớp đăng ký này). Ví dụ: `offchain/src/types.ts` đọc tại
+> ⚠️ **Mã off-chain đang được chuyển về repo này — đừng đoán, hãy kiểm.** Mọi đường dẫn `offchain/`,
+> `examples/`, `scripts/` dưới đây có bản gốc ở repo
+> [`MagicLampNetwork/LAMP`](https://github.com/MagicLampNetwork/LAMP), nhánh `main`, thư mục
+> `PlatformKit/` (tên cũ của lớp đăng ký này). Ví dụ: `offchain/src/types.ts` đọc tại
 > `https://github.com/MagicLampNetwork/LAMP/blob/main/PlatformKit/offchain/src/types.ts`.
-> Phần on-chain (`onchain/`) thì đã ở repo này. Việc di chuyển nốt off-chain đang chờ chốt cách gỡ phụ
-> thuộc SDK Treasury — xem `Specs/README.md`.
+> Phần on-chain (`onchain/`) thì đã ở repo này. Trạng thái thật của việc chuyển off-chain (đã vào git
+> chưa, ở nhánh nào) đọc ở [`../DevStatus.md`](../DevStatus.md) — kiểm bằng
+> `git log --oneline -3 -- offchain/`.
 
 ---
 
