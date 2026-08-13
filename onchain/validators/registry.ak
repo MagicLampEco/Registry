@@ -1,26 +1,96 @@
-// PlatformKit registry — spend validator: cập nhật một entry platform đã đăng ký.
-// Entry UTxO mang beacon NFT (registry_beacon policy) + datum PlatformEntry, sống ở
+// PlatformKit registry — spend validator: cập nhật / di trú một entry platform đã đăng ký.
+// Entry UTxO mang beacon NFT (policy khai trong datum) + datum PlatformEntry, sống ở
 // địa chỉ validator này. Discoverable qua beacon policy; mỗi entry độc lập (no contention).
 //
-// ÉP (UpdateEntry — authority-gated):
-//   U-SIG     tx ký bởi registry_authority.
+// THAM SỐ (v2): CHỈ `registry_authority`. Bỏ tham số `beacon_policy` — nay đọc từ
+// `entry_in.beacon_policy`. Nhờ vậy hash của validator này tính được TRƯỚC, và
+// `registry_beacon(authority, registry_hash)` mới ép được địa chỉ đích lúc đúc.
+// ⚠ Đánh đổi (ghi rõ, không giấu): lời khai `beacon_policy` trong một UTxO TỰ DỰNG ở
+// địa chỉ này có thể bịa. Hồ sơ bịa đó không mang beacon NFT thật nên không hiện ra khi
+// quét sổ theo policy, và muốn chi tiêu nó vẫn phải có chữ ký authority ⇒ trơ.
+//
+// ÉP (chung cả hai nhánh):
+//   S-GOVSELF `entry_in.governance_ref != own_hash`. LỖ ĐÃ CHẶN: `governance_consented`
+//             quét MỌI tx.inputs tìm input ở Script(governance_ref), mà ô hồ sơ đang chi
+//             tiêu LUÔN nằm ở Script(own_hash) ⇒ một hồ sơ khai `governance_ref = hash
+//             của chính registry` biến `governance_consented` thành hằng True VĨNH VIỄN
+//             ⇒ authority một mình Retire / đổi cut_bps / di trú được. Rào "hai bên" bị
+//             mở lại bằng đúng MỘT GIÁ TRỊ DATUM. Cổng đúc cũng chặn ở R-GOVSELF.
+//
+// ÉP (UpdateEntry — authority + đồng thuận quản trị cho việc KHÔNG đảo ngược được):
+//   U-SIG     tx ký bởi registry_authority — TRỪ ca hồi sinh thuần tuý (xem U-REVIVE).
+//   U-REVIVE  Paused → Active mà MỌI trường khác Y HỆT: authority ký HOẶC đồng thuận
+//             quản trị của chính platform. Lý do tách chiều (đặc tả gốc gộp một dòng
+//             `Active ↔ Paused`, đó là lỗi đặc tả): nếu cả hai chiều đều chỉ cần
+//             authority thì authority đặt Paused rồi KHÔNG BAO GIỜ ký lại — platform
+//             không có cách tự đảo ngược. Hiệu ứng thật = gỡ vĩnh viễn, mà KHÔNG đi qua
+//             rào "hai bên" mà chính luật này dựng ra. Nguồn cao hơn:
+//             Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md:201 §8 bước 7 — "kết nạp DỄ,
+//             gỡ KHÓ (ngưỡng cao hơn nhiều) — để không ai vũ-khí-hoá bước gỡ nhắm đối
+//             thủ". Chiều `Active → Paused` GIỮ NGUYÊN chỉ-authority: cần van dừng nhanh.
+//             "Mọi trường khác y hệt" ép CHẶT (identity 6 field + spec_version +
+//             governance_ref + accepted_assets + cut_bps); lỏng một trường là platform
+//             tự mở lại KÈM đổi cut_bps — đi vòng qua đúng ràng buộc vừa dựng.
 //   U-SINGLE  ĐÚNG 1 entry input + 1 entry output theo SCRIPT HASH (chống double-sat).
-//   U-NFT     beacon NFT (beacon_policy, platform_id) bảo toàn ở in & out.
-//   U-ID      identity bất biến: platform_id, instance_id, custody_hash, seed_policy, created_epoch.
-//   U-MUT     field khả biến sau cập nhật vẫn hợp lệ (governance_ref, accepted, cut_bps).
+//   U-NFT     beacon NFT (entry_in.beacon_policy, platform_id) bảo toàn ở in & out.
+//   U-ID      identity bất biến 6 field (thêm beacon_policy so với v1).
+//   U-VER     spec_version KHÔNG đổi (đổi phiên bản phải đi đường MigrateEntry).
+//   U-MUT     field khả biến sau cập nhật vẫn hợp lệ (governance_ref đúng 28 byte,
+//             và entry vẫn thuộc ĐÚNG MỘT hạng hình dạng — không nửa vời).
+//   U-SHAPE   KHÔNG đổi hạng: `shape_custodial(in) == shape_custodial(out)`. Chuyển
+//             có-kho ↔ không-kho = đổi bản chất dịch vụ ⇒ phải đăng ký mới.
 //   U-MINT-0  KHÔNG mint/burn (update không đụng beacon supply).
+//   U-TERMINAL KHÔNG chi tiêu hồ sơ đã Retired qua đường Update.
+//   U-VALUE   không rút bớt native asset / lovelace khỏi ô hồ sơ.
+//   U-GOV     ĐỔI KHÔNG ĐẢO NGƯỢC ĐƯỢC ⇒ cần đồng thuận quản trị của chính platform:
+//             (a) status → Retired, (b) đổi governance_ref / accepted_assets / cut_bps.
+//
+// ÉP (MigrateEntry — đưa hồ sơ sang registry validator mới):
+//   M-SIG/M-GOV   authority ký VÀ platform đồng thuận (di trú = ra khỏi quyền tài phán
+//                 của validator này, platform phải đồng ý).
+//   M-DEST        new_registry_hash ĐÚNG 28 BYTE và ≠ own_hash; đúng 1 input ở own_hash;
+//                 đúng 1 output ở Script(new_registry_hash). LỖ ĐÃ CHẶN (28 byte):
+//                 `is_at_script` chỉ so bytes, nên di trú tới `#"00"` là "hợp lệ" ⇒ beacon
+//                 NFT + min-ADA bay tới một địa chỉ script KHÔNG TỒN TẠI và KHÔNG THỂ tồn
+//                 tại ⇒ mất beacon vĩnh viễn, phá thẳng PK5 "beacon sống suốt đời".
+//   M-MINT-0      không mint/burn.  M-ID  6 field định danh bất biến.
+//   M-STATUS      status KHÔNG đổi — nếu không, di trú thành đường Retire trá hình.
+//   M-VER         new_spec_version > cũ, và datum out khai đúng new_spec_version.
+//   M-MUT         field khả biến của datum ĐÍCH vẫn hợp lệ. LỖ ĐÃ CHẶN: thiếu dòng này,
+//                 di trú ghi được `governance_ref = #""`, `cut_bps = 99999`,
+//                 `accepted_assets = []` ⇒ ở registry MỚI không script nào có hash rỗng ⇒
+//                 `governance_consented` không bao giờ thoả ⇒ hồ sơ VĨNH VIỄN không
+//                 Retire được, không di trú tiếp được. Chính là "hồ sơ kẹt vĩnh viễn" mà
+//                 nhánh Migrate sinh ra để vá — nhánh cứu tự tạo lại cái nó cứu.
+//   M-SHAPE       KHÔNG đổi hạng hình dạng (như U-SHAPE).
+//   M-NFT         beacon NFT có ở cả input lẫn output.   M-VALUE  như U-VALUE.
+//   KHÔNG ép U-TERMINAL: hồ sơ Retired PHẢI di trú được — đó chính là lỗ đang vá
+//   (trước v2, xoay quyền đăng ký làm hồ sơ Retired kẹt vĩnh viễn, phá cam kết
+//   "beacon sống suốt đời, dấu vết kiểm toán không đứt").
+//
+// ⚠ GIẢ ĐỊNH LOAD-BEARING (chốt: KHÔNG vá bằng mã ở v2): MẤT KHOÁ AUTHORITY ⇒ TOÀN SỔ
+// ĐÔNG CỨNG. U-SIG và M-SIG đều đòi ĐÚNG `registry_authority` được nướng vào tham số, kể
+// cả nhánh cứu MigrateEntry (M-SIG đòi authority CŨ). Mất khoá là không hồ sơ nào cập
+// nhật hay di trú được nữa. Đường đóng đúng là chuyển `registry_authority` sang một
+// script nhiều chữ ký / DAO, KHÔNG phải thêm luật ở đây.
+//
+// ⚠ HỒI TỐ HAI TẦNG NGƯỢC NHAU (nói ra để đợt sau không quên): đổi TRƯỜNG trong datum
+// thì hồi tố được nhưng tốn một chữ ký cho mỗi hồ sơ; đổi THAM SỐ validator thì đổi
+// script hash, tức KHÔNG hồi tố — phải di trú từng hồ sơ. Hôm nay chưa có hồ sơ nào
+// trên chuỗi nên chưa phải trả giá.
+//
 // else fail — KHÔNG xóa entry (retire = status, không spend-burn).
 
 use aiken/collection/list
+use aiken/primitive/bytearray
 use cardano/assets
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
-use magiclamp/registry/platform.{PlatformEntry, Retired, RegistryRedeemer, UpdateEntry}
+use magiclamp/registry/platform.{Active, MigrateEntry, Paused, PlatformEntry,
+  RegistryRedeemer, Retired, UpdateEntry}
 use magiclamp/registry/util
 
-/// registry parameterized bởi (registry_authority, beacon_policy).
-/// beacon_policy = hash(registry_beacon(authority)) — chỉ phụ thuộc authority → không
-/// vòng với registry hash. Dùng để ép beacon NFT bảo toàn.
-validator registry(registry_authority: ByteArray, beacon_policy: assets.PolicyId) {
+/// registry parameterized CHỈ bởi registry_authority (v2 — bỏ beacon_policy).
+validator registry(registry_authority: ByteArray) {
   spend(
     datum_opt : Option<PlatformEntry>,
     redeemer  : RegistryRedeemer,
@@ -30,39 +100,126 @@ validator registry(registry_authority: ByteArray, beacon_policy: assets.PolicyId
     expect Some(entry_in) = datum_opt
     let own_addr = util.own_address(own_ref, tx.inputs)
     let own_hash = util.own_script_hash(own_addr)
+    // beacon_policy nay lấy TỪ DATUM (không còn là tham số validator).
+    let beacon_policy = entry_in.beacon_policy
 
-    // Chỉ một action (UpdateEntry).
-    let UpdateEntry = redeemer
+    // S-GOVSELF: cổng đồng thuận KHÔNG được tự thoả. Ô hồ sơ đang chi tiêu luôn nằm ở
+    // Script(own_hash) ⇒ nếu governance_ref == own_hash thì governance_consented là hằng
+    // True vĩnh viễn và mọi rào "hai bên" biến mất. Áp cho CẢ HAI nhánh.
+    expect entry_in.governance_ref != own_hash
 
-    // U-MINT-0: không mint/burn.
-    expect assets.is_zero(tx.mint)
+    when redeemer is {
+      UpdateEntry -> {
+        // U-MINT-0: không mint/burn.
+        expect assets.is_zero(tx.mint)
 
-    // U-SIG: authority ký.
-    expect list.has(tx.extra_signatories, registry_authority)
+        // U-SINGLE: đúng 1 entry input + 1 output theo SCRIPT HASH.
+        expect util.count_inputs_at_script(tx.inputs, own_hash) == 1
+        expect util.count_outputs_at_script(tx.outputs, own_hash) == 1
+        let reg_in = util.input_at_script(tx.inputs, own_hash)
+        let reg_out = util.output_at_script(tx.outputs, own_hash)
 
-    // U-SINGLE: đúng 1 entry input + 1 output theo SCRIPT HASH.
-    expect util.count_inputs_at_script(tx.inputs, own_hash) == 1
-    expect util.count_outputs_at_script(tx.outputs, own_hash) == 1
-    let reg_in = util.input_at_script(tx.inputs, own_hash)
-    let reg_out = util.output_at_script(tx.outputs, own_hash)
-    expect !util.is_vk(reg_out.address)
+        expect InlineDatum(od) = reg_out.datum
+        expect entry_out: PlatformEntry = od
 
-    expect InlineDatum(od) = reg_out.datum
-    expect entry_out: PlatformEntry = od
+        // U-TERMINAL: Retired là trạng thái CUỐI của đường Update — không revive.
+        // (Di trú vẫn được: xem nhánh MigrateEntry.)
+        expect entry_in.status != Retired
 
-    // U-TERMINAL: Retired là trạng thái CUỐI — không revive (audit: chống Retired→Active).
-    expect entry_in.status != Retired
+        // U-ID: identity bất biến (6 field).
+        expect platform.identity_preserved(entry_in, entry_out)
+        // U-VER: spec_version KHÔNG đổi ở đường Update.
+        expect entry_out.spec_version == entry_in.spec_version
+        // U-MUT: field khả biến hợp lệ (gov 28 byte + đúng một hạng hình dạng).
+        expect platform.mutable_fields_valid(entry_out)
+        // U-SHAPE: không đổi hạng có-kho ↔ không-kho.
+        expect platform.shape_custodial(entry_in) == platform.shape_custodial(entry_out)
 
-    // U-ID: identity bất biến.
-    expect platform.identity_preserved(entry_in, entry_out)
-    // U-MUT: field khả biến hợp lệ.
-    expect platform.mutable_fields_valid(entry_out)
+        // U-NFT: beacon NFT bảo toàn ở in & out (entry "thật" mang NFT).
+        expect platform.has_one_nft(reg_in.value, beacon_policy, entry_in.platform_id)
+        expect platform.has_one_nft(reg_out.value, beacon_policy, entry_out.platform_id)
 
-    // U-NFT: beacon NFT bảo toàn ở in & out (entry "thật" mang NFT).
-    expect platform.has_one_nft(reg_in.value, beacon_policy, entry_in.platform_id)
-    expect platform.has_one_nft(reg_out.value, beacon_policy, entry_out.platform_id)
+        // U-VALUE: không rút bớt khỏi ô hồ sơ.
+        expect util.value_not_drained(reg_in.value, reg_out.value)
 
-    True
+        // U-REVIVE: hồi sinh THUẦN TUÝ = Paused → Active và MỌI trường khác y hệt.
+        // Ép chặt từng trường khả biến, không chỉ identity: lỏng một trường là platform
+        // tự mở lại KÈM đổi cut_bps/governance_ref, đi vòng qua U-GOV.
+        let pure_revive =
+          entry_in.status == Paused && entry_out.status == Active && entry_out.spec_version == entry_in.spec_version && entry_out.governance_ref == entry_in.governance_ref && entry_out.accepted_assets == entry_in.accepted_assets && entry_out.cut_bps == entry_in.cut_bps
+
+        // U-SIG: authority ký. NGOẠI LỆ DUY NHẤT — hồi sinh thuần tuý cũng chấp nhận
+        // đồng thuận quản trị của chính platform, để authority không biến `Paused` thành
+        // "gỡ vĩnh viễn" bằng cách đơn giản là không bao giờ ký lại.
+        expect or {
+            list.has(tx.extra_signatories, registry_authority),
+            pure_revive && util.governance_consented(
+              tx,
+              entry_in.governance_ref,
+            ),
+          }
+
+        // U-GOV: việc KHÔNG đảo ngược được đòi đồng thuận quản trị của chính platform.
+        // Dùng governance_ref CŨ (bên đương nhiệm phải đồng ý cả khi bị thay).
+        let needs_consent =
+          entry_out.status == Retired || platform.governed_fields_changed(
+            entry_in,
+            entry_out,
+          )
+        expect or {
+            !needs_consent,
+            util.governance_consented(tx, entry_in.governance_ref),
+          }
+
+        True
+      }
+
+      MigrateEntry { new_registry_hash, new_spec_version } -> {
+        // M-MINT-0: không mint/burn.
+        expect assets.is_zero(tx.mint)
+
+        // M-SIG: authority ký.
+        expect list.has(tx.extra_signatories, registry_authority)
+
+        // M-GOV: platform đồng thuận (di trú đưa hồ sơ ra khỏi quyền tài phán này).
+        expect util.governance_consented(tx, entry_in.governance_ref)
+
+        // M-DEST: đích phải là một SCRIPT HASH THẬT (đúng 28 byte) và KHÁC chính mình;
+        // đúng 1 input ở đây; đúng 1 output ở đích. Thiếu ràng buộc 28 byte thì di trú
+        // tới #"00" là "hợp lệ" ⇒ beacon NFT bay vào địa chỉ không thể tồn tại.
+        expect bytearray.length(new_registry_hash) == platform.script_hash_len
+        expect new_registry_hash != own_hash
+        expect util.count_inputs_at_script(tx.inputs, own_hash) == 1
+        expect util.count_outputs_at_script(tx.outputs, new_registry_hash) == 1
+        let reg_in = util.input_at_script(tx.inputs, own_hash)
+        let reg_out = util.output_at_script(tx.outputs, new_registry_hash)
+
+        expect InlineDatum(od) = reg_out.datum
+        expect entry_out: PlatformEntry = od
+
+        // M-ID: identity bất biến (6 field).
+        expect platform.identity_preserved(entry_in, entry_out)
+        // M-STATUS: di trú KHÔNG đổi trạng thái (chống Retire trá hình).
+        expect entry_out.status == entry_in.status
+        // M-VER: chỉ TIẾN, và datum out khai đúng phiên bản đã tuyên trong redeemer.
+        expect new_spec_version > entry_in.spec_version
+        expect entry_out.spec_version == new_spec_version
+        // M-MUT: datum ĐÍCH vẫn hợp lệ. Thiếu dòng này, nhánh cứu tự ghi ra hồ sơ khoá
+        // chết (gov rỗng / cut_bps ngoài dải / accepted rỗng) ở registry mới.
+        expect platform.mutable_fields_valid(entry_out)
+        // M-SHAPE: không đổi hạng có-kho ↔ không-kho.
+        expect platform.shape_custodial(entry_in) == platform.shape_custodial(entry_out)
+
+        // M-NFT: beacon NFT có ở cả input lẫn output.
+        expect platform.has_one_nft(reg_in.value, beacon_policy, entry_in.platform_id)
+        expect platform.has_one_nft(reg_out.value, beacon_policy, entry_out.platform_id)
+
+        // M-VALUE: không rút bớt khỏi ô hồ sơ.
+        expect util.value_not_drained(reg_in.value, reg_out.value)
+
+        True
+      }
+    }
   }
 
   else(_) {
