@@ -1,29 +1,52 @@
 # Registrations — hồ sơ đăng ký của từng dịch vụ
 
 Mỗi dịch vụ muốn hoạt động trong hệ sinh thái MagicLamp có **một file hồ sơ** ở thư mục này.
-Hồ sơ là bước 0 của quy trình đăng ký: nó nằm ngoài chuỗi, không tốn phí, và là nơi bên đăng ký
-chứng minh mình thoả bốn điều kiện bắt buộc trước khi đụng tới bất cứ giao dịch nào.
+Hồ sơ là bước 0 của quy trình đăng ký: nằm ngoài chuỗi, không tốn phí, và là nơi bên đăng ký
+khai mình đang đứng ở đâu trên bốn trục điều kiện.
 
-## Nộp hồ sơ thế nào
+## Khai bằng **mã**, không viết văn xuôi
 
-1. Đọc [`../REGISTRATION-STANDARD.md`](../REGISTRATION-STANDARD.md) — đặc biệt §2 (bốn điều kiện)
-   và §5 (tiêu chí duyệt).
-2. Sao [`_TEMPLATE.md`](_TEMPLATE.md) thành `<ten-dich-vu>.md` và điền.
-3. Mở PR vào repo này. Hồ sơ được rà theo đúng bốn tiêu chí ở §5 — không có tiêu chí ẩn.
+Đây là điểm khác với cách làm cũ. Hồ sơ có một khối ` ```json registration ` chọn **một mã từ tập
+đóng** cho mỗi trục, kèm những con trỏ mà mã đó bắt buộc phải có. Tập đóng ở
+[`codes.json`](codes.json).
 
-**Nguyên tắc điền:** mỗi khai báo tuân thủ phải kèm **con trỏ kiểm được** — `file:line`, địa chỉ
-on-chain, hoặc endpoint. Chưa làm được thì ghi thẳng là chưa, kèm mốc dự kiến. Hồ sơ khai chưa
-xong vẫn được tiếp nhận; hồ sơ khai không đúng sự thật thì không.
+Hệ quả: **hạng niêm yết tính ra được bằng máy**, nên người giữ quyền đăng ký chuyển từ vai người
+phán xử sang vai người đối chiếu — và bên nộp biết chính xác mình đang ở đâu, thiếu gì, mà không
+phải hỏi ai.
+
+```bash
+node ../tools/check-registration.mjs <ten-dich-vu>.md   # chấm một hồ sơ
+node ../tools/check-registration.mjs                    # chấm hết
+```
+
+## Nộp thế nào
+
+1. Đọc [`../REGISTRATION-STANDARD.md`](../REGISTRATION-STANDARD.md) — §2 (điều kiện), §3 (hồ sơ),
+   §5 (duyệt).
+2. Sao [`template.md`](template.md) thành `<ten-dich-vu>.md`, chọn mã, điền con trỏ.
+3. Chạy bộ chấm ở trên tới khi hết dòng `✗`.
+4. Mở PR vào repo này.
+
+## Ba điều nên biết trước khi lo lắng về việc chưa đủ điều kiện
+
+- **Khai "chưa đạt" không phải căn cứ từ chối.** Chỉ có ba căn cứ, và chúng nằm trong một **tập
+  đóng**: `platform_id` trùng · không có ai chịu trách nhiệm liên hệ được · **khai không đúng sự
+  thật**. Chọn đúng một mã thấp là khai ĐÚNG.
+- **Chỉ trục hệ token (`2.2`) là cổng cứng.** Ba trục kia — danh tính, kho giá trị, hạ tầng ngoài
+  — là **lời khai có phân hạng**: chúng quyết định hạng niêm yết, không quyết định việc được vào.
+- **Không thu asset thì khai `CU-N`**, hạng ngang với có kho. Không thu tiền không phải thiếu sót.
 
 ## Trạng thái hiện tại
 
-| Dịch vụ | Repo | Đội phụ trách | Trạng thái |
-|---|---|---|---|
-| [Trace](trace.md) | `/OriLifeTrace` | OriLife agent | Nháp — chờ đội điền |
-| [Work](work.md) | `/AladinWork` | Aladin agent | Nháp — chờ đội điền |
-| [Chat](chat.md) | `/ProofChat` | ProofChat agent | Nháp — chờ đội điền |
-| [Join](join.md) | `/LampNetCloud/Join` | Join agent | Chờ rà — đội đã khai, còn thiếu ba mục |
+Đo bằng `node ../tools/check-registration.mjs`, không chép tay.
 
-Bốn hồ sơ trên do Registry mở sẵn khung, đã điền phần nhận dạng và những dấu vết tích hợp rà
-được từ mã nguồn. Phần khai báo tuân thủ và tham số kỹ thuật để trống có chủ đích: chỉ đội sở
-hữu dịch vụ mới khai được chính xác, và khai hộ thì không ai chịu trách nhiệm về tính đúng.
+| Dịch vụ | Con trỏ thực thi | Đội phụ trách | Trạng thái |
+|---|---|---|---|
+| [Trace](trace.md) | `/OriLifeTrace` | OriLife agent | Chưa nộp — chờ đội điền |
+| [Work](work.md) | `/AladinWork` | AladinWork agent | Chưa nộp — chờ đội điền |
+| [Chat](chat.md) | `/ProofChat` | ProofChat agent | Chưa nộp — chờ đội điền |
+| [LampNet + Join](join.md) | `/LampNetCloud/Join` + `/LampNetCloud/lampnet-hivemind` | Join agent · LampNet agent | **L0 — đã tiếp nhận.** Chặn lên `L1` bởi đúng hai ô: `governance_ref` và trục danh tính |
+
+Ba hồ sơ "chưa nộp" do Registry mở sẵn khung, đã điền phần nhận dạng và những dấu vết tích hợp rà
+được từ mã nguồn. Phần khai báo để trống **có chủ đích**: chỉ đội sở hữu mới khai được chính xác,
+và khai hộ thì không ai chịu trách nhiệm về tính đúng.

@@ -16,7 +16,7 @@ một policy — không có sổ trung tâm, nên đăng ký của bên này kh�
 | Bạn là | Đọc |
 |---|---|
 | Đội muốn đưa dịch vụ vào hệ | [`REGISTRATION-STANDARD.md`](REGISTRATION-STANDARD.md) — điều kiện, hồ sơ, quy trình bốn bước |
-| Đội đã quyết đăng ký, cần làm từng bước | [`Specs/ONBOARDING.md`](Specs/ONBOARDING.md) |
+| Đội đã quyết đăng ký, cần làm từng bước | [`Specs/onboarding.md`](Specs/onboarding.md) |
 | Người cần hiểu cơ chế đầy đủ | [`Specs/`](Specs/) — CONTRACT (bất biến) · FEAT (hành vi) · TECH (kiến trúc) · EXEC (lộ trình) |
 | Người muốn xem ai đã đăng ký | [`Registrations/`](Registrations/) |
 
@@ -24,11 +24,20 @@ một policy — không có sổ trung tâm, nên đăng ký của bên này kh�
 
 ```
 REGISTRATION-STANDARD.md   chuẩn vào hệ — tài liệu bên đăng ký đọc trước
-Specs/                     đặc tả đầy đủ của cơ chế (CONTRACT/FEAT/TECH/EXEC/ONBOARDING)
-Registrations/             hồ sơ đăng ký từng dịch vụ + mẫu
+DevStatus.md               hiện trạng ĐO ĐƯỢC (script hash, số test, việc treo) — nơi DUY NHẤT nói hiện trạng
+ChangeLog.md               chuyện đã xảy ra, thêm vào đầu, không sửa dòng cũ
+Specs/                     đặc tả đầy đủ (CONTRACT · Math · Feat · Tech · Exec · onboarding)
+Registrations/             hồ sơ đăng ký từng dịch vụ + mẫu + codes.json (tập đóng các mã khai báo)
 onchain/                   hai validator Aiken: registry_beacon (mint) + registry (spend)
-Legacy/                    tài liệu đã bị thay, giữ để tra lịch sử
+offchain/                  SDK dựng giao dịch + ba van đối soát trước khi route phí
+tools/                     bộ chấm hồ sơ đăng ký bằng máy
+bench/                     mô phỏng tìm số cho các tham số kinh tế
+tests/ examples/ scripts/  kiểm thử, ví dụ cấu hình, kịch bản triển khai
 ```
+
+**Script hash không chép vào tài liệu này.** Nó đổi theo tham số validator, và mỗi bản chép là
+một chỗ để lệch. Số sống ở [`DevStatus.md`](DevStatus.md) kèm lệnh kiểm; nguồn gốc là
+`onchain/plutus.json`.
 
 ## Hai tầng, không lẫn quyền
 
@@ -47,21 +56,22 @@ dưới tên **PlatformKit**, chung cây với Treasury. Nó tách sang repo ri�
 trách nhiệm: Treasury là **kho** của từng dịch vụ, Registry là **sổ niêm yết** của cả hệ — hai
 việc khác nhau, hai vòng đời khác nhau.
 
-**Đã di chuyển, có bằng chứng thực thi:**
+**Đợt 1 (2026-07-29) — on-chain và đặc tả.** Hai validator, thư viện dùng chung, bộ test, và toàn
+bộ `Specs/`. Lúc đó `aiken build` cho script hash **trùng khít từng bit** với bản ở LAMP: di chuyển
+không đổi hành vi, không đổi địa chỉ validator.
 
-- Toàn bộ on-chain — hai validator, thư viện dùng chung, 30 test. `aiken check` cho 30/30 pass;
-  `aiken build` cho script hash **trùng khít từng bit** với bản đang ở LAMP:
-  - `registry` → `b3b4c26a76eaadc4769746e4a5c6066e11f2b9677a7a90184d6489cd`
-  - `registry_beacon` → `bc3b9041e74ace58c432adb204c24daaab6cd713dcd4963255cf5575`
-  - Nghĩa là: di chuyển không đổi hành vi và không đổi địa chỉ validator. Không ai phải triển
-    khai lại.
-- Toàn bộ đặc tả (`Specs/`), nguyên văn, chỉ sửa đường dẫn trỏ tới file đã đổi chỗ.
+**Đợt 2 (2026-08-13) — off-chain, và hash đổi CÓ CHỦ Ý.** Hai việc trong cùng một đợt:
 
-**Chưa di chuyển:** phần off-chain (SDK dựng giao dịch, ví dụ cấu hình, kịch bản triển khai,
-test off-chain) vẫn ở `PlatformKit/` trong repo LAMP. Lý do là một ràng buộc kỹ thuật thật:
-mã off-chain hiện nhập trực tiếp SDK của Treasury bằng đường dẫn tương đối
-(`../../../Treasury/offchain/src/...`), mà SDK đó chưa được đóng gói phát hành. Cắt sang repo
-này ngay sẽ làm đứt các nhập đó. Cách xử lý đang được chốt.
+- **Phần off-chain đã sang** — SDK dựng giao dịch, ví dụ cấu hình, kịch bản triển khai, bộ test.
+  Ràng buộc từng chặn việc này là mã off-chain nhập thẳng SDK Treasury bằng đường dẫn tương đối
+  (`../../../Treasury/offchain/src/...`), mà SDK đó chưa đóng gói phát hành. Gỡ bằng **đảo chiều
+  phụ thuộc**: hàm onboard nhận hàm dựng kho từ bên gọi, mọi kiểu mượn của Treasury khai lại tại
+  chỗ. Repo này nay typecheck và test xanh **mà không cần repo LAMP có mặt trên đĩa** — có một ca
+  kiểm khoá đúng tính chất đó (`tests/noExternalImports.test.ts`).
+- **Script hash đổi** vì validator đổi tham số và lược đồ datum (khép issue #3 và #6: ép hồ sơ nằm
+  đúng địa chỉ registry, thêm đường di trú, tách quyền gỡ-mềm và gỡ-cứng). Đổi được **miễn phí vì
+  chưa triển khai gì lên bất kỳ mạng nào** — sau giao dịch đầu tiên trên preview thì mỗi lần đổi là
+  di trú toàn sổ. Hash cũ và mới ghi ở [`ChangeLog.md`](ChangeLog.md).
 
-Trong lúc chưa chốt, `PlatformKit/` bên LAMP vẫn là nơi chạy được của phần off-chain — đừng tạo
-bản sao thứ hai của nó ở đây.
+`PlatformKit/` bên LAMP nay là bản **thừa**, và hai bản sẽ trôi khác nhau nếu để nguyên. Registry
+đã gửi thư đề nghị LAMP gỡ phần đã chuyển và trỏ về repo này.
