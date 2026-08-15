@@ -96,7 +96,7 @@
   "tu_choi": {
     "_doc": "Tập ĐÓNG các căn cứ từ chối. Không có căn cứ nào ngoài ba mục này. Cạnh tranh với thành phần sẵn có KHÔNG phải căn cứ từ chối.",
     "R1": "platform_id trùng hoặc gây nhầm lẫn với một entry đã niêm yết",
-    "R2": "không có ai chịu trách nhiệm liên hệ được",
+    "R2": "hồ sơ KHÔNG KHAI đầu mối chịu trách nhiệm — ô \"Đầu mối liên hệ\" (pointers.dau_moi_lien_he) trống, hoặc mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Kiểm bằng ĐỌC hồ sơ. Hồ sơ CÓ KHAI mà gửi thư không thấy trả lời thì KHÔNG phải R2 — đó là trạng thái 'tồn liên lạc' (REGISTRATION-STANDARD.md §5 bước 2), treo niêm yết chứ không từ chối.",
     "R3": "khai không đúng sự thật — khác hẳn với khai chưa xong"
   }
 }
