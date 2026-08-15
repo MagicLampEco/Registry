@@ -85,7 +85,14 @@ bộ 4 đặc tả hạ tầng L1 đã rời repo Join về LampNet (quyết đ�
 > vẫn là `join` (lớp tích hợp). LampNet agent đã nêu ở thư 2026-08-07 rằng sổ trỏ vào một chỗ nội dung đã
 > rời đi. Registry **không tự đổi**: `platform_id` là một trong sáu trường định danh bất biến, đổi sau khi
 > lên chuỗi là phải đăng ký mới và mất lịch sử. Hôm nay **chưa có gì trên bất kỳ mạng nào**, nên đổi còn
-> miễn phí — nhưng chỉ một lần này. Chủ sở hữu chốt giữ `join` hay đổi sang `lampnet` trước khi niêm yết.
+> miễn phí — **và miễn phí không giới hạn số lần, cho tới đúng lúc đúc beacon**. Bản trước của dòng này
+> viết *"chỉ một lần này"*; đó là **sai**, và nó tự chế ra một sự cấp bách không có. Đo được: tên này đã
+> đổi miễn phí **hai lần** rồi — `4ff1852` (`joinnet` → `join`) và `bbe56e9` (gộp ba bản hồ sơ về một).
+> Kiểm: `git cat-file -t 4ff1852 bbe56e9` (phải trả `commit` cả hai).
+>
+> Nên đây **không** phải quyết định gấp. Chủ sở hữu chốt giữ `join` hay đổi sang `lampnet` trước khi
+> niêm yết, và cái chặn hồ sơ này ở L0 **không phải cái tên** — là hai ô `governance_ref` và trục danh
+> tính, cộng ba ô đầu mối người thật còn trống (`:29`, `:78-79`, `:158`).
 
 ## (b) Giải thích bốn mã đã chọn
 

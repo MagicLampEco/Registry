@@ -18,9 +18,21 @@
 //     `beacon_policy` (lời tự khai, bị ép khớp policy thật lúc mint qua R-POLICY).
 //   ⚠ RỦI RO CÒN LẠI (ghi ra, không giấu): một UTxO TỰ DỰNG đặt ở địa chỉ `registry`
 //     với `beacon_policy` khai bậy vẫn tồn tại được — không validator nào chạy lúc TẠO
-//     UTxO. Nhưng (a) nó không mang beacon NFT thật nên không hiện ra khi quét theo
-//     policy, và (b) muốn chi tiêu nó vẫn phải có chữ ký authority (U-SIG/M-SIG). Nên
-//     nó trơ: không lừa được người quét sổ, không rút được gì.
+//     UTxO. Cái ĐỠ nó hôm nay là ĐÚNG MỘT thứ: nó không mang beacon NFT thật nên không
+//     hiện ra khi quét sổ theo policy.
+//     ⛔ ĐÍNH CHÍNH 2026-08-15 — bản trước của khối này còn viết thêm "muốn chi tiêu nó
+//     vẫn phải có chữ ký authority (U-SIG/M-SIG)". Câu đó SAI, và audit đối kháng
+//     (lĩnh vực cardano) đã dựng PoC PASS. Đường đi: `validators/registry.ak:205-211`
+//     cho U-SIG một NGOẠI LỆ — `pure_revive && governance_consented(entry_in.
+//     governance_ref)`. Trong ô TỰ DỰNG thì kẻ dựng khai CẢ BA lời: `beacon_policy`
+//     (qua U-NFT bằng policy hắn tự đúc), `governance_ref` (trỏ script hắn kiểm soát),
+//     `status: Paused`. Rồi spend `Paused → Active` với `extra_signatories: []` ⇒ PASS.
+//     Ba lời tự khai khép kín vòng xác thực. S-GOVSELF không chặn: nó chỉ cấm
+//     `governance_ref == own_hash`, còn đây là script CỦA KẺ DỰNG.
+//     Thiệt hại hôm nay = 0, nhưng vì tính chất ỨNG DỤNG (sổ không giữ giá trị — PK1;
+//     hồ sơ bịa vô hình khi quét theo policy), KHÔNG phải vì validator chặn.
+//     ⇒ Bản nào đặt TIỀN CỌC hay bất kỳ giá trị nào vào ô hồ sơ phải cân lại chỗ này
+//     TRƯỚC, không được kế thừa câu "nó trơ".
 
 use aiken/primitive/bytearray
 use cardano/assets.{Value}

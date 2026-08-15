@@ -7,7 +7,13 @@
 // `registry_beacon(authority, registry_hash)` mới ép được địa chỉ đích lúc đúc.
 // ⚠ Đánh đổi (ghi rõ, không giấu): lời khai `beacon_policy` trong một UTxO TỰ DỰNG ở
 // địa chỉ này có thể bịa. Hồ sơ bịa đó không mang beacon NFT thật nên không hiện ra khi
-// quét sổ theo policy, và muốn chi tiêu nó vẫn phải có chữ ký authority ⇒ trơ.
+// quét sổ theo policy — và ĐÓ LÀ THỨ DUY NHẤT đỡ nó.
+// ⛔ ĐÍNH CHÍNH 2026-08-15: bản trước viết tiếp "và muốn chi tiêu nó vẫn phải có chữ ký
+// authority ⇒ trơ". SAI — PoC audit đối kháng PASS. Ngoại lệ U-SIG ở `:205-211` nhận
+// `pure_revive && governance_consented(entry_in.governance_ref)`; trong ô tự dựng thì
+// `governance_ref` CŨNG do kẻ dựng khai ⇒ spend `Paused → Active` với
+// `extra_signatories: []` là ĐI QUA. Xem khối đính chính đầy đủ ở
+// `lib/magiclamp/registry/platform.ak:19`.
 //
 // ÉP (chung cả hai nhánh):
 //   S-GOVSELF `entry_in.governance_ref != own_hash`. LỖ ĐÃ CHẶN: `governance_consented`
