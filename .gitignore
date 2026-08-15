@@ -28,6 +28,12 @@ dist/
 # ── Trạng thái deploy (theo môi trường, có thể chứa địa chỉ ví) ──
 **/scripts/deployed.json
 **/scripts/onboarded-instances.json
+**/scripts/registry.json
+**/scripts/registered.json
+**/scripts/registered-instances.json
+
+# ── Kết quả chạy test off-chain ──
+coverage/
 
 # ── macOS junk ──
 .DS_Store

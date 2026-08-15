@@ -7,6 +7,10 @@ quy trình nào.
 Đặc tả đầy đủ của cơ chế nằm ở [`Specs/`](Specs/) — đọc tài liệu này trước, đọc `Specs/` khi
 cần chi tiết kỹ thuật.
 
+> **Quy ước trích dẫn.** Trích dẫn dạng `Repo/đường/dẫn.md` là đường dẫn **trong repo đó**, không
+> phải trong repo này. `Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md` nằm ở repo `Launch`;
+> `LAMP/Treasury/CONTRACT.md` nằm ở repo `LAMP`.
+
 ---
 
 ## 1. Vì sao phải đăng ký
@@ -24,79 +28,188 @@ token, và một cách kế toán giá trị. Không có sổ đăng ký thì ba
 Đăng ký giải quyết cả ba: một dịch vụ đã đăng ký thì **tìm được, kiểm chứng được, và ghép
 được** với mọi dịch vụ khác trong hệ.
 
-## 2. Bốn điều kiện bắt buộc
+## 2. Điều kiện — một cổng cứng, ba lời khai có phân hạng
 
-Bốn điều kiện dưới đây là bất biến — không có ngoại lệ theo từng bên.
+Đây là chỗ bản trước nói mạnh hơn nguồn của nó, và đã sửa. Whitepaper hệ sinh thái viết
+(`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md:201`, §8 bước 2):
 
-### 2.1 Danh tính người dùng bằng PhoenixKey DID
+> *"Ba điều kiện duy nhất: **tiêu MAGIC · dùng CARP · đăng ký**. Cổng **mở** — đủ điều kiện là
+> vào, không phải xin phép."*
 
-Người dùng cuối của dịch vụ được định danh bằng **PhoenixKey DID**, không phải tài khoản riêng
-của dịch vụ. Hệ quả bắt buộc:
+Bản trước của chuẩn này ghi **bốn điều kiện bắt buộc, không có ngoại lệ** — tức nó tự thêm hai
+điều kiện vào một lời hứa công khai, và bỏ mất "tiêu MAGIC". Hệ quả thật: hồ sơ Join kẹt vĩnh
+viễn ở cửa nộp vì không thu asset, và ProofChat không nộp được vì phải chọn giữa khai sai và
+không nộp. Cả hai đều là lỗi của chuẩn.
+
+Cách dung hoà, và nó là nguyên tắc của toàn bộ tài liệu này:
+
+| | Trục | Vai |
+|---|---|---|
+| **2.2** | Hệ token dùng chung | **cổng cứng** — đây đúng là ba điều kiện của whitepaper |
+| **2.1** | Danh tính người dùng | **lời khai có phân hạng** |
+| **2.3** | Kho giá trị on-chain | **lời khai có phân hạng** |
+| **2.4** | Phụ thuộc hạ tầng đóng ngoài hệ | **lời khai có phân hạng** |
+
+**Lời khai có phân hạng** nghĩa là: khai đúng thì hồ sơ được **tiếp nhận**, dù khai "chưa đạt".
+Mã đã khai quyết định **hạng niêm yết**, và bên định tuyến phí đọc hạng đó rồi tự quyết mức tin.
+Chỉ **khai sai sự thật** mới là căn cứ từ chối. Tập đóng các mã: [`Registrations/codes.json`](Registrations/codes.json).
+
+### 2.1 Danh tính người dùng bằng PhoenixKey DID · trục `identity`
+
+Người dùng cuối được định danh bằng **PhoenixKey DID**, không phải tài khoản riêng của dịch vụ.
+Nguồn: whitepaper §8 bước 2 (*"định danh qua PhoenixKey (hoặc danh tính tương đương)"*) và §5.
 
 - **Một người = một DID** là *đích* của hệ danh tính, và là nền chống Sybil mà quyền biểu quyết,
-  uy tín, phần thưởng hướng tới. **Mức bảo đảm thật hôm nay thấp hơn đích đó** — đọc §7 trước khi
-  thiết kế bất cứ cơ chế nào dựa vào nó: hiện `did:phoenix` mới ép được ở **mức thiết bị** (khoá gốc
-  sinh trong vùng bảo mật của máy + cổng sinh trắc) và **mức chuỗi DID** (không đúc trùng anchor cho
-  cùng một DID). Một người có N thiết bị vẫn ra được N DID.
+  uy tín, phần thưởng hướng tới. **Mức bảo đảm thật hôm nay thấp hơn đích đó rất nhiều** — đọc §7
+  trước khi thiết kế bất cứ cơ chế nào dựa vào nó. Đo trên mã đang sống (Phoenix agent 2026-08-04,
+  Join chuyển tiếp 2026-08-05): `did:phoenix` mới ép được ở **mức chuỗi DID** — không đúc trùng
+  anchor cho cùng một chuỗi DID. **Mức thiết bị CŨNG chưa ép**: DID là băm của entropy sinh tại
+  thời điểm gọi chứ không dẫn từ khoá phần cứng hay seed (`PhoenixKeyDID/Database` →
+  `DidPhoenixGenerator.java:116-135`, dùng `SecureRandom`); backend chỉ kiểm trùng pubkey nên phép
+  kiểm luôn qua (`IdentityServiceImpl.java:98`); không có xác thực phần cứng nào
+  (grep `attestation|appattest|play.?integrity|devicecheck` toàn repo backend = 0); phí đăng ký
+  1.2 ADA do nền tảng trả (`CardanoServiceImpl.java:77-81`). ⟹ **một máy tạo được không giới hạn
+  DID bằng script thuần, không cần điện thoại.** Đừng dựng cơ chế nào coi một DID là một người,
+  và cũng đừng coi nó là một thiết bị.
 - Dịch vụ **không tự phát hành danh tính thay thế** để lách điều kiện trên.
-- Khoá riêng thuộc về người dùng. Dịch vụ giữ hộ khoá của người dùng là vi phạm.
+- Khoá riêng thuộc về người dùng. Dịch vụ giữ hộ khoá của người dùng là **mã `ID-1`**, không phải
+  một cửa từ chối — nhưng nó chặn hạng niêm yết ở `L1`.
 
-> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md §10`)
-> — nhưng nó phải tự đăng ký như một thành phần và tự chứng minh thoả tính duy nhất một-người-một-danh-tính.
-> Một dịch vụ **thường** thì dùng PhoenixKey, không tự dựng hệ danh tính riêng.
+> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (whitepaper §10) — nhưng nó phải
+> tự đăng ký như một thành phần, và bên dùng nó khai mã `ID-A` kèm `platform_id` của hệ đó. Một
+> dịch vụ **thường** thì dùng PhoenixKey, không tự dựng hệ danh tính riêng.
 
-### 2.2 Dùng chung hệ token LAMP · MAGIC · CARP
+### 2.2 Dùng chung hệ token LAMP · MAGIC · CARP · trục `token` — **cổng cứng**
 
 | Token | Vai trò | Ràng buộc với bên đăng ký |
 |---|---|---|
 | **LAMP** | Token gốc, tổng cung cố định **36 tỷ, không đốt**. Giảm lưu hành = chuyển vào Treasury, không huỷ. | Không thiết kế cơ chế đốt LAMP. Nguồn: `LAMP/Treasury/CONTRACT.md §5`. |
 | **MAGIC** | Quyền dùng dịch vụ, được cấp (Gen) chứ không mua. | **Không tạo đường-ra**: không cho phép đổi MAGIC ngược ra tài sản ngoài hệ, dưới bất kỳ hình thức nào. |
-| **CARP** | Đồng lưu thông và ổn định của hệ. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: repo `CarpetMint` (đường dẫn cũ `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md` không còn; **file canonical đang chờ đội CARP xác nhận** — đừng trích số từ bản nào khác cho tới lúc đó). Lưu ý đừng nhầm với `LampNetCloud/Specs/Carpet/` — đó là lớp mạng P2P Carpet, không phải token CARP. |
+| **CARP** | Đồng lưu thông và ổn định của hệ; **đơn vị trả thưởng đóng góp tài nguyên**. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: repo `CarpetMint` (đường dẫn cũ `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md` không còn; **file canonical đang chờ đội CARP xác nhận** — đừng trích số từ bản nào khác cho tới lúc đó). Đừng nhầm với `LampNetCloud/Specs/Carpet/` — đó là lớp mạng P2P Carpet, không phải token CARP. |
 
-**Biến thể được phép.** Một dịch vụ có thể phát hành token riêng neo vào hệ (token của platform,
-CARP instance riêng) — nhưng phải qua đúng cổng của nó, không tự ý:
+**Biến thể được phép.** Một dịch vụ có thể phát hành token riêng neo vào hệ — nhưng phải qua đúng
+cổng của nó, không tự ý. Token neo policy LAMP thì đăng ký quyền phát hành ở **Mint-Authority
+Registry** (`LAMP/Genesis/onchain/lib/magiclamp/genesis/registry.ak`) — sổ khác với sổ niêm yết
+platform trong repo này, đừng nhầm hai cái. CARP instance riêng thì theo điều kiện của đặc tả CARP.
 
-- Token neo policy LAMP: đăng ký quyền phát hành ở **Mint-Authority Registry**
-  (`LAMP/Genesis/onchain/lib/magiclamp/genesis/registry.ak`) — đây là sổ khác với sổ niêm yết
-  platform trong repo này, đừng nhầm hai cái.
-- CARP instance riêng: theo điều kiện của đặc tả CARP, gồm tỉ lệ đỡ giá không dưới 1.0 và
-  tài nguyên quy đổi phải đo được on-chain.
+**Đây là trục duy nhất chặn niêm yết.** Mã `TK-X` — có token riêng chưa qua cổng phát hành — là căn
+cứ từ chối. Không phải vì cạnh tranh: vì nó phá đúng hệ token dùng chung mà mọi bên khác đang dựa vào.
 
-### 2.3 Kho giá trị on-chain, không phải sổ nội bộ
+### 2.3 Kho giá trị on-chain · trục `custody`
 
-Phí và giá trị dịch vụ thu được phải chảy vào một **Treasury custody instance** on-chain của
-chính dịch vụ đó, không nằm trong cơ sở dữ liệu riêng. Lý do: kế toán nội bộ không kiểm chứng
-được từ ngoài, nên không thể làm cơ sở cho quyền biểu quyết hay uy tín ở tầng hệ.
+Phí và giá trị dịch vụ thu được nên chảy vào một **Treasury custody instance** on-chain của chính
+dịch vụ đó (mã `CU-1`), không nằm trong cơ sở dữ liệu riêng (mã `CU-0`). Lý do: kế toán nội bộ
+không kiểm chứng được từ ngoài, nên không làm cơ sở cho quyền biểu quyết hay uy tín ở tầng hệ.
 
 Kho là **của dịch vụ**, do cổng quản trị riêng của dịch vụ (`governance_ref`) gác chi. Registry
 không giữ tiền và không chi được tiền của ai (`Specs/CONTRACT.md` §5, bất biến PK1).
 
-### 2.4 Không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi
+**Dịch vụ không thu asset ở tầng này khai mã `CU-N`** — hạng ngang `CU-1`, vì không thu tiền không
+phải là thiếu sót. `CU-N` vẫn **bắt buộc khai `governance_ref`**, và lý do không phải để gác tiền:
+xem §6, chuyển sang `Retired` đòi đồng thuận của chính platform, nên hồ sơ không có `governance_ref`
+là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô đó bảo vệ bên đăng ký.
 
-Chức năng cốt lõi không được đặt trên một dịch vụ bên thứ ba mà hệ không kiểm soát và người
-dùng không thoát ra được. Dùng kênh ngoài để tiếp cận người dùng thì được; đặt danh tính,
-thanh toán hay dữ liệu gốc ở đó thì không.
+#### Bốn tính chất bắt buộc của `governance_ref` — đọc trước khi chọn script
+
+Đây là ô dễ khai sai nhất, và khai sai thì hậu quả **không đảo ngược được**. Nguồn máy đọc:
+`Registrations/codes.json` mục `governance_ref_yeu_cau`.
+
+| | Yêu cầu | Vi phạm thì sao |
+|---|---|---|
+| **G1** | Phải là một script hash **28 byte**, và phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Độ dài 28 byte bị validator ép cứng — `onchain/lib/magiclamp/registry/platform.ak:122`; sai độ dài thì giao dịch đăng ký hỏng ngay tại cổng. |
+| **G2** | **Không** được là hash của chính validator registry. | Cổng đồng thuận tự thoả vĩnh viễn ⇒ quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, đích di trú. |
+| **G3** | **Không** nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). | Registry chỉ ép được *"script đó **chạy** trong giao dịch"*, **không** ép được *"script đó **phê duyệt đúng** thay đổi này"*. Nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. **Đây là giả định load-bearing: an toàn của cổng đồng thuận bằng đúng an toàn của script mà chính bên đăng ký khai.** |
+| **G4** | Nếu nhánh đồng thuận cần **mint/burn** token — mẫu phổ thông là đốt NFT đề xuất khi thực thi — thì nó xung đột với ràng buộc least-authority của cổng đúc: giao dịch đăng ký không được gánh policy mint ngoài. | Hồ sơ **không đăng ký được**. Hai đường vòng hợp lệ: dùng **withdrawal-0**, hoặc một **nhánh spend không mint**. |
+
+**Đổi `governance_ref` là bàn giao hai chiều**: cần đồng thuận của **cả** cổng cũ **lẫn** cổng mới,
+ở cả thao tác cập nhật lẫn di trú. Một chiều thôi là mở lại đúng ca G1 — bàn giao sang một cổng
+chết.
+
+### 2.4 Không phụ thuộc hạ tầng đóng ngoài hệ · trục `infra`
+
+Chức năng cốt lõi đặt trên một dịch vụ bên thứ ba mà hệ không kiểm soát và người dùng không thoát
+ra được là một rủi ro thật — nhưng **whitepaper không có điều kiện này**, nên chuẩn này không được
+biến nó thành cổng đóng. Nó là lời khai bốn bậc `IN-0`…`IN-3`.
+
+Dùng kênh ngoài để **tiếp cận** người dùng thì bình thường. Đặt **danh tính, thanh toán hay dữ liệu
+gốc** ở đó thì hạ hạng. Và một dạng phụ thuộc dễ bỏ sót: kho ứng dụng có thể nắm **quyền phủ quyết**
+đúng chức năng cốt lõi — không phải chỉ chậm phát hành mà là gỡ hẳn.
 
 ---
 
-## 3. Hồ sơ đăng ký — nộp những gì
+## 3. Hồ sơ đăng ký — khai bằng **mã**, không viết văn xuôi
 
-Mỗi bên nộp **một hồ sơ** theo mẫu [`Registrations/_TEMPLATE.md`](Registrations/_TEMPLATE.md).
-Hồ sơ gồm bốn phần:
+Đây là phần đổi lớn nhất so với bản trước, và lý do nó đổi:
 
-**(a) Nhận dạng dịch vụ** — tên gọi, `platform_id` đề nghị, repo, người hoặc đội chịu trách
-nhiệm, mô tả một câu dịch vụ làm gì.
+Chừng nào hồ sơ còn là văn xuôi thì "duyệt" là một hành vi của con người, mà hành vi của con người
+thì không kiểm lại được. Bên nộp không biết mình đang đứng ở đâu; bên duyệt không có gì để tự ràng
+mình. Khai bằng mã từ **tập đóng** thì hạng niêm yết **tính ra được**, và người giữ quyền đăng ký
+chuyển từ vai người phán xử sang vai người đối chiếu.
 
-**(b) Khai báo tuân thủ bốn điều kiện §2** — mỗi điều kiện trả lời bằng **con trỏ kiểm được**
-(đường dẫn `file:line`, hoặc địa chỉ on-chain, hoặc endpoint), không phải bằng lời hứa. Chưa
-làm được điểm nào thì ghi thẳng là chưa, kèm mốc dự kiến — khai thiếu trung thực nặng hơn
-khai chưa xong.
+Mỗi bên nộp **một hồ sơ** theo mẫu [`Registrations/template.md`](Registrations/template.md), gồm:
+
+**(a) Khối khai báo máy đọc** — một khối ` ```json registration ` chọn một mã cho mỗi trục §2, kèm
+các con trỏ mà mã đó bắt buộc phải có. Chấm thử trước khi mở PR:
+
+```bash
+node tools/check-registration.mjs Registrations/<ten-dich-vu>.md
+```
+
+**(b) Giải thích bốn mã** — vì sao chọn mã đó, con trỏ kiểm được, và **thiếu gì để lên mã cao hơn**.
+Cột cuối là cột quan trọng nhất: nó biến hồ sơ thành một đường đi, không phải một bản án.
 
 **(c) Tham số kỹ thuật** — `instance_id`, `custody_hash`, `seed_policy`, `governance_ref`,
-danh sách asset chấp nhận, `cut_bps`, các bucket kế toán. Ý nghĩa từng trường: `Specs/CONTRACT.md` §2.
+`accepted_assets`, `cut_bps`, bucket kế toán. Chỉ bắt buộc khi `CU-1`.
 
-**(d) Cam kết vận hành** — ai giữ quyền quản trị kho, cách xử lý khi khoá bị lộ, cách thông báo
-khi dừng dịch vụ.
+**(d) Lời khẳng định và hạng chứng thực** — liệt kê **mọi** con số dịch vụ khai ra rồi tính tiền
+hoặc xin uy tín dựa trên nó, mỗi dòng một hạng `EV-0` / `EV-1` / `EV-2`. Một dịch vụ khai nhiều
+hạng cho nhiều chặng là bình thường.
+
+**(e) Cam kết vận hành** — ai giữ quyền quản trị kho, xử lý khi khoá lộ, cách thông báo khi dừng,
+ai tiếp nhận nếu đội ngừng duy trì.
+
+**Con trỏ bắt buộc là con trỏ *on-chain*, không phải URL.** Bốn trường ở (c) đều tra được bằng
+explorer. Một endpoint web là **tuỳ chọn** và việc nó đang sập **không** ảnh hưởng hồ sơ — cổng đăng
+ký kiểm kho on-chain có thật không, không kiểm dịch vụ có sống không.
+
+### Con trỏ vào mã nguồn phải mang **ba** thứ, không phải một
+
+Ô "con trỏ kiểm được" ở (b) và (d) trước đây chỉ đòi `file:line`. Không đủ: cùng một `file:line`
+trên một **nhánh chưa gộp** và trên `main` là hai mức bảo đảm khác hẳn — người ngoài chạy được
+`main`, không chạy được nhánh của đội khác. Ca thật: AladinWork trích `Core/consume-magic.js` làm
+chứng cứ, tệp đó **không có trên `main`**, chỉ có trên một nhánh chưa gộp (đội tự đính chính,
+thư 2026-08-13).
+
+> **Mọi con trỏ chứng cứ phải mang ba thứ: `file:line`, **tên nhánh**, và **SHA đã gộp vào `main`**
+> — hoặc chữ **`CHƯA GỘP`** kèm tên nhánh. Con trỏ không có SHA trên `main` chấm ở **hạng thấp
+> hơn**, dù mã đúng đến đâu.**
+
+Kiểm bằng máy, hai lệnh:
+
+```bash
+git branch --contains <sha>          # nhánh nào chứa commit đó
+git cat-file -e main:<đường dẫn>     # tệp có tồn tại trên main không
+```
+
+Đây không phải nghi ngờ thiện chí: một chứng cứ chỉ sống trên nhánh riêng thì bên thứ ba không tái
+lập được, nên nó chưa phải chứng cứ — nó là một lời hứa có địa chỉ.
+
+### Hạng chứng thực — và một câu phải đọc kỹ
+
+| Hạng | Nghĩa |
+|---|---|
+| `EV-0` | tự khai — chính bên hưởng lợi ký, hoặc không ai ký |
+| `EV-1` | một bên **không hưởng lợi** từ con số đó ký |
+| `EV-2` | neo on-chain, bên thứ ba tra lại được độc lập |
+
+> **`EV-0` vẫn bán được.** Nó chỉ **không được dùng để cấp uy tín hoặc quyền biểu quyết ở tầng hệ**.
+> Đây là **mô tả, không phải hình phạt** — hệ không có quyền phạt. Ai đọc hạng này như một mức kỷ
+> luật là đọc sai: nó nói cho bên mua biết họ đang tin vào cái gì.
+
+Một chỗ dễ tưởng là an toàn mà không: chữ ký **chỉ** đạt `EV-1` khi khoá ký thuộc một bên khác. Một
+máy chủ tự ký bằng khoá nằm trên chính nó, hoặc một node ký bằng hạt giống là hằng số trong mã nguồn
+nên mọi node đều có cùng khoá — cả hai đều vẫn là `EV-0`. Cái thứ hai không phải "tự ký", nó là
+**không ký**.
 
 ## 4. Quy trình bốn bước
 
@@ -105,83 +218,162 @@ khi dừng dịch vụ.
     Registrations/     kho on-chain          niêm yết, thấy được     phí chảy về kho
 ```
 
-**(0) Nộp hồ sơ.** Mở một PR thêm file vào [`Registrations/`](Registrations/). Hồ sơ được rà
-theo tiêu chí §5. Bước này hoàn toàn off-chain và không tốn phí.
+**(0) Nộp hồ sơ.** Mở một PR thêm file vào [`Registrations/`](Registrations/). Bước này hoàn toàn
+off-chain, không tốn phí, và **kết quả là một hạng tính ra được** — không phải một lời phán.
 
-**(1) Seed custody** — dựng kho on-chain của dịch vụ, chạy một lần. Kết quả: `instance_id`,
-`custody_hash`, `seed_policy`. Chi tiết: `Specs/ONBOARDING.md` mục (c).
+**(1) Seed custody** — dựng kho on-chain, chạy một lần. Kết quả: `instance_id`, `custody_hash`,
+`seed_policy`. Chi tiết: `Specs/onboarding.md` mục (c). **Bỏ qua bước này nếu khai `CU-N`.**
 
-**(2) Register entry** — niêm yết vào sổ: mint một beacon NFT mang tên `platform_id` và tạo
-entry trỏ về kho vừa dựng. Ràng buộc **R-BIND** buộc entry phải tham chiếu một kho **có thật**
-đã lên chain, nên bước 1 phải xong trước bước 2 — entry không thể khai khống kho.
+**(2) Register entry** — mint một beacon NFT mang tên `platform_id` và tạo entry trỏ về kho. Ràng
+buộc **R-BIND** buộc entry tham chiếu một kho **có thật** đã lên chain, nên bước 1 phải xong trước
+bước 2. Từ bản v2 của validator, entry còn bị ép nằm **đúng** ở địa chỉ validator registry
+(**R-OUT-1**) và `created_epoch` bị ép theo cửa sổ hiệu lực của chính giao dịch (**R-EPOCH**) — không
+tự khai được nữa.
 
-**(3) Nối luồng thu** — ứng dụng gọi cửa thu của kho mình mỗi khi phát sinh phí. Việc **định
-giá thuộc về dịch vụ**, hệ không quyết giá thay.
+**(3) Nối luồng thu** — ứng dụng gọi cửa thu của kho mình mỗi khi phát sinh phí. Việc **định giá
+thuộc về dịch vụ**, hệ không quyết giá thay.
 
-Một bên được phép dừng sau bước 1 (có kho riêng, không niêm yết) hoặc sau bước 2 (niêm yết,
-chưa nối luồng thu).
+Một bên được phép dừng sau bước 1 hoặc sau bước 2.
 
-## 5. Tiêu chí duyệt
+## 5. Duyệt — "có kiểm duyệt" nghĩa là gì, và nghĩa là **không** gì
 
-Đăng ký **có kiểm duyệt** (`Specs/CONTRACT.md` bất biến PK3): một quyền đăng ký ký duyệt từng
-hồ sơ, để `platform_id` không trùng và sổ không bị rác. Quyền này chỉ gác **việc niêm yết** —
-nó không đụng được tiền trong kho của bất kỳ ai.
+`Specs/CONTRACT.md` bất biến PK3 viết cổng đăng ký là **có kiểm duyệt**. Whitepaper §10 viết *"bất
+kỳ ai cũng đăng ký vào hệ được, **không phải xin phép**"*. Hai câu đó **không** ngược nhau, và đây
+là câu ràng buộc chính người giữ quyền:
 
-Để việc kiểm duyệt không biến thành cổng đóng, hồ sơ chỉ bị từ chối theo **tiêu chí khách quan**
-dưới đây, và từ chối phải nêu rõ rơi vào mục nào.
+> **"Có kiểm duyệt" = kiểm **lời khai** theo tiêu chí khách quan công khai. Nó **không** phải quyền
+> từ chối tuỳ ý. Hồ sơ khai đúng và không rơi vào tập từ chối dưới đây thì quyền đăng ký **buộc phải
+> ký** — đúng chữ của whitepaper: *"đủ điều kiện là vào"*.**
 
-**Hai cổng, đừng gộp làm một.** Kho on-chain chỉ ra đời ở bước (1), sau khi hồ sơ đã nộp ở bước (0) —
-nên tiêu chí nào đòi kho thật thì thuộc cổng niêm yết, không thuộc cổng tiếp nhận. Gộp hai cổng là tự
-khoá mình: mọi hồ sơ lần đầu đều trượt một cách máy móc.
+### Tập từ chối — **đóng**, chỉ có ba
 
-**Cổng tiếp nhận hồ sơ — áp ở bước (0):**
+Nguồn máy đọc: `Registrations/codes.json` mục `tu_choi`.
 
-1. `platform_id` trùng hoặc gây nhầm lẫn với một entry đã niêm yết.
-2. Không có ai chịu trách nhiệm liên hệ được.
-3. Khai không đúng sự thật (khác hẳn với khai chưa xong).
+| Mã | Căn cứ |
+|---|---|
+| **R1** | `platform_id` trùng hoặc gây nhầm lẫn với một entry đã niêm yết |
+| **R2** | **hồ sơ không khai đầu mối chịu trách nhiệm** — ô "Đầu mối liên hệ" ở mục (a) (`pointers.dau_moi_lien_he`) trống, hoặc mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Căn cứ **về nội dung hồ sơ**, kiểm bằng đọc văn bản; **không** phải căn cứ "gửi thư mà không thấy trả lời". |
+| **R3** | **khai không đúng sự thật** — khác hẳn với khai chưa xong |
 
-**Khai "chưa đạt" kèm mốc dự kiến KHÔNG phải căn cứ từ chối ở bước (0).** Hồ sơ như vậy được tiếp nhận
-và mang trạng thái *đã tiếp nhận — chưa đủ điều kiện niêm yết*; nó khác hẳn *bị từ chối*. Khai thiếu
-trung thực thì nặng hơn khai chưa xong.
+Không có căn cứ nào ngoài ba mục này. Cụ thể, **không** phải căn cứ từ chối:
 
-**Cổng niêm yết — áp ở bước (2), khi kho đã có thật:**
+- khai "chưa đạt" ở bất kỳ trục nào trong 2.1 / 2.3 / 2.4, kèm mốc dự kiến hoặc kèm câu "chặn bởi
+  một quyết định chưa chốt" — hồ sơ vào trạng thái *đã tiếp nhận*, khác hẳn *bị từ chối*;
+- **cạnh tranh trực tiếp** với một thành phần sẵn có trong hệ (whitepaper §10);
+- dịch vụ đang sập, endpoint 502, hoặc chưa có URL công khai.
 
-4. Không thoả một trong bốn điều kiện §2 **tại thời điểm niêm yết**.
-5. Tham số kỹ thuật sai hoặc không đối soát được với kho thật trên chain.
+### R2 — phép kiểm hai bước, và vì sao phải tách làm hai
 
-Ràng buộc **R-BIND** on-chain đã ép sẵn thứ tự này: entry phải trỏ một kho đã lên chain, nên cổng niêm
-yết không thể bị vượt bằng cách khai khống. Nhưng lưu ý giới hạn thật của nó ở §7.
+Câu R2 của bản trước — *"không có ai chịu trách nhiệm liên hệ được"* — gộp hai thế giới khác hẳn
+nhau: (i) hồ sơ **không khai** đầu mối nào, và (ii) hồ sơ **có khai** nhưng thư không tới (hộp đầy,
+lọc thư rác, người nghỉ, kênh đổi). Nhìn từ phía người gửi hai ca trông y hệt. Ca (ii) **không phủ
+định được** — không ai chứng minh được là không có ai — nên nó thưởng cho việc gửi vụng, và mở đúng
+cái cửa mà chính §5 tự cấm ở đầu mục: *"Nó không phải quyền từ chối tuỳ ý."* Gộp chúng là biến một
+sự cố kỹ thuật của **người gửi** thành một bản án đối với **người nộp**.
 
-**Cạnh tranh không phải là lý do từ chối.** Một dịch vụ cạnh tranh trực tiếp với thành phần
-sẵn có trong hệ vẫn được niêm yết nếu thoả bốn điều kiện — đây là cam kết ở
-`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md §10` ("Cổng đăng ký mở — ai cũng vào, cạnh tranh bình đẳng").
+Bộ chấm đã đúng sẵn: `tools/check-registration.mjs` chỉ kiểm **ô trống**, tức chỉ ca (i). Văn bản
+nay thu về ngang bộ chấm — phần rộng thêm là phần không kiểm được.
+
+**Bước 1 — kiểm hồ sơ. Quyết định R2 nằm trọn ở bước này.**
+
+```bash
+node tools/check-registration.mjs Registrations/<ten-dich-vu>.md
+```
+
+Ô đầu mối trống **và** mục (e) không nêu người tiếp nhận ⇒ **R2**, không cần gửi gì cho ai. Hồ sơ
+**có khai** ⇒ **không bao giờ là R2**, dù sau đó liên lạc ra sao.
+
+**Bước 2 — có khai mà thư không tới thì KHÔNG phải R2.** Đó là một trạng thái riêng, **"tồn liên
+lạc"**, nằm **ngoài** tập từ chối. Điều kiện để đặt trạng thái đó: người giữ quyền ghi vào **nhật ký
+rà soát của chính hồ sơ** — kèm dấu thời gian — ít nhất
+
+- **≥ 2 lần thử**,
+- **cách nhau ≥ 7 ngày**,
+- trên **≥ 2 kênh khác nhau** trong số kênh hồ sơ đã khai, và **một trong hai phải là kênh công
+  khai** (issue hoặc PR trên repo của hồ sơ).
+
+Đủ ba điều kiện thì hồ sơ chuyển `tồn liên lạc` và **treo niêm yết**; nó **hồi lại ngay khi bên nộp
+trả lời** — khác hẳn `bị từ chối`, thứ không hồi.
+
+Ranh giới giữa hai bước là ranh giới của phép phủ định: bước 1 phủ định được (mở tệp ra là thấy);
+bước 2 thì không, nên bước 2 không được phép là căn cứ từ chối.
+
+### Thời hạn, và im lặng là gì
+
+Người giữ quyền chỉ cần **không bao giờ ký** là chặn được vô thời hạn mà không để lại một quyết định
+nào để đem ra soi. Nên:
+
+- Hồ sơ nộp ở bước (0) phải được trả lời trong **14 ngày**: hoặc *đã tiếp nhận* (kèm hạng tính ra),
+  hoặc *bị từ chối* (kèm **mã** R1/R2/R3 và câu giải thích cụ thể).
+- **Quá hạn mà không có trả lời nào thì coi là *đã tiếp nhận***, và bên nộp được ghi vào nhật ký rà
+  soát của hồ sơ rằng nó tiếp nhận theo hạn, không theo chữ ký.
+- Im lặng **không** thay được chữ ký ở bước (2) — mint beacon vẫn cần chữ ký thật. Điều khoản này
+  chặn im lặng ở cổng tiếp nhận, không tạo ra một đường vòng lên chuỗi.
+- Từ chối theo **R3** phải nêu **dòng khai nào** sai và **bằng chứng nào** cho thấy nó sai. Từ chối
+  không nêu được hai thứ đó thì không phải một quyết định R3.
 
 ## 6. Sau khi được niêm yết
 
-- **Năm trường định danh là bất biến**: `platform_id`, `instance_id`, `custody_hash`,
-  `seed_policy`, `created_epoch`. Đổi bất kỳ trường nào = một platform khác, phải đăng ký mới.
-- **Bốn trường còn lại đổi được** qua thao tác cập nhật entry: trạng thái, cổng quản trị,
-  danh sách asset, tỉ lệ cắt.
-- **Vòng đời một chiều**: `Active ⇄ Paused → Retired`. `Retired` là trạng thái cuối, không hồi
-  sinh. Entry không bao giờ bị xoá — lịch sử luôn tra được.
-- ⚠️ **Trạng thái là nhãn niêm yết, không phải van khoá tiền.** Đặt `Paused` hay `Retired`
-  **không** dừng dòng thu/chi ở kho — kho vẫn vận hành qua cổng quản trị riêng của nó. Ai hiểu
-  "Retired = quỹ đã đóng" là hiểu sai (`Specs/CONTRACT.md` bất biến PK10).
-- **Bên định tuyến phí phải tự đối soát trước khi tin một entry**: kiểm trùng `platform_id` và
-  đối chiếu entry với kho thật. Entry chỉ là con trỏ; kho mới là nguồn chân lý khi hai bên lệch.
+- **Sáu trường định danh là bất biến**: `platform_id`, `instance_id`, `custody_hash`, `seed_policy`,
+  **`beacon_policy`**, `created_epoch`. Đổi bất kỳ trường nào = một platform khác, phải đăng ký mới.
+- **Bốn trường còn lại đổi được**: `status`, `governance_ref`, `accepted_assets`, `cut_bps`.
+- **Vòng đời một chiều**: `Active ⇄ Paused → Retired`. `Retired` là trạng thái cuối, không hồi sinh.
+  Entry không bao giờ bị xoá — lịch sử luôn tra được.
+- ⚠️ **Trạng thái là nhãn niêm yết, không phải van khoá tiền.** Đặt `Paused` hay `Retired` **không**
+  dừng dòng thu/chi ở kho — kho vẫn vận hành qua cổng quản trị riêng của nó. Ai hiểu "Retired = quỹ
+  đã đóng" là hiểu sai (`Specs/CONTRACT.md` bất biến PK10).
+- **Bên định tuyến phí phải tự đối soát trước khi tin một entry**: kiểm trùng `platform_id` và đối
+  chiếu entry với kho thật. Entry chỉ là con trỏ; kho mới là nguồn chân lý khi hai bên lệch.
+
+### Ai được đổi gì — **gỡ khó hơn kết nạp**
+
+Bản trước để **một chữ ký quyền đăng ký** làm được mọi thứ: ngừng hẳn một dịch vụ đang sống, đổi
+cổng quản trị, đổi danh sách asset, đổi tỉ lệ cắt — không cần dịch vụ đó biết, và `Retired` thì không
+hồi sinh. Whitepaper §8 bước 7 nói ngược lại điều đó, và nói bằng một nguyên tắc bất biến:
+
+> *"chỉ chạm QUYỀN, không chạm TÀI SẢN… Kết nạp **dễ**, gỡ **khó** (ngưỡng cao hơn nhiều) — để không
+> ai vũ-khí-hoá bước gỡ nhắm đối thủ."*
+
+Nguyên tắc cắt của bản v2: **việc đảo ngược được thì một bên quyết; việc không đảo ngược được thì hai
+bên cùng ký.**
+
+| Đổi gì | Cần gì | Vì sao |
+|---|---|---|
+| `Active → Paused` (gỡ-mềm) | chữ ký quyền đăng ký — **đủ** | phải có van dừng nhanh cho một niêm yết đang gây hại; và nó **đảo ngược được** |
+| `Paused → Active` | chữ ký quyền đăng ký **hoặc** đồng thuận quản trị của chính platform | để một lần tạm dừng đơn phương **không** biến thành gỡ vĩnh viễn trên thực tế |
+| `→ Retired` (gỡ-cứng) | quyền đăng ký **và** đồng thuận quản trị của platform | không đảo ngược được — ngưỡng phải cao hơn kết nạp |
+| `governance_ref`, `accepted_assets`, `cut_bps` | quyền đăng ký **và** đồng thuận quản trị | đây là mô tả về kho của chính platform; sổ không được nói khác chủ |
+| di trú sang bản registry mới | quyền đăng ký **và** đồng thuận quản trị | di trú là đưa hồ sơ ra khỏi quyền tài phán của validator hiện tại |
+
+**Đồng thuận quản trị** thể hiện on-chain bằng một trong hai cách, nhận cả hai để không ép platform
+theo đúng một kiểu tích hợp: giao dịch **chi tiêu một input** ở `Script(governance_ref)`, hoặc mang
+một **withdrawal** từ `Script(governance_ref)`.
+
+**Đường di trú.** Bản v1 không có: datum không có trường phiên bản, redeemer không có nhánh di trú,
+và validator ép output nằm ở chính script hash cũ — nên hồ sơ đã `Retired` sẽ **kẹt vĩnh viễn** khi
+xoay quyền đăng ký, phá thẳng cam kết "beacon sống suốt đời, dấu vết kiểm toán không đứt". Bản v2 có
+`spec_version` trong datum và nhánh `MigrateEntry`, và nhánh đó **cố ý không** áp ràng buộc trạng thái
+cuối — hồ sơ `Retired` phải di trú được. Nhánh này không đổi được `status`; nếu đổi được thì nó thành
+một đường `Retire` trá hình.
+
+**Giới hạn còn lại, nói ra thay vì giấu:** quyền đăng ký vẫn có thể `Paused` lặp đi lặp lại ngay sau
+mỗi lần platform tự `Active` trở lại. Việc đó **hiện trên chuỗi** nên nó là một thất bại quản trị
+thấy được, không phải một cửa im lặng — nhưng nó chưa bị chặn bằng mã. Đường đóng là chuyển quyền
+đăng ký sang nhiều chữ ký (§7).
 
 ## 7. Điểm chưa chốt
 
-Ba điểm dưới đây đang mở, ghi ra để bên đăng ký biết mình đang tin vào cái gì:
+Ghi ra để bên đăng ký biết mình đang tin vào cái gì.
 
 | Điểm | Hiện trạng | Ảnh hưởng tới bên đăng ký |
 |---|---|---|
-| Quyền đăng ký | Đang là **một khoá đơn**, chưa phải multisig hay DAO | Một khoá rò là chiếm được tên. Phải chuyển thành nhiều chữ ký trước khi lên mainnet. |
+| Quyền đăng ký | Đang là **một khoá đơn**, chưa phải multisig hay DAO | Một khoá rò là chiếm được tên. Phải chuyển thành nhiều chữ ký trước khi lên mainnet. Đây cũng là đường đóng nốt giới hạn "Pause lặp" ở §6. |
+| **Hai thẩm quyền khác nhau** | "Quyền đăng ký" thực ra là hai: quyền gộp thay đổi vào repo này (bước 0) và khoá ký `registry_authority` on-chain (bước 2). Lộ trình nhiều chữ ký hiện chỉ nói tới cái thứ hai. | Cả hai đều phải siết trước mainnet. Một hồ sơ được gộp vào repo là bằng chứng xã hội "đã đăng ký vào hệ", dùng thuyết phục người dùng ngoài, dù chưa từng có beacon nào trên chuỗi. |
 | Tính duy nhất `platform_id` | Bảo đảm bằng **kỷ luật ký**, không bằng mật mã | Bên định tuyến phí phải tự kiểm trùng, không được tin sổ một cách mù quáng. |
-| Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết. |
-| Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức thiết bị** + mức chuỗi DID; **mức người chưa ép on-chain**. Lớp ép mức người đang thiết kế, chưa phát hành. | Đừng dựng cơ chế chống Sybil chỉ dựa trên "hai DID phân biệt" — một người hai thiết bị vẫn ký chéo cho chính mình được. Tới khi lớp mức người lên, giữ rào kinh tế làm phòng thủ chính. |
-| R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho, không được coi "đã qua R-BIND" là đã kiểm. |
-| Hai thẩm quyền khác nhau | "Quyền đăng ký" thực ra là hai: quyền gộp thay đổi vào repo này (bước 0) và khoá ký `registry_authority` on-chain (bước 2). Lộ trình nhiều chữ ký hiện chỉ nói tới cái thứ hai. | Cả hai đều phải siết trước mainnet. Siết một cái mà bỏ cái kia thì cổng vẫn hở. |
-| Dịch vụ không thu asset | Chưa có đường. Ràng buộc on-chain đòi `accepted_assets` khác rỗng và `governance_ref` khác rỗng, nên một dịch vụ không thu tiền vẫn buộc dựng kho và khai ít nhất một asset mới lên sổ được. | Nếu dịch vụ của bạn không thu asset, nêu rõ trong hồ sơ — đây là khoảng trống của chuẩn, không phải lỗi của bạn. |
+| Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết — xem hạng `EV-0` ở §3. |
+| Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức chuỗi DID**. **Mức người và cả mức thiết bị đều chưa ép** — dẫn chứng ở §2.1. Chủ dự án đã chốt "một người = một DID" là **yêu cầu cứng** (2026-08-06). PhoenixKey chốt (2026-08-14, thay bản 2026-08-07): personhood **KHÔNG phải một thang tích luỹ** — nó là một **tập mệnh đề độc lập, không xếp thứ tự**. Một DID có `person-in-jurisdiction` mà **không** có `hardware-rooted-key` là **hợp lệ**; ép qua bậc khoá-phần-cứng trước sẽ làm personhood **phụ thuộc thiết bị**, đúng thứ bất biến "một người một DID" cấm. Giao diện: `personhood(did) → { attestations: Set<Attestation>, as_of: timestamp }`, với `Attestation ∈ { did-chain, hardware-rooted-key, person-in-jurisdiction(<mã pháp quyền>) }`. **Không** nhận và **không** trả nullifier (tra tự do theo nullifier là một máy vét cạn 20 bit). Bên cần "≥ mức X" thì **kiểm tập có chứa mệnh đề mình cần**, không so số — trả một số là **sai kiểu**, nó ép một thứ tự không tồn tại và bên nhận sẽ tự bịa thứ tự khi so sánh. `hardware-rooted-key` (tên cũ `device`, đã bỏ) nói đúng một điều: *"khoá gốc của DID sinh trong vùng bảo mật của máy và mở được bằng cổng sinh trắc của máy. KHÔNG ép 'một người một máy', KHÔNG ép 'một máy một DID': cùng một máy sinh được nhiều DID, mỗi DID một khoá gốc riêng."* Mệnh đề `did-chain`: **mã đã xong trên `main`, chưa deploy**; phát hành được ngay sau đợt redeploy PA-1, mốc chưa có ngày. Mệnh đề `person-in-jurisdiction` cần ba việc **chưa có người nhận**.<br><br>⛔ **`person-global` KHÔNG có trong chuẩn này, và đừng thêm vào.** Nó **bất khả** như mọi định nghĩa đang lưu hành: người hai quốc tịch cho ra hai nullifier ⇒ hai DID; chặn được chỉ bằng sinh trắc 1:N toàn cầu, mà hội đồng Phoenix đã chứng minh là bất khả. Trong repo còn một **thư cũ** có dòng bảng `person-global` (`_Agents/inbox/_done/Phoenix-tra-giao-dien-personhood-va-moc-bac-dau-2026-08-07.md:37`) — dòng đó **đã bị thay**, đừng chép lại. Cần một mệnh đề "trên" thì dùng `person-in-jurisdictions(S)`: *"là người thật ở **mỗi** pháp quyền trong tập S, S được công bố; không phát biểu gì về pháp quyền ngoài S."* | Đừng dựng cơ chế chống Sybil dựa trên "hai DID phân biệt" — một máy ký chéo cho chính nó bằng script được. Rào kinh tế đỡ được **một phần**, không phải tất cả — đọc kỹ ranh giới này. Ràng buộc: phần thưởng phát ra mỗi epoch phải bị chặn trên bởi một phần **nhỏ hơn 1** của lượng MAGIC thực bị tiêu cùng epoch, phần dư về Treasury. Nó làm kẻ **tự tạo cầu giả** để farm luôn lỗ, kể cả khi tạo được vô hạn DID. Nhưng nó **im lặng** trước đường thứ hai: **không đốt gì cả, chỉ khai CUNG để lấy phần của lượng người khác đã đốt** — đường đó có lợi nhuận dương với mọi tỉ phần và mọi hệ số, và chỉ chặn được bằng biên nhận do bên **không hưởng lợi** ký, thách thức có phát hiện thật, và cổng DID cho node. Chứng minh và phản ví dụ: [`bench/DOI-CHIEU.md`](bench/DOI-CHIEU.md) §1. |
+| **Xếp hạng khám phá** | Whitepaper §8 bước 3 hứa *"thứ hạng tính theo **số người thật độc lập đã dùng**"*. Mệnh đề đó **chưa hiện thực được** vì nó cần đúng tầng personhood ở dòng trên. | Đây là chỗ **tiền không thay được danh tính**: rào kinh tế làm kẻ farm lỗ tiền, nhưng không làm thứ hạng đúng. Một bên chịu lỗ vẫn mua được thứ hạng. Mọi thứ hạng công bố trước khi có personhood đều theo một trục khác với trục đã hứa. |
+| R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho. |
+| Van đối soát off-chain | Ba hàm mà `Specs/Feat-Spec.md` giao trọng lượng an toàn cho — đối soát hồ sơ với kho thật, quét sổ theo policy, tìm định danh trùng — xem [`./DevStatus.md`](DevStatus.md) (ở **gốc repo**, không phải trong `Specs/`) để biết trạng thái đo được tại thời điểm đọc. | Đừng coi ba lỗ ở trên là "đã có van chặn" cho tới khi `DevStatus.md` nói ngược lại kèm lệnh kiểm. |
 
-Lộ trình đóng ba điểm này: `Specs/Tech-Spec.md` mục known-gap và `Specs/Exec-Spec.md` §6.
+Lộ trình đóng các điểm này: `Specs/Tech-Spec.md` mục known-gap và `Specs/Exec-Spec.md` §6.

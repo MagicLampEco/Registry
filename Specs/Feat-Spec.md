@@ -1,9 +1,26 @@
-# PlatformKit — FEAT (đặc tả tính năng / hành vi)
+# Registry — Feat-Spec (đặc tả tính năng / hành vi)
 
-**Trạng thái:** bản thảo 2026-06-15. Bám sát [CONTRACT.md](./CONTRACT.md) (khung interface đã chốt).
-KHÔNG mâu thuẫn contract. Tham số chưa chốt đánh dấu **"tham số mở (DAO định)"**.
+| Trường | Giá trị |
+|---|---|
+| Phiên bản | v1.0.1 |
+| Trạng thái | `DRAFT` |
+| Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
+| Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13 |
+| Người duyệt | **chưa ai duyệt** |
+| Cập nhật cuối | 2026-08-13 |
+| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
-> Spec này mô tả **hành vi nhìn thấy được** của PlatformKit: một team onboard một platform thế nào
+> ⚠ **Chuẩn StandardSpec: phía sau chỉ được bắt đầu khi phía trước ĐÃ DUYỆT.** Bản này chưa duyệt.
+> Mọi thứ dựng trên nó đang chạy trước cổng — ghi ra để không ai tưởng đã qua cổng.
+
+> **Tên cũ của lớp này là "PlatformKit"** (khi nó còn sống trong repo LAMP). Tên hiện hành: **Registry**.
+
+Bám sát [CONTRACT.md](./CONTRACT.md) (khung interface đã chốt). KHÔNG mâu thuẫn contract. Tham số
+chưa chốt đánh dấu **"tham số mở (DAO định)"**. Phát biểu hình thức của bất biến +
+mục giới hạn: [`Math-Spec.md`](./Math-Spec.md) — hành vi mô tả ở đây **không được hứa mạnh hơn**
+Math-Spec §14.
+
+> Spec này mô tả **hành vi nhìn thấy được** của Registry: một team onboard một platform thế nào
 > (seed kho → đăng ký niêm yết → nối app thu phí), collect adapter biến sự kiện app thành `CollectItem`,
 > discover registry để tìm platform, và ai dùng SDK này. Người không-kỹ-thuật đọc cũng hiểu.
 > KHÔNG đi sâu datum/redeemer/validator (xem [TECH](./Tech-Spec.md)) hay lộ trình bootstrap (xem
@@ -15,7 +32,7 @@ KHÔNG mâu thuẫn contract. Tham số chưa chốt đánh dấu **"tham số m
 
 ### 0.1 Mục tiêu
 
-PlatformKit là **khuôn mẫu onboarding**: mỗi platform (PhoenixKey, OriLife, team eco khác) đăng ký một
+Registry là **khuôn mẫu onboarding**: mỗi platform (PhoenixKey, OriLife, team eco khác) đăng ký một
 lần là có sẵn hệ thống **tương tự MagicLamp** — một **Treasury custody instance** (kho có ghi sổ) cộng
 một **entry Registry** (niêm yết discoverable). Nó giải quyết bốn nhu cầu, không trộn lẫn:
 
@@ -44,7 +61,7 @@ Mục tiêu cuối: **làm LAMP có giá trị** bằng open SDK. Mỗi platform
 |---|---|
 | Custody/collect/release internals, bảo-toàn-value, split cut | [Treasury](https://github.com/MagicLampNetwork/LAMP/tree/main/Treasury) (FEAT/MATH/TECH) |
 | Datum `PlatformEntry`, redeemer registry, bất biến on-chain | [TECH](./Tech-Spec.md) |
-| **Định giá phí** (bò ≠ gà — `animal_fee`), quy đổi LAMP↔USD/ADA | App (OriLife/PhoenixKey) + Oracle, **NGOÀI** PlatformKit |
+| **Định giá phí** (bò ≠ gà — `animal_fee`), quy đổi LAMP↔USD/ADA | App (OriLife/PhoenixKey) + Oracle, **NGOÀI** Registry |
 | Cơ chế vote / Voting Power (đích `governance_ref`) | [Governance/VotingPower](https://github.com/MagicLampNetwork/LAMP/tree/main/Governance/VotingPower) |
 | Lộ trình deploy registry, onboard PhoenixKey/OriLife, tích hợp collect | [EXEC](./Exec-Spec.md) |
 
@@ -146,7 +163,7 @@ open SDK.
 ### 2.3 Adapter là tùy biến nhẹ per-platform
 
 Mỗi platform có sự kiện riêng → adapter là **lớp mỏng app tự viết** (nghe sự kiện của họ, map sang
-`CollectItem`). SDK PlatformKit cung cấp **khung chung** `collectAdapter(events) -> CollectItem[]` +
+`CollectItem`). SDK Registry cung cấp **khung chung** `collectAdapter(events) -> CollectItem[]` +
 builder batch; phần "sự kiện gì → amount bao nhiêu" do app điền. Đây là **đường mở rộng đúng chỗ**:
 chung phần cơ học (batch/build/receipt), riêng phần nghiệp vụ (định giá/sự kiện).
 
@@ -295,9 +312,9 @@ soát custody thật (`verifyEntryAgainstCustody`), kiểm trùng id (`duplicate
 
 ## 7. Phụ thuộc
 
-- **Treasury** (`Treasury/CONTRACT.md`) — custody/collect/release + `custody_seed` (cửa 1). PlatformKit
+- **Treasury** (`Treasury/CONTRACT.md`) — custody/collect/release + `custody_seed` (cửa 1). Registry
   dùng lại, không sửa.
 - **Governance** (`Governance/VotingPower/`) — đích `governance_ref` (gác release từng platform). v1
   bootstrap committee, → DAO.
-- **Oracle** LAMP↔USD/ADA — cho app **định giá** (cửa 3), **NGOÀI** PlatformKit (app-side).
+- **Oracle** LAMP↔USD/ADA — cho app **định giá** (cửa 3), **NGOÀI** Registry (app-side).
 - **Caller app:** PhoenixKey (Frontend/SDK), OriLife (mobile/SDK), team Cardano khác (open SDK).

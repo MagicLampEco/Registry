@@ -1,0 +1,102 @@
+{
+  "spec_version": 2,
+  "updated": "2026-08-13",
+  "_doc": "Tập đóng các mã khai báo của cổng đăng ký MagicLamp. Đây là NGUỒN DUY NHẤT: mẫu hồ sơ, chuẩn đăng ký và tools/check-registration.mjs đều đọc từ đây. Thêm một dạng dịch vụ mới = thêm một MÃ ở đây, không phải mở một ngoại lệ.",
+
+  "axes": {
+    "identity": {
+      "condition": "2.1",
+      "label": "Danh tính người dùng",
+      "gate": "soft",
+      "_gate_doc": "soft = khai đúng thì được tiếp nhận; mã thấp chỉ hạ hạng niêm yết, không phải căn cứ từ chối.",
+      "codes": {
+        "ID-0": { "rank": 0, "label": "chưa nối danh tính hệ", "needs": ["moc_du_kien"] },
+        "ID-1": { "rank": 1, "label": "dùng PhoenixKey DID, nhưng dịch vụ còn giữ khoá riêng của người dùng", "needs": ["con_tro", "moc_du_kien"] },
+        "ID-2": { "rank": 2, "label": "dùng PhoenixKey DID, khoá riêng nằm ở thiết bị người dùng", "needs": ["con_tro"] },
+        "ID-3": { "rank": 3, "label": "như ID-2, và dịch vụ đọc personhood_level khi cấp uy tín hoặc quyền biểu quyết", "needs": ["con_tro"] },
+        "ID-A": { "rank": null, "label": "dùng một hệ danh tính khác ĐÃ đăng ký trong hệ — hạng lấy theo hạng của hệ đó", "needs": ["platform_id_he_danh_tinh"] }
+      }
+    },
+
+    "token": {
+      "condition": "2.2",
+      "label": "Hệ token dùng chung",
+      "gate": "hard",
+      "_gate_doc": "hard = đây là ba điều kiện duy nhất của whitepaper (tiêu MAGIC · dùng CARP · đăng ký). Chỉ trục này chặn niêm yết.",
+      "codes": {
+        "TK-0": { "rank": 0, "label": "chưa nối hệ token", "needs": ["moc_du_kien"] },
+        "TK-1": { "rank": 1, "label": "tiêu MAGIC, dùng CARP, không đốt LAMP, không mở đường đổi MAGIC ngược ra tài sản ngoài hệ", "needs": ["con_tro"] },
+        "TK-2": { "rank": 2, "label": "như TK-1, và có token riêng đã qua đúng cổng (Mint-Authority Registry, hoặc điều kiện CARP instance)", "needs": ["con_tro", "con_tro_cong_phat_hanh"] },
+        "TK-X": { "rank": -1, "label": "có token riêng CHƯA qua cổng phát hành", "needs": ["con_tro"], "tu_choi": true, "_doc": "Mã duy nhất là căn cứ từ chối. Không phải vì cạnh tranh — vì nó phá hệ token dùng chung mà mọi bên khác đang dựa vào." }
+      }
+    },
+
+    "custody": {
+      "condition": "2.3",
+      "label": "Kho giá trị",
+      "gate": "soft",
+      "codes": {
+        "CU-0": { "rank": 0, "label": "có thu, nhưng còn nằm ở sổ nội bộ", "needs": ["moc_du_kien"] },
+        "CU-1": { "rank": 2, "label": "có thu, kho Treasury custody instance on-chain đã dựng", "needs": ["instance_id", "custody_hash", "seed_policy", "governance_ref", "governance_ref_tinh_chat", "accepted_assets", "cut_bps"] },
+        "CU-N": { "rank": 2, "label": "KHÔNG thu asset ở tầng này — hồ sơ không kho", "needs": ["governance_ref", "governance_ref_tinh_chat", "thu_o_dau"], "_doc": "Lấp khoảng trống issue #5 mục 3. Hình dạng on-chain: custody_hash / seed_policy / instance_id RỖNG, accepted_assets RỖNG, cut_bps = 0. Hạng ngang CU-1 vì không thu tiền không phải là thiếu sót." }
+      }
+    },
+
+    "infra": {
+      "condition": "2.4",
+      "label": "Phụ thuộc hạ tầng đóng ngoài hệ",
+      "gate": "soft",
+      "_gate_doc": "Trục này KHÔNG có trong whitepaper — nó là bổ sung của Registry, nên nó không được là cổng đóng. Nó là lời khai có phân hạng: bên định tuyến đọc sổ và tự quyết mức tin.",
+      "codes": {
+        "IN-0": { "rank": 0, "label": "chưa rà", "needs": [] },
+        "IN-1": { "rank": 1, "label": "có phụ thuộc đóng KHÔNG thay thế được cho chức năng cốt lõi", "needs": ["danh_sach_phu_thuoc"] },
+        "IN-2": { "rank": 2, "label": "có phụ thuộc đóng nhưng thay thế được, và đã có đường thay thế cụ thể", "needs": ["danh_sach_phu_thuoc", "duong_thay_the"] },
+        "IN-3": { "rank": 3, "label": "không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi", "needs": [] }
+      }
+    }
+  },
+
+  "governance_ref_yeu_cau": {
+    "_doc": "Bốn tính chất mà script khai ở governance_ref PHẢI có. Ba cái đầu là ràng buộc thật — vi phạm là hồ sơ tự khoá chết hoặc cổng đồng thuận thành thủ tục rỗng. Bên đăng ký khai vào pointers.governance_ref_tinh_chat.",
+    "G1": "phải là script hash 28 byte, và phải là một script CHẠY ĐƯỢC — giao dịch đăng ký buộc phải chứng minh nó chạy (chi tiêu một input ở Script(governance_ref), hoặc mang một withdrawal từ đó). Khai một hash chết là đăng ký được rồi không bao giờ Retire, đổi tham số hay di trú được nữa.",
+    "G2": "KHÔNG được là hash của chính validator registry — nếu không thì cổng đồng thuận tự thoả vĩnh viễn và quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, và đích di trú.",
+    "G3": "KHÔNG nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). Registry chỉ ép được 'script đó CHẠY trong giao dịch', KHÔNG ép được 'script đó phê duyệt ĐÚNG thay đổi này' — nên nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. Đây là giả định load-bearing: an toàn của cổng đồng thuận = an toàn của script mà chính bên đăng ký khai.",
+    "G4": "nếu nhánh đồng thuận của script cần MINT hoặc BURN token (mẫu phổ thông: đốt NFT đề xuất khi thực thi) thì nó xung đột với ràng buộc least-authority của cổng đúc — giao dịch đăng ký không được gánh policy mint ngoài. Hai đường vòng hợp lệ: dùng withdrawal-0, hoặc một nhánh spend không mint."
+  },
+
+  "evidence_tiers": {
+    "_doc": "Hạng chứng thực khai RIÊNG cho từng lời khẳng định, không khai một hạng cho cả dịch vụ. Một dịch vụ khai được nhiều hạng cho nhiều chặng.",
+    "EV-0": { "rank": 0, "label": "tự khai — chính bên hưởng lợi ký hoặc không ai ký" },
+    "EV-1": { "rank": 1, "label": "một bên KHÔNG hưởng lợi từ con số đó ký" },
+    "EV-2": { "rank": 2, "label": "neo on-chain, bên thứ ba tra lại được độc lập" }
+  },
+
+  "listing_tiers": {
+    "_doc": "Hạng niêm yết TÍNH RA từ các mã đã khai, không do người duyệt chấm. Đây là chỗ 'kiểm duyệt' thôi là 'quyền từ chối tuỳ ý' và thành 'phép kiểm khai báo'.",
+    "L0": {
+      "label": "đã tiếp nhận — chưa đủ điều kiện niêm yết",
+      "require": { "token_not": ["TK-X"] },
+      "_doc": "Mọi hồ sơ khai đúng sự thật đều đạt L0, kể cả khi mọi trục đều ở mã 0."
+    },
+    "L1": {
+      "label": "đã niêm yết",
+      "require": { "token_min": 1, "identity_min": 1, "custody_min": 2, "infra_min": 1 }
+    },
+    "L2": {
+      "label": "niêm yết đủ điều kiện",
+      "require": { "token_min": 1, "identity_min": 2, "custody_min": 2, "infra_min": 2 }
+    },
+    "L3": {
+      "label": "đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ",
+      "require": { "token_min": 1, "identity_min": 3, "custody_min": 2, "infra_min": 2, "evidence_min": 1 },
+      "_doc": "evidence_min = 1 nghĩa là KHÔNG lời khẳng định nào còn ở EV-0. Số liệu tự khai bán được, nhưng không cấp uy tín — bất biến RE-5."
+    }
+  },
+
+  "tu_choi": {
+    "_doc": "Tập ĐÓNG các căn cứ từ chối. Không có căn cứ nào ngoài ba mục này. Cạnh tranh với thành phần sẵn có KHÔNG phải căn cứ từ chối.",
+    "R1": "platform_id trùng hoặc gây nhầm lẫn với một entry đã niêm yết",
+    "R2": "không có ai chịu trách nhiệm liên hệ được",
+    "R3": "khai không đúng sự thật — khác hẳn với khai chưa xong"
+  }
+}

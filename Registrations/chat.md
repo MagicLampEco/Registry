@@ -34,7 +34,7 @@ Phần chưa đạt — ghi rõ còn thiếu gì và mốc dự kiến:
 
 ## (c) Tham số kỹ thuật
 
-CHỜ NỘP — xem mẫu bảng trường ở [`_TEMPLATE.md`](_TEMPLATE.md) mục (c).
+CHỜ NỘP — xem mẫu bảng trường ở [`template.md`](template.md) mục (c).
 
 ## (d) Cam kết vận hành
 

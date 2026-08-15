@@ -1,7 +1,19 @@
-# PlatformKit — EXEC: lộ trình bootstrap & mốc
+# Registry — Exec-Spec: lộ trình bootstrap & mốc
 
-**Doctype:** MagicLamp Protocol — PlatformKit Spec (EXEC)
-**Trạng thái:** 🔜 outline triển khai 2026-06-15. Bám [`CONTRACT.md`](./CONTRACT.md) (khung interface
+| Trường | Giá trị |
+|---|---|
+| Phiên bản | v1.0.1 |
+| Trạng thái | `DRAFT` |
+| Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
+| Pha hiện tại | M0–M4 đã có mã; **chưa mốc nào có bằng chứng kiểm chứng lại được** (xem §9) |
+| Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13 |
+| Người duyệt | **chưa ai duyệt** |
+| Cập nhật cuối | 2026-08-13 |
+| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
+
+> **Tên cũ của lớp này là "PlatformKit"** (khi nó còn sống trong repo LAMP). Tên hiện hành: **Registry**.
+
+Bám [`CONTRACT.md`](./CONTRACT.md) (khung interface
 khóa) — KHÔNG mâu thuẫn. EXEC KHÔNG định nghĩa lại datum/bất biến (việc của [TECH](./Tech-Spec.md)) — chỉ
 định **thứ tự deploy, onboard, tích hợp, checklist, DoD, known-gap**.
 
@@ -14,7 +26,7 @@ ba cửa onboard; PK1–PK11), [`Treasury/EXEC.md`](https://github.com/MagicLamp
 ## 0. Mục tiêu & phạm vi
 
 ### 0.1 Mục tiêu
-Đưa PlatformKit từ **registry on-chain đã viết** (`registry_beacon.ak` + `registry.ak` + `platform.ak`)
+Đưa Registry từ **registry on-chain đã viết** (`registry_beacon.ak` + `registry.ak` + `platform.ak`)
 tới **bootstrap chạy thật**: deploy registry (param authority) → onboard **PhoenixKey + OriLife** (config
 + seed + register) → tích hợp **collect ở lớp touchable** (PhoenixKey Frontend/SDK; OriLife mobile/SDK).
 Bám cách Treasury/Distribution đã làm (deploy theo bước, mỗi bước ghi output bước sau dùng).
@@ -37,13 +49,12 @@ Bám cách Treasury/Distribution đã làm (deploy theo bước, mỗi bước g
 ## 1. Trạng thái thật hiện tại (bám sự thật, không trí nhớ)
 - Registry on-chain **đã viết + đã có vá an ninh** cùng cây Treasury: `onchain/lib/magiclamp/registry/platform.ak`
   + `validators/registry_beacon.ak` (thêm **R-BIND** ref-input custody + **R-MINT-2** least-authority, F5)
-  + `validators/registry.ak` (thêm **U-TERMINAL** Retired terminal). **`aiken check` = **137 pass, 0 fail** (đo 2026-07-29, cùng cây Treasury)**
+  + `validators/registry.ak` (thêm **U-TERMINAL** Retired terminal). **`aiken check`: CHƯA KIỂM CHỨNG ĐƯỢC tại thời điểm viết** (số cũ đo 2026-07-29 ở cây Treasury, không còn đối chiếu được với cây này sau đợt sửa v2) — kiểm bằng `cd onchain && aiken check`
   (toàn cây); chưa deploy testnet.
 - Treasury custody/collect/seed: đã viết, hardening v1 áp (`Treasury/EXEC.md §16/§17`); chưa deploy.
 - Governance: **chưa thật** → `registry_authority` + `governance_ref` bootstrap bằng **committee multisig**
   (known-gap §6; audit #4 — KHÔNG key đơn).
-- Off-chain SDK PlatformKit (`onboard/registrationBuilder/collectAdapter/registryQuery`): **đã viết, test
-  xanh = 86 pass (đo 2026-07-29)** (gồm gương R-BIND `verifyCustodyBinding`/`verifyEntryAgainstCustody`, U-TERMINAL
+- Off-chain SDK Registry (`onboard/registrationBuilder/collectAdapter/registryQuery`): **đã viết; số kiểm thử CHƯA KIỂM CHỨNG ĐƯỢC tại thời điểm viết** — kiểm bằng `cd offchain && npm test` (gồm gương R-BIND `verifyCustodyBinding`/`verifyEntryAgainstCustody`, U-TERMINAL
   `UPD-TERMINAL`, dedup `findDuplicatePlatformIds`, `foreignScript`). **Chưa deploy/E2E Preview** (M5).
 
 > Vì chưa deploy gì → đổi param `registry_authority` ⇒ đổi script hash registry KHÔNG cần migrate (lý do
@@ -55,13 +66,118 @@ Bám cách Treasury/Distribution đã làm (deploy theo bước, mỗi bước g
 
 | Mốc | Nội dung | Phụ thuộc | DoD (bằng chứng) |
 |---|---|---|---|
-| **M0** | `aiken build` + `aiken check` xác nhận `registry_beacon` + `registry` + `platform.ak` compile cùng cây Treasury; import `util` (count_*_at_script, output_with_token, is_vk). | Treasury onchain build xanh | `aiken build` xanh; `plutus.json` ra 2 validator; **`aiken check` = **137 pass, 0 fail** (đo 2026-07-29, cùng cây Treasury)** (toàn cây Treasury + Registry); unit `entry_well_formed`/`identity_preserved`/`mutable_fields_valid` round-trip. |
+| **M0** | `aiken build` + `aiken check` xác nhận `registry_beacon` + `registry` + `platform.ak` compile cùng cây Treasury; import `util` (count_*_at_script, output_with_token, is_vk). | Treasury onchain build xanh | `aiken build` xanh; `plutus.json` ra 2 validator; **`aiken check`: CHƯA KIỂM CHỨNG ĐƯỢC tại thời điểm viết** (số cũ đo 2026-07-29 ở cây Treasury, không còn đối chiếu được với cây này sau đợt sửa v2) — kiểm bằng `cd onchain && aiken check` (toàn cây Treasury + Registry); unit `entry_well_formed`/`identity_preserved`/`mutable_fields_valid` round-trip. |
 | **M1** | **Datum + redeemer test** (TECH §2): encode/decode `PlatformEntry` (9 field, Constr order) + `PlatformStatus` (0/1/2) round-trip Aiken↔off-chain. Invariant: entry register-status==Active. | M0 | datum round-trip pass; **register status≠Active → reject** (R-WF); **platform_id≠NFT name → reject** (R-NAME). |
 | **M2** | **`registry_beacon` (mint) test** (TECH §3): R-SIG/R-MINT-1/**R-MINT-2**/R-OUT-1/R-WF/R-NAME/**R-BIND** + BURN cấm. | M1 | unit: happy register pass; **không-authority-ký → reject** (R-SIG); **mint 2 token / qty>1 → reject** (R-MINT-1); **mint thêm policy ngoài → reject** (R-MINT-2, F5); **output ví thường (is_vk) → reject** (R-OUT-1); **entry malformed → reject** (R-WF); **burn beacon → reject** (else fail); **thiếu ref-input custody / custody NFT≠1 / custody ở Script khác custody_hash → reject** (R-BIND). |
 | **M3** | **`registry` (spend) test** (TECH §4): U-SIG/U-SINGLE/U-NFT/U-ID/U-MUT/U-MINT-0/**U-TERMINAL**. | M1 | unit: happy update (đổi status / mutable) pass; **không-authority → reject** (U-SIG); **đổi identity (custody_hash…) → reject** (U-ID); **2 entry input (double-sat khác stake-cred) → reject** (U-SINGLE); **mint/burn trong update → reject** (U-MINT-0); **mutable hạ governance_ref="" → reject** (U-MUT); **mất beacon NFT out → reject** (U-NFT); **spend entry status=Retired (Retired→Active / Retired→Retired) → reject** (U-TERMINAL). |
-| **M4** | **Off-chain SDK** (TECH §6): `onboard/registrationBuilder/collectAdapter/registryQuery`. `decodePlatformEntry` khớp Aiken (9 field). Tái dùng config/lucid Treasury. | M1–M3 | **vitest = 86 pass (đo 2026-07-29)** (PlatformKit offchain): datum decode khớp Aiken; `planRegister`/`planUpdateEntry` dry-run hợp lệ + reject path (`REG-BIND` thiếu/sai custody, `UPD-TERMINAL` Retired); `discoverPlatforms` quét policy giả-lập trả entry + đánh dấu `duplicate`/`foreignScript`; `verifyEntryAgainstCustody` đối soát custody. |
-| **M5** | **E2E Preview** (harness kiểu Treasury): `01_deploy_registry` (param authority, self-ref chiều beacon→registry) → `02_onboard` PhoenixKey + OriLife (seed custody cửa 1 + register cửa 2) → `03_collect` (gộp lô cửa 3) → `04_update_status` (pause/resume/retire) → verify on-chain (tx hash + explorer). | M4, **Treasury custody/seed deploy Preview** (`Treasury/EXEC.md M6`) | record `LIVE_DEPLOY_PREVIEW.md` riêng PlatformKit với tx hash thật; discover quét policy ra đúng 2 platform Active. |
+| **M4** | **Off-chain SDK** (TECH §6): `onboard/registrationBuilder/collectAdapter/registryQuery`. `decodePlatformEntry` khớp Aiken (9 field). Tái dùng config/lucid Treasury. | M1–M3 | **vitest: CHƯA KIỂM CHỨNG ĐƯỢC tại thời điểm viết** — kiểm bằng `cd offchain && npm test` (offchain Registry): datum decode khớp Aiken; `planRegister`/`planUpdateEntry` dry-run hợp lệ + reject path (`REG-BIND` thiếu/sai custody, `UPD-TERMINAL` Retired); `discoverPlatforms` quét policy giả-lập trả entry + đánh dấu `duplicate`/`foreignScript`; `verifyEntryAgainstCustody` đối soát custody. |
+| **M5** | **E2E Preview** (harness kiểu Treasury): `01_deploy_registry` (param authority, self-ref chiều beacon→registry) → `02_onboard` PhoenixKey + OriLife (seed custody cửa 1 + register cửa 2) → `03_collect` (gộp lô cửa 3) → `04_update_status` (pause/resume/retire) → verify on-chain (tx hash + explorer). | M4, **Treasury custody/seed deploy Preview** (`Treasury/EXEC.md M6`) | record `LIVE_DEPLOY_PREVIEW.md` riêng Registry với tx hash thật; discover quét policy ra đúng 2 platform Active. |
 | **M6** | **Tích hợp collect lớp touchable** (§5): PhoenixKey Frontend/SDK + OriLife mobile/SDK. KHÔNG đụng backend. | M5 | e2e: sự kiện app → CollectItem → settlement tx → custody tăng + receipt; **không touch backend Java / backend OriLife** (diff chỉ Frontend/SDK/mobile). |
+
+### 2.1 Chi tiết từng mốc — mười thành phần bắt buộc
+
+Bảng §2 ở trên chỉ có **bốn** thành phần (Mốc, Nội dung = *Task*, Phụ thuộc = *Depends on*, DoD =
+*Acceptance*). Chuẩn Exec-Spec đòi **mười**
+(`TigerAgent/StandardSpec/_shared/standards/Exec-Spec.standard.md` §3.4). Sáu thành phần còn thiếu —
+**Output, Test (tách khỏi Acceptance), Evidence, Tech + Libs, Docs, Skill + Provides** — bổ sung dưới
+đây. Bảng §2 giữ nguyên làm bản tóm tắt.
+
+Trạng thái mốc dùng bộ đóng của chuẩn: `not_started` / `blocked-by-<X>` / `ready` / `in_progress` /
+`complete` / `pivoted`. **Không có cột ngày** — mốc sẵn sàng khi phụ thuộc xong, không theo lịch.
+
+---
+
+**M0 — Biên dịch hai validator**  ·  trạng thái `in_progress`
+
+- **Output:** `onchain/plutus.json` chứa đúng hai validator `registry` và `registry_beacon`, mỗi cái
+  có trường `hash`.
+- **Test:** `aiken check` không có ca đỏ; `aiken build` thoát mã 0.
+- **Acceptance:** hai điều trên xanh **và** script hash được ghi lại trước/sau mỗi lần đụng validator.
+- **Evidence:** output thô của `aiken check` và `aiken build`; hai script hash dán vào
+  [`../ChangeLog.md`](../ChangeLog.md) khi chúng đổi.
+- **Tech:** Aiken. **Libs:** `aiken-lang/stdlib` (ghim phiên bản trong `onchain/aiken.toml`).
+- **Docs:** [`Tech-Spec.md`](./Tech-Spec.md) §1–§5, [`Math-Spec.md`](./Math-Spec.md) §5.
+- **Skill:** kỹ sư Aiken/Plutus, hiểu mô hình eUTxO. **Provides:** script hash cho M5 bước 01.
+
+**M1 — Vòng khứ hồi datum + redeemer**  ·  trạng thái `in_progress`
+
+- **Output:** bộ kiểm thử vòng khứ hồi `PlatformEntry` ↔ Plutus Data, chạy được ở **cả hai** bên
+  (Aiken và off-chain).
+- **Test:** mã hoá rồi giải mã ra đúng giá trị ban đầu, với **mọi** trường và **mọi** nhánh
+  `PlatformStatus` (0/1/2); đăng ký với `status ≠ Active` bị từ chối (R-WF); `platform_id ≠` tên NFT
+  bị từ chối (R-NAME).
+- **Acceptance:** thứ tự trường ở off-chain khớp **đúng** thứ tự khai báo trong `platform.ak` — kiểm
+  bằng một ca so byte, không bằng mắt.
+- **Evidence:** output thô của bộ kiểm thử hai bên.
+- **Tech:** Aiken + TypeScript. **Libs:** `aiken-lang/stdlib`, thư viện CBOR của `lucid`.
+- **Docs:** [`Tech-Spec.md`](./Tech-Spec.md) §2 (kèm cảnh báo phiên bản), [`Math-Spec.md`](./Math-Spec.md) §3 A-DATA.
+- **Skill:** người hiểu mã hoá Plutus Data theo vị trí. **Provides:** lược đồ chung cho M2, M3, M4.
+
+**M2 — Cổng đúc `registry_beacon`**  ·  trạng thái `in_progress`
+
+- **Output:** `registry_beacon.ak` cùng bộ kiểm thử phủ đủ mười một ràng buộc R-*.
+- **Test:** mỗi ràng buộc một ca **từ chối** riêng: R-SIG, R-MINT-1, R-MINT-2, R-OUT-1 (gồm ca **đặt
+  hồ sơ ở script lạ** — ca đã từng lọt ở v1), R-NAME, R-POLICY, R-VER, R-WF, R-VALUE, R-EPOCH,
+  R-BIND; cộng một ca đốt beacon → từ chối.
+- **Acceptance:** mọi dòng trong bảng kẻ tấn công [`Math-Spec.md`](./Math-Spec.md) §8 ghi "chặn" đều
+  có ít nhất một ca kiểm thử tương ứng.
+- **Evidence:** output thô liệt kê tên từng ca.
+- **Tech:** Aiken. **Libs:** `aiken-lang/stdlib`.
+- **Docs:** [`Math-Spec.md`](./Math-Spec.md) §5.1 và §8. **Skill:** kỹ sư Aiken + tư duy đối kháng.
+- **Provides:** cổng đăng ký dùng được cho M4 và M5.
+
+**M3 — Validator chi tiêu `registry`**  ·  trạng thái `in_progress`
+
+- **Output:** `registry.ak` với **hai** nhánh redeemer (`UpdateEntry`, `MigrateEntry`) cùng bộ kiểm thử.
+- **Test:** ca từ chối cho U-SIG, U-SINGLE, U-NFT, U-ID (sáu trường), U-VER, U-MUT, U-MINT-0,
+  U-TERMINAL, U-VALUE, U-GOV; ca từ chối cho M-SIG, M-GOV, M-DEST, M-STATUS, M-VER, M-ID, M-NFT,
+  M-VALUE, M-MINT-0; và hai ca **chấp nhận** quan trọng: `Active → Paused` chỉ với chữ ký authority,
+  và **di trú một hồ sơ `Retired`** (chính lỗ mà v2 vá).
+- **Acceptance:** không ca nào cũ bị xoá để cho xanh; ca hỏng vì đổi lược đồ thì **sửa**, không xoá.
+- **Evidence:** output thô + `git diff --stat` cho thấy số ca không giảm.
+- **Tech:** Aiken. **Libs:** `aiken-lang/stdlib`.
+- **Docs:** [`Math-Spec.md`](./Math-Spec.md) §5.2, §5.3, §7 T-CONSENT.
+- **Skill:** kỹ sư Aiken. **Provides:** đường cập nhật và đường di trú cho M4, M5.
+
+**M4 — SDK off-chain**  ·  trạng thái `in_progress`
+
+- **Output:** gói TypeScript trong `offchain/` với bốn khối `onboard`, `registrationBuilder`,
+  `collectAdapter`, `registryQuery`.
+- **Test:** giải mã datum khớp Aiken; `planRegister` / `planUpdateEntry` dựng được giao dịch hợp lệ
+  và **từ chối** đúng chỗ (`REG-BIND`, `UPD-TERMINAL`); `discoverPlatforms` đánh dấu `duplicate` và
+  `foreignScript`; `verifyEntryAgainstCustody` bắt được entry lệch kho.
+- **Acceptance:** **ba van** ở [`Math-Spec.md`](./Math-Spec.md) §6.2 đều gọi được và đều có ca kiểm
+  thử; tài liệu SDK nói rõ bỏ van là tự chịu.
+- **Evidence:** output thô của bộ kiểm thử.
+- **Tech:** TypeScript, Node. **Libs:** `lucid` (ghim phiên bản), `vitest`.
+- **Docs:** [`Tech-Spec.md`](./Tech-Spec.md) §6, [`Feat-Spec.md`](./Feat-Spec.md) §3.
+- **Skill:** kỹ sư TypeScript có kinh nghiệm dựng giao dịch Cardano.
+- **Provides:** công cụ chạy M5.
+
+**M5 — Chạy thật trên Preview**  ·  trạng thái `blocked-by-M4` *(và chờ Treasury deploy Preview)*
+
+- **Output:** một tệp `LIVE_DEPLOY_PREVIEW.md` của Registry, mang **tx hash thật**.
+- **Test:** bốn kịch bản chạy trên mạng Preview — triển khai, onboard hai platform, thu gộp lô, đổi
+  trạng thái (tạm dừng / mở lại / ngừng hẳn).
+- **Acceptance:** quét policy trả về **đúng hai** platform `Active`, và mỗi tx tra được trên explorer.
+- **Evidence:** tx hash + đường dẫn explorer cho từng bước.
+- **Tech:** TypeScript + mạng Preview. **Libs:** `lucid`, nhà cung cấp chỉ mục (Blockfrost hoặc Kupo).
+- **Docs:** §3 và §4 của tài liệu này. **Skill:** người vận hành có khoá Preview.
+- **Provides:** bằng chứng cho M6 và cho quyết định lên mainnet.
+
+**M6 — Nối thu phí ở lớp chạm được**  ·  trạng thái `blocked-by-M5`
+
+- **Output:** hai bản tích hợp — PhoenixKey (Frontend/SDK) và OriLife (mobile/SDK).
+- **Test:** một sự kiện app đi hết đường tới giao dịch thanh toán và kho tăng đúng số.
+- **Acceptance:** **diff KHÔNG chạm** backend Java của PhoenixKey và backend OriLife.
+- **Evidence:** `git diff --stat` của cả hai repo, cho thấy phạm vi chạm.
+- **Tech:** TypeScript / Flutter. **Libs:** SDK Registry (M4).
+- **Docs:** §5 của tài liệu này. **Skill:** kỹ sư của chính đội sở hữu từng app.
+- **Provides:** dòng thu thật — mốc cuối của lộ trình bootstrap.
+
+> **Tỉ lệ song song.** M0 và M1 độc lập; M2, M3 cùng phụ thuộc M1 và chạy song song được; M4 phụ
+> thuộc M1–M3; M5 phụ thuộc M4; M6 phụ thuộc M5. Chuỗi cuối (M4→M5→M6) là **đường găng**, và nó tuần
+> tự thật — không cắt ngắn được, vì mỗi bước cần đầu ra thật của bước trước.
 
 ---
 
@@ -70,7 +186,7 @@ Bám cách Treasury/Distribution đã làm (deploy theo bước, mỗi bước g
 Thứ tự deploy (một chiều, không vòng — TECH §5):
 
 1. **Chốt `registry_authority`** — v1 = committee multisig pubkey hash (known-gap §6). Đặt vào `.env`
-   PlatformKit (`REGISTRY_AUTHORITY`).
+   Registry (`REGISTRY_AUTHORITY`).
 2. **Compile `registry_beacon(registry_authority)`** → `beacon_policy = hash`. Ghi `BEACON_POLICY` `.env`.
 3. **Compile `registry(registry_authority, beacon_policy)`** → `registry_hash`. Ghi `REGISTRY_HASH` `.env`.
 4. Không có UTxO trung tâm phải khởi tạo — registry **không cần seed** (khác custody). Platform đầu tiên
@@ -235,10 +351,10 @@ quyền release** (blast-radius nhỏ) — dùng chung KHÔNG còn rủi ro an t
 
 ## 9. Tiêu chí "xong" (Definition of Done)
 
-- [x] `aiken build` 2 validator xanh + **`aiken check` **137 pass, 0 fail** (đo 2026-07-29)** (M0); unit R-*/U-* đủ reject
+- [ ] `aiken build` 2 validator xanh + `aiken check` xanh (M0); unit R-*/U-* đủ reject
       path gồm **R-MINT-2** (least-authority, F5) + **R-BIND** (ref-input custody) + **U-TERMINAL** (Retired
       terminal) (M2/M3).
-- [x] Off-chain SDK **86 test xanh (đo 2026-07-29)**: datum decode khớp Aiken; `onboard/registrationBuilder/collectAdapter/
+- [ ] Off-chain SDK: bộ kiểm thử xanh; datum decode khớp Aiken; `onboard/registrationBuilder/collectAdapter/
       registryQuery` có test, gồm `verifyCustodyBinding`/`verifyEntryAgainstCustody` (R-BIND/audit #6),
       `UPD-TERMINAL`, `findDuplicatePlatformIds`/`duplicate` (audit #2), `foreignScript` (audit #3) (M4).
 - [ ] E2E Preview: deploy registry → onboard PhoenixKey + OriLife → collect → update status → verify
@@ -258,4 +374,4 @@ quyền release** (blast-radius nhỏ) — dùng chung KHÔNG còn rủi ro an t
 - **Governance** (`Governance/VotingPower/`) — đích `governance_ref`; v1 bootstrap committee.
 - **PhoenixKey** — tích hợp Frontend/SDK; KHÔNG đụng `PhoenixKeyDID/Database` (backend Java, thuộc Long).
 - **OriLife** — tích hợp mobile/SDK; KHÔNG đụng backend OriLife.
-- **Oracle** LAMP↔USD/ADA — app-side định giá (cửa 3), ngoài PlatformKit.
+- **Oracle** LAMP↔USD/ADA — app-side định giá (cửa 3), ngoài Registry.

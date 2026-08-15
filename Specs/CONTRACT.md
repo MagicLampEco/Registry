@@ -1,15 +1,33 @@
-# PlatformKit — CONTRACT (interface khóa: khuôn mẫu onboarding platform)
+# Registry — CONTRACT (interface khóa: khuôn mẫu onboarding platform)
 
-**Trạng thái:** khung interface 2026-06-15 (chờ anh duyệt). Đây là **xương sống** cho lớp onboarding:
-mỗi Platform (PhoenixKey, OriLife, team eco khác) đăng ký một lần là có sẵn hệ thống tương tự
-MagicLamp (**Treasury custody instance** + **entry Registry**). KHÔNG ai tự đổi schema/bất biến ở đây.
+| Trường | Giá trị |
+|---|---|
+| Phiên bản | v1.1.0 |
+| Trạng thái | `DRAFT` |
+| Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
+| Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13 |
+| Người duyệt | **chưa ai duyệt** |
+| Cập nhật cuối | 2026-08-13 |
+| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
+
+> **Tên cũ của lớp này là "PlatformKit"** (khi nó còn sống trong repo LAMP). Tên hiện hành:
+> **Registry**. Chỗ nào dưới đây còn chữ PlatformKit là đang nói về **đường dẫn lịch sử ở repo LAMP**,
+> không phải tên module hiện hành.
+
+Đây là **xương sống** cho lớp onboarding: mỗi Platform (PhoenixKey, OriLife, team eco khác) đăng ký
+một lần là có sẵn hệ thống tương tự MagicLamp (**Treasury custody instance** + **entry Registry**).
+KHÔNG ai tự đổi schema/bất biến ở đây.
+
+> ⚠ **Phát biểu hình thức của mọi bất biến, mô hình tin cậy, phân tích kẻ tấn công và mục giới hạn
+> nằm ở [`Math-Spec.md`](./Math-Spec.md)** — tài liệu này chỉ nêu **ý định**, không chép lại phát
+> biểu hình thức. Hai bản chép đôi sẽ trôi khác nhau.
 
 Gốc: tái dùng **Treasury** đa thuê bao (`Treasury/CONTRACT.md §1` instance param hóa, §10 hardening v1)
 + Registry on-chain vừa xây (`onchain/lib/magiclamp/registry/platform.ak`,
-`validators/registry_beacon.ak`, `validators/registry.ak`). PlatformKit **KHÔNG phát minh kho bạc mới**
+`validators/registry_beacon.ak`, `validators/registry.ak`). Registry **KHÔNG phát minh kho bạc mới**
 — nó là **khuôn lắp ráp** quanh Treasury đã có + một **sổ đăng ký** để các platform discoverable.
 
-> **Mục tiêu cuối (KHÔNG đổi):** làm LAMP có giá trị bằng **open SDK** cho mọi Cardano team. PlatformKit
+> **Mục tiêu cuối (KHÔNG đổi):** làm LAMP có giá trị bằng **open SDK** cho mọi Cardano team. Registry
 > hạ rào onboarding: một team không cần đọc hết Treasury internals — họ chạy 3 cửa (seed → register →
 > integrate) là có kho bạc + được niêm yết. Mỗi platform thêm vào là một caller `collectToTreasury`,
 > một nguồn cầu LAMP.
@@ -21,7 +39,7 @@ Gốc: tái dùng **Treasury** đa thuê bao (`Treasury/CONTRACT.md §1` instanc
 - Một **Platform** = **một Treasury custody instance** (param hóa riêng — `Treasury/CONTRACT.md §1`)
   **cộng** **một entry Registry** trỏ tới instance đó.
 - **Treasury instance** đã cho platform: custody UTxO giữ value đa-asset + **sổ bucket trong datum**,
-  hai cửa nóng `Collect`/`Release`, NFT authenticity `seed_policy` (hardening v1 §10 H5). PlatformKit
+  hai cửa nóng `Collect`/`Release`, NFT authenticity `seed_policy` (hardening v1 §10 H5). Registry
   KHÔNG sửa custody — nó **dùng lại nguyên** validator Treasury.
 - **Entry Registry** = một UTxO mang **beacon NFT** (`registry_beacon` policy, asset name = `platform_id`)
   + datum `PlatformEntry` trỏ `(instance_id, custody_hash, seed_policy, governance_ref, accepted_assets,
@@ -59,9 +77,14 @@ param-validator = bất biến đời instance; datum = DAO chỉnh):
 > chưa cập nhật entry), **custody là chuẩn**; off-chain coi entry là chỉ-mục, verify lại bằng custody
 > khi cần con số ràng buộc. (Xem `Tech-Spec.md` invariant đối soát.)
 
-**Identity 5 field bất biến** (`platform_id, instance_id, custody_hash, seed_policy, created_epoch`) —
-khóa cứng on-chain ở `UpdateEntry` (U-ID, `registry.ak`). Đổi một field này = một platform KHÁC, phải
-đăng ký mới. Mutable 4 field đổi qua `UpdateEntry` (authority ký).
+**Identity bất biến — SÁU field từ v2** (`platform_id, instance_id, custody_hash, seed_policy,
+beacon_policy, created_epoch`) — khóa cứng on-chain ở CẢ `UpdateEntry` (U-ID) lẫn `MigrateEntry`
+(M-ID), `registry.ak`. Đổi một field này = một platform KHÁC, phải đăng ký mới. Mutable 4 field đổi
+qua `UpdateEntry` (authority ký; ba trong bốn field đòi thêm đồng thuận quản trị — U-GOV).
+
+> **Đổi so với v1:** v1 khoá **năm** field (không có `beacon_policy`, vì khi đó `beacon_policy` là
+> tham số validator chứ không nằm trong datum). v2 đưa nó vào datum để phá vòng phụ thuộc theo chiều
+> ngược lại, nên phải khoá nó lại bằng T-ID6. Lý do đầy đủ: [`Math-Spec.md`](./Math-Spec.md) §7 PK4.
 
 > **Đăng ký buộc trỏ custody THẬT (R-BIND — `registry_beacon.ak`).** `RegisterPlatform` NAY ép tx đăng ký
 > phải **reference một custody UTxO** mang ĐÚNG 1 NFT authenticity `(seed_policy, instance_id)` Ở ĐÚNG địa
@@ -107,18 +130,11 @@ committee → DAO**: v1 authority = multisig committee bootstrap (Governance ch�
 chạy → chuyển `registry_authority` về DAO (xem `Exec-Spec.md` known-gap). Authority CHỈ gác **niêm yết**,
 KHÔNG động được **value** (value ở custody, gác bởi `governance_ref` riêng từng platform — §5).
 
-> **Known-gap audit #2 — `platform_id` duy nhất là VAN QUY TRÌNH, KHÔNG bất biến mật mã.** `registry_beacon`
-> KHÔNG one-shot (không consume một genesis UTxO duy nhất) → on-chain KHÔNG biết một `platform_id` đã được
-> mint trước đó; ràng buộc R-MINT-1 chỉ ép "mint đúng 1 token mỗi tx". Vì vậy tính duy nhất dựa **hai van
-> quy trình**: (1) `registry_authority` không ký 2 lần cùng `platform_id` (authority-curated); (2) SDK dedup
-> — `discoverPlatforms` đánh dấu `duplicate` cho mọi entry trùng id, caller route phí PHẢI kiểm trước khi
-> tin. Đây **không** phải đảm bảo mật mã. Đề xuất đóng v1.x: **one-shot `genesis_ref` per platform** (mẫu
-> `custody_seed` — consume UTxO duy nhất → asset-name duy nhất theo cơ chế) hoặc **registry-state roster**
-> (đánh đổi: thêm contention). (Xem `Tech-Spec.md` GAP-2.)
->
-> **Known-gap audit #4 — `registry_authority` hiện 1 key-hash = single point of failure.** Một khóa rò =
-> chiếm tên/onboard rác. NÊN là **multisig/committee script** (M-of-N), governance_ref committee → DAO.
-> Trước mainnet PHẢI là committee multisig, KHÔNG key đơn. (Xem `Exec-Spec.md §6.1`, `Tech-Spec.md` GAP-3.)
+> **Hai giới hạn của mô hình này — ĐỌC TRƯỚC KHI TIN SỔ.** Tính duy nhất `platform_id` là **van quy
+> trình**, KHÔNG phải bất biến mật mã; và `registry_authority` một khoá đơn là một điểm hỏng duy nhất.
+> Phát biểu hình thức, **phản ví dụ hai giao dịch** bác mệnh đề duy nhất, và đường đóng thật:
+> [`Math-Spec.md`](./Math-Spec.md) §14 L1 + L2, kèm bảng kẻ tấn công §8 (T5, T15).
+> Bản này **không chép lại** — chép đôi thì hai bản trôi khác nhau.
 
 ### 3.3 Phá vòng beacon↔registry (self-ref NFT)
 
@@ -273,40 +289,31 @@ App của platform gọi `collectToTreasury(asset, amount, app_id, category)` c�
 
 ---
 
-## 8. Bất biến interface (KHÓA — mọi spec PlatformKit phải khớp)
+## 8. Bất biến interface (KHÓA — mọi spec Registry phải khớp)
 
-- **PK1 — Platform = (Treasury instance) + (entry Registry).** Registry là con trỏ, KHÔNG giữ value.
-- **PK2 — Beacon-per-platform.** Mỗi platform một beacon NFT (name=`platform_id`) dưới policy chung;
-  discover = quét policy. KHÔNG registry UTxO trung tâm (no contention, no O(N) bloat).
-- **PK3 — Authority-gated, curated.** `registry_authority` ký mọi register/update → `platform_id` duy
-  nhất + kiểm duyệt. KHÔNG permissionless. Authority gác **niêm yết**, KHÔNG gác **value**.
-- **PK4 — Identity 5 field bất biến.** `platform_id, instance_id, custody_hash, seed_policy,
-  created_epoch` khóa cứng (U-ID). Đổi = platform mới.
-- **PK5 — Retire = status, KHÔNG burn.** Beacon sống suốt đời; vòng đời chỉ tiến (Active⇄Paused→Retired),
-  KHÔNG xóa entry. Đồng nhất no-burn của LAMP/Treasury.
-- **PK6 — Mỗi platform `governance_ref` RIÊNG** (khuyến nghị defense-in-depth). #1B ĐÓNG ở Treasury (F10
-  — `spend_spec_hash` gồm `instance_id`), nên dùng chung KHÔNG còn gây replay-chéo; giữ riêng để **tách
-  quyền release** (blast-radius nhỏ). Yêu cầu interface thay thế: Governance commit đúng `instance_id` khi
-  tạo proposal.
-- **PK7 — custody là nguồn chân lý** cho `(cut_bps, accepted_assets, governance_ref)`; entry là bản sao
-  niêm yết, verify lại bằng custody khi cần con số ràng buộc.
-- **PK8 — Đăng ký buộc trỏ custody THẬT (R-BIND).** `RegisterPlatform` ép reference-input custody mang
-  đúng 1 NFT authenticity `(seed_policy, instance_id)` Ở `Script(custody_hash)` → entry không nói dối
-  custody. Custody phải seed + submit TRƯỚC register. (Vá an ninh — đóng audit #6 ở mức đăng ký.)
-- **PK9 — Retired là trạng thái CUỐI (U-TERMINAL).** Vòng đời một chiều Active⇄Paused→Retired; entry
-  Retired không spend/update được nữa (cấm revive). Thứ tự status ép on-chain, không còn là chính sách
-  off-chain. (Vá an ninh.)
-- **PK10 — `status` là NHÃN DISCOVERY, KHÔNG van chặn dòng tiền (F7).** Registry KHÔNG gác custody on-chain
-  (custody validator không đọc registry; registry không đọc custody). `Paused`/`Retired` KHÔNG dừng được
-  Collect/Release ở custody — kho vẫn thu/chi. "Retired = quỹ đóng" là HIỂU NHẦM. Muốn Pause THẬT → v1.x
-  (custody đọc entry qua reference input). (§4.)
-- **PK11 — receipt/app_id CHƯA neo on-chain (F8 — kế thừa Treasury).** `app_id` ở `CollectItem` redeemer là
-  vô danh; CustodyDatum không có `receipt_root`. **VP/uy tín KHÔNG tin `app_id` từ Collect** để cấp tín
-  dụng C1 tới khi receipt thực thi (chống bịa). receipt = v1.x hoặc bỏ lời hứa. (`Treasury/TECH.md §6`.)
+Mười một bất biến. Dưới đây là **chỉ mục ý định**, một dòng một cái. **Phát biểu hình thức, chứng
+minh, và giới hạn** nằm ở [`Math-Spec.md`](./Math-Spec.md) — bản này KHÔNG chép lại.
 
-> **Mô hình tin cậy khi route phí (audit — đọc kỹ).** `platform_id` duy nhất + `registry_authority` đơn
-> khóa là **van quy trình**, KHÔNG bất biến mật mã: discover (`discoverPlatforms`) chỉ đọc datum →
-> KHÔNG đủ tin. Người tin PHẢI (a) kiểm `duplicate`/`findDuplicatePlatformIds` (audit #2), (b) gọi
-> `verifyEntryAgainstCustody(entry, custodyUtxo)` đối soát custody THẬT trước khi route phí (audit #6
-> hậu kỳ), (c) đối với authority đơn khóa — chờ committee multisig trước mainnet (audit #4). Chi tiết +
-> lộ trình đóng ở `Tech-Spec.md` known-gap GAP-2/3/4/5 + `Exec-Spec.md §6`.
+| Mã | Ý định (một dòng) | Hình thức |
+|---|---|---|
+| **PK1** | Platform = (Treasury instance) + (entry Registry). Registry là con trỏ, KHÔNG giữ value. | Math §7 PK1 — T-CUSTODY |
+| **PK2** | Beacon-per-platform dưới một policy chung; discover = quét policy. KHÔNG sổ trung tâm. | Math §7 PK2 — T-INDEP |
+| **PK3** | Có kiểm duyệt: `registry_authority` ký mọi register/update. Gác **niêm yết**, KHÔNG gác **value**. | Math §7 PK3 — T-SEPARATE |
+| **PK4** | Định danh **SÁU** field bất biến (v2 thêm `beacon_policy`). Đổi = platform mới. | Math §7 PK4 — T-ID6 |
+| **PK5** | Rút niêm yết = đổi nhãn, KHÔNG đốt beacon. Beacon sống suốt đời. | Math §7 PK5 — T-SUPPLY |
+| **PK6** | Mỗi platform một `governance_ref` RIÊNG — khuyến nghị tách quyền, không phải ràng buộc máy. | Math §7 PK6 |
+| **PK7** | Kho là nguồn chân lý cho `(cut_bps, accepted_assets, governance_ref)`; entry là bản sao niêm yết. | Math §7 PK7 |
+| **PK8** | Đăng ký buộc trỏ tới một kho **đang tồn tại** (R-BIND) — KHÔNG phải phép xác thực kho là thật. | Math §7 PK8, §14 L3 |
+| **PK9** | `Retired` là trạng thái cuối của **đường Update**; v2 mở đường **di trú** cho hồ sơ Retired. | Math §7 PK9 — T-MIGRATE |
+| **PK10** | `status` là NHÃN NIÊM YẾT, KHÔNG van khoá tiền. "Retired = quỹ đóng" là HIỂU NHẦM. | Math §7 PK10 — T-NOGATE |
+| **PK11** | `app_id` / receipt CHƯA neo on-chain. VP/uy tín KHÔNG được tin `app_id` từ Collect. | Math §7 PK11, §14 L8 |
+
+Thêm một định lý **mới của v2**, không mang mã PK: **T-CONSENT** — mọi thay đổi *không đảo ngược
+được* (`→ Retired`, đổi `governance_ref`/`accepted_assets`/`cut_bps`, di trú) đòi **cả** chữ ký
+authority **lẫn** đồng thuận quản trị của chính platform. `Active ↔ Paused` thì authority tự quyết,
+vì nó đảo ngược được. (Math §7 T-CONSENT.)
+
+> **Mô hình tin cậy khi định tuyến phí** và **bảng kẻ tấn công** trước đây nằm ở mục này, nay chuyển
+> sang [`Math-Spec.md`](./Math-Spec.md) §6.2 và §8. Tóm một câu để không ai bỏ sót: đọc sổ **không
+> đủ** để tin — phải kiểm trùng `platform_id`, đối soát kho thật, và kiểm `registry_authority` đã là
+> multisig chưa.
