@@ -11,6 +11,44 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-08-15 — `T-RECEIPT` có **miền** (`D-RECEIPT`), và `tồn liên lạc` có điều kiện thứ tư
+
+- **Đổi gì (hai chỗ, hai nhà nêu).**
+  - `Specs/Math-Spec.md` §13.1.1 **mới**: `T-RECEIPT` chỉ áp cho lời khai **phát biểu sai được** về
+    một sự việc **ngoài chính lời khai**. Lời khai tự chứng (khoá là `hash(dạng chuẩn tắc)`) nằm
+    **ngoài** miền — nó là một cái **tên**, không phải biên nhận, nên không có nghĩa vụ nào phát
+    sinh để mà phân hạng. Kèm phép thử của PhoenixKey (*"khai vống thì khai thế nào?"*) đã siết:
+    phải hỏi về **mệnh đề mà khoản tiền phụ thuộc vào**, không hỏi về thứ được băm.
+  - `REGISTRATION-STANDARD.md` §5 bước 2: `tồn liên lạc` từ **ba** điều kiện lên **bốn** — lần thử
+    trên kênh công khai phải **gọi đích danh đầu mối người thật** trong hồ sơ; mở issue trống không
+    tính.
+- **Vì sao.**
+  - PhoenixKey đề nghị thêm một **nhánh** *"hoặc (b) nội dung tự chứng"* vào phép tuyển. Không nhận
+    cách phát biểu đó: nhánh (b) là một **đường cấp quyền**, và ai cũng đi được bằng cách băm lời
+    khai của mình lại — `hash("tôi đã phục vụ 1000 yêu cầu")` tự chứng hoàn hảo trong khi con số
+    1000 thì bịa. Đặt làm **miền** thì cái chặn nằm trong cấu trúc: ngoài miền = **không có quyền
+    nào được cấp**, không phải quyền cấp theo lối khác.
+  - ProofChat nêu: hồ sơ do **agent** giữ chỉ đọc kênh công khai khi có người mở phiên, nên mốc
+    "≥7 ngày" đo bằng lịch có thể ứng với 0 lần đọc. `tồn liên lạc` treo niêm yết của người khác ⇒
+    chi phí phải đặt lên bên **hành động**, không đặt lên bên **im lặng**.
+- **Gãy gì nếu bám bản cũ:** ai đang định dùng "nội dung của tôi content-addressed" làm căn cứ đòi
+  entitlement sẽ không còn cửa — tự chứng đưa ra khỏi miền, không đưa lên hạng. Và ai đã ghi nhật ký
+  rà soát đủ ba điều kiện cũ mà lần thử công khai **không gọi đích danh** thì nhật ký đó chưa đủ:
+  chưa đặt được `tồn liên lạc`, phải thử lại cho đúng hình.
+
+## 2026-08-15 — `pending` không những không chặn Sybil, nó **nghiêng về phía kẻ giả**
+
+- **Đổi gì:** `Specs/Math-Spec.md` §13.4 mục 1 nâng lên: điều kiện thăng *"qua `W` epoch không phát
+  hiện lỗi"* thưởng đúng thứ Sybil dư mà người thật thiếu — **thời gian không tốn chi phí**. Node
+  thật phải chạy máy `W` epoch; node giả chỉ cần **không làm gì** `W` epoch. (PhoenixKey nêu.) Cùng
+  mục, chứng cứ về cổng `loa ≥ 1` siết chặt hơn: **mọi** chỗ dựng `EpochContributionV2` trong toàn
+  kho `lampnet-hivemind` đều nằm trong `#[cfg(test)]` — cổng đó gác một con đường chưa ai đi.
+- **Vì sao:** bản trước mới nói `pending` *"không chặn"*. Nói thế còn nhẹ và còn để ngỏ cho một người
+  đọc lạc quan nghĩ rằng nới `W` sẽ chặt hơn.
+- **Gãy gì nếu bám bản cũ:** ai đang coi `W` là tham số chờ hiệu chuẩn đang giải sai bài. Không phải
+  hiệu chuẩn sai — **sai loại điều kiện**. *"Không bị bắt lỗi"* thì cả hai bên đều đạt bằng cách nằm
+  im, nên không con số `W` nào tách được họ. Đổi số vô ích; phải đổi loại.
+
 ## 2026-08-15 — `R1` chuyển từ lời hứa của người sang phép kiểm của máy; và bộ chấm thôi đỏ khi hồ sơ chỉ THIẾU
 
 - **Đổi gì:** chuẩn đã có căn cứ từ chối `R1` (trùng `platform_id`) từ đầu, nhưng **không có gì

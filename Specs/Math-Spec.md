@@ -465,6 +465,39 @@ ra hai loại biên nhận khác nhau; hỏi chung một câu thì mọi câu tr
 bên ký-và-kiểm, chữ ký của hai bên kia đang phân bổ tài sản của người ngoài cuộc. Một biểu quyết
 tuyên bố ngược lại không đổi được điều này — nó chỉ đổi được ai bị thiệt.
 
+#### 13.1.1 Miền áp dụng — và phép thử để biết mình có ở trong miền không
+
+`T-RECEIPT` hỏi *"nếu biên nhận đó **sai** thì ai chịu?"*. Câu hỏi này **giả định trước** rằng biên
+nhận **sai được**. Có những lời khai không sai được, và với chúng câu hỏi rỗng chứ không phải có một
+đáp án thứ ba.
+
+Ca mẫu (PhoenixKey nêu 2026-08-15): khoá tra cứu là `content_cid = hash(dạng chuẩn tắc của nội
+dung)`. Không tồn tại thao tác "khai vống" — khai khác đi thì ra khoá khác, mà khoá khác thì là bản
+ghi khác, không phải bản đang tranh chấp. Không có bên kiểm, và cũng không cần bên nào.
+
+> **`D-RECEIPT` (miền).** `T-RECEIPT` chỉ áp cho lời khai **phát biểu sai được** về một sự việc
+> **ngoài chính lời khai**. Lời khai tự chứng — nội dung **chính là** vật — nằm **ngoài** miền: nó
+> không phải biên nhận, nó là một **cái tên**. Tên không tạo nghĩa vụ cho ai, nên không có quyền nào
+> để cấp.
+
+> **Phép thử miền** (phát biểu của PhoenixKey, nhận nguyên): **hỏi *"khai vống thì khai thế nào?"***
+> Phát biểu nổi câu khai vống ⇒ ở **trong** miền, `T-RECEIPT` áp, và nó hỏi ai gánh. Không phát biểu
+> nổi ⇒ **ngoài** miền, không có gì để phân hạng.
+
+⚠ **Đặt câu hỏi lên đúng vật thì phép thử mới chạy.** Phải hỏi về **mệnh đề mà khoản tiền phụ thuộc
+vào**, không hỏi về thứ được băm. Ví dụ phản chứng: `hash(dạng chuẩn tắc của "tôi đã phục vụ 1000
+yêu cầu"))` là một băm hoàn toàn tự chứng — hỏi *"khai vống cái băm thế nào?"* thì trả lời được là
+"không thể", và người đọc kết luận nhầm rằng mình ở ngoài miền. Nhưng khoản tiền không phụ thuộc vào
+cái băm, nó phụ thuộc vào **con số 1000**; băm một con số bịa vẫn ra một băm hợp lệ. Hỏi đúng vật thì
+câu khai vống phát biểu được ngay ⇒ ở trong miền ⇒ `T-RECEIPT` áp ⇒ hỏi tiếp ai chịu thiệt.
+
+Vì sao `D-RECEIPT` là **miền** chứ không phải nhánh thứ ba của phép tuyển: nếu viết thành *"quyền ⟸
+(a) bên chịu thiệt là bên đã kiểm, **hoặc** (b) nội dung tự chứng"*, thì (b) trở thành một **đường
+cấp quyền**, và ai cũng đi được đường đó chỉ bằng cách băm lời khai của mình lại. Cái chặn duy nhất
+lúc đó là một câu văn xuôi dặn "đừng áp cho sự kiện ở ngoài" — mà văn xuôi thì không phải hình thức.
+Đặt nó làm miền thì cái chặn nằm **trong** cấu trúc: ngoài miền nghĩa là **không có quyền nào được
+cấp**, chứ không phải quyền được cấp theo lối khác.
+
 ### 13.2 Áp vào hai đường mã đang chạy — nghiệm bằng đọc mã
 
 Chứng cứ dưới đây đọc trên repo **khác** (`LampNetCloud/lampnet-hivemind`, **chỉ đọc**), nhánh
@@ -509,6 +542,14 @@ không cần có.
    ([`../bench/DOI-CHIEU.md`](../bench/DOI-CHIEU.md) §1 — không đốt gì, chỉ khai **cung**, lãi dương
    với mọi `ρ` và mọi `α`) đi qua cửa `pending` y hệt node thật. Ai đọc `pending` như *"đã vá
    Sybil"* là tưởng nhầm.
+
+   🔴 **Và nó tệ hơn "không chặn": cửa đó nghiêng về phía kẻ giả** (PhoenixKey nêu 2026-08-15, nhận
+   nguyên). Điều kiện *"qua `W` epoch không phát hiện lỗi"* thưởng đúng thứ Sybil dư còn người thật
+   thiếu — **thời gian không tốn chi phí**. Node thật muốn qua `W` epoch phải chạy máy thật `W`
+   epoch; node giả chỉ cần **không làm gì** trong `W` epoch. Nên nới `W` **không** làm cửa lọc chặt
+   hơn, nó chỉ kéo dài hàng chờ của người trung thực. Muốn cửa đó lọc được thì điều kiện thăng phải
+   là thứ **tốn của kẻ giả nhiều hơn tốn của người thật**; *"không bị bắt lỗi"* thì cả hai đều đạt
+   bằng cách nằm im. ⟹ chọn con số `W` không phải câu hỏi đúng cho tới khi đổi **loại** điều kiện.
 2. 🔴 **Giá một danh tính trên đường lease đo được bằng 0 — nhưng nó không mua được gì.** Vào cửa
    `/v1/mobile/lease` chỉ cần một cặp khoá Ed25519 tự sinh: không ký quỹ, không phí, không
    attestation, không tra sổ peer; toàn bộ phép xác thực là *"ký được bằng khoá riêng của khoá công
@@ -517,8 +558,12 @@ không cần có.
    chặn ở cửa trả tiền, và giá phẳng nên `N` danh tính không nhân tiền lên — nút thắt là **công tính
    toán thật**. ⟹ danh tính miễn phí chỉ thành đòn bẩy ở nơi phần thưởng **co giãn theo số danh
    tính**, tức đường pool. Ở đó cổng danh tính là `loa ≥ 1` (`allocate.rs:213-222`) — **và tôi chưa
-   nghiệm được đường dữ liệu nào nạp `loa` thật**: mọi lần gán ngoài `types.rs:584` đều nằm trong
-   test. Cổng có trong hàm; chưa đủ chứng cứ nói nó có hiệu lực trên sản xuất.
+   nghiệm được đường dữ liệu nào nạp `loa` thật**. Đo lại 2026-08-15, chặt hơn: bốn chỗ gán `loa: 1`
+   (`metering.rs:522,579` · `reliability.rs:65` · `tier.rs:200`) đều nằm sau một `#[cfg(test)]`
+   (mở lần lượt ở `:277` · `:43` · `:147`), và **mọi** chỗ dựng `EpochContributionV2` trong toàn kho
+   cũng vậy (`allocate.rs:403` · `metering.rs:511,568` · `reliability.rs:50` · `tier.rs:185`). Không
+   có mã sản xuất nào dựng nổi cái struct mà cổng `loa` gác ⟹ cổng đó chưa **yếu**, nó đang gác một
+   con đường **chưa ai đi**.
 3. ⚠ **`pending` trên đường pool KHÔNG phải nhãn rỗng — nhưng cũng chưa phải lá chắn công bố
    được.** Có cơ chế phát hiện thật (PoR, quorum, bond, `loa`). Bốn chốt PA-4 mà LampNet hứa — hạn
    tự-thăng cứng · gom batch đơn định · M-of-N vai neo · `W` theo tài nguyên — thì **chưa**. Mục này
