@@ -2,12 +2,12 @@
 
 | Trường | Giá trị |
 |---|---|
-| Phiên bản | v0.1.0 |
+| Phiên bản | v0.2.0 |
 | Trạng thái | `DRAFT` |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Người viết | Registry agent — 2026-08-13 |
 | Người duyệt | **chưa ai duyệt** |
-| Cập nhật cuối | 2026-08-13 |
+| Cập nhật cuối | 2026-08-15 (thêm §13 — tiêu chí biên nhận `T-RECEIPT`) |
 | Loại toán | E (đúng đắn thuần) + B (cơ chế, phần quyền hạn) |
 | Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
@@ -18,8 +18,9 @@
 > trôi khác nhau.
 
 > ⚠ **Bản này mô tả trạng thái SAU đợt sửa validator v2** (`spec_version = 2`): định danh bất biến
-> **sáu** trường, có nhánh di trú `MigrateEntry`, `→ Retired` đòi đồng thuận hai bên. Mã v2 đã nằm
-> trên đĩa nhưng **chưa commit** lúc viết — xem §17 để biết cách tự kiểm.
+> **sáu** trường, có nhánh di trú `MigrateEntry`, `→ Retired` đòi đồng thuận hai bên. ~~Mã v2 đã nằm
+> trên đĩa nhưng **chưa commit** lúc viết~~ — **hết hiệu lực 2026-08-15**: mã v2 đã gộp vào `main`
+> (PR #8, merge commit `c63372e`). Vẫn **chưa deploy** mạng nào. Cách tự kiểm: §17.
 
 ---
 
@@ -337,7 +338,7 @@ thêm một reference input mỗi giao dịch kho + ràng vòng đời custody�
 
 *Hệ quả bắt buộc:* hệ uy tín / sức bỏ phiếu **KHÔNG được** tin `app_id` lấy từ `Collect` để cấp tín
 dụng C1. Ai làm thế là mở đường bịa số. Hoặc thi công receipt, hoặc bỏ lời hứa — không có đường
-giữa.
+giữa. Tiêu chí mà bản thi công receipt phải thoả: [§13](#13-biên-nhận--khi-nào-một-chữ-ký-tạo-ra-nghĩa-vụ).
 
 ### T-CONSENT — định lý mới của v2 (không có mã PK riêng)
 
@@ -437,6 +438,111 @@ có KHÔNG phải lý do từ chối**.
 
 ---
 
+## §13. Biên nhận — khi nào một chữ ký tạo ra nghĩa vụ
+
+PK11 và L8 nói **receipt chưa có**. Mục này không thi công nó; nó chốt **tiêu chí** mà bất kỳ bản
+thi công nào cũng phải thoả, để lần viết mã đầu tiên không phải quay lại chọn lại. Trước mục này,
+câu hỏi lưu hành trong hệ là *"biên nhận đã ký thành **quyền** (entitlement) ngay lúc ký, hay là
+**đơn chờ** (`pending`) tới khi neo on-chain?"* — và bốn chuyên gia không hội tụ.
+
+**Câu hỏi đó sai kiểu: nó hỏi một câu cho hai vật khác nhau.** Hai đường thanh toán khác nhau sinh
+ra hai loại biên nhận khác nhau; hỏi chung một câu thì mọi câu trả lời đều đúng một nửa.
+
+### 13.1 `T-RECEIPT` — tiêu chí phân định
+
+> **`T-RECEIPT`.** Một biên nhận đã ký thành **quyền ngay lúc ký** ⟺ bên **chịu thiệt** nếu biên
+> nhận đó sai **chính là** bên đã **kiểm** nó, và kiểm bằng chứng cứ mà bên đòi tiền **không bịa
+> được**.
+>
+> Không thoả cả hai vế ⇒ biên nhận chỉ là **đơn có bằng chứng** (`pending`).
+
+Đây là tiêu chí **cấu trúc**, không phải chính sách: nó hỏi ai gánh sai số, không hỏi ai đáng tin.
+
+> **`T-NO-THIRD-PARTY` (trụ đỡ, không đảo được bằng biểu quyết).** Hai bên **không** tạo được nghĩa
+> vụ cho một bên thứ ba bằng cách ký với nhau.
+
+`T-RECEIPT` là hệ quả trực tiếp của `T-NO-THIRD-PARTY`: khi bên chịu thiệt **không** nằm trong tập
+bên ký-và-kiểm, chữ ký của hai bên kia đang phân bổ tài sản của người ngoài cuộc. Một biểu quyết
+tuyên bố ngược lại không đổi được điều này — nó chỉ đổi được ai bị thiệt.
+
+### 13.2 Áp vào hai đường mã đang chạy — nghiệm bằng đọc mã
+
+Chứng cứ dưới đây đọc trên repo **khác** (`LampNetCloud/lampnet-hivemind`, **chỉ đọc**), nhánh
+`main`, SHA `3c2ec22`, đối chiếu 2026-08-15. Con trỏ mang đủ ba thứ theo
+[`../REGISTRATION-STANDARD.md`](../REGISTRATION-STANDARD.md) §3.
+
+| | đường **mobile lease** | đường **pool epoch** (V2, `allocate_rewards_v2`) |
+|---|---|---|
+| mã | `lampnet-mirage/src/mobile_settle.rs:27,39,295-333` | `lampnet-reward/src/allocate.rs:244-258` |
+| trả thế nào | đơn giá phẳng `BASE_PRICE_COMPUTE_ULAMP = 10` (`:27`) — **không có pool trần** | emission **co giãn có trần**: `Σvalue ≤ pool` ⇒ trả nguyên giá tuyệt đối; `Σvalue > pool` ⇒ co tỉ lệ (`:252-257`) |
+| ai ký | **thiết bị ký một mình** — `verify_receipt` nhận đúng một chữ ký (`:295-300`) | node khai, nhưng phải qua chữ ký peer đã kết nạp |
+| ai kiểm | **chính bên trả**: server đối chiếu `expected_hash`, thứ *"KHÔNG serialize ra client"* (`:39`, so ở `:330-333`) | **có kiểm, và kiểm thật**: PoR + assignment mạng (`metering.rs:127,143`), quorum Splash (`:172`), cọc `BondEscrow` (`:155`), cổng `loa ≥ 1` (`allocate.rs:219`) |
+| khai vống thì ai chịu | **bên trả** — đúng bên vừa kiểm | **không phải bên kiểm.** Dưới trần: bên cấp vốn cho pool (emission thật chảy ra). Trên trần: mọi node khác, bị co tỉ lệ. Cả hai đều là **bên thứ ba** |
+| `T-RECEIPT` | **thoả** ⇒ entitlement, `W = 0` | **không thoả** ⇒ `pending`, `W > 0` |
+
+Đường lease thoả tiêu chí **không phải nhờ chữ ký chéo hai bên** — nó chỉ có một chữ ký. Nó thoả nhờ
+bên trả nắm một **ground truth** (`expected_hash`) mà bên đòi tiền không thấy, nên không bịa khớp
+được. Đây là chỗ dễ đọc nhầm nhất của cả mục: **số chữ ký không quyết định gì; ai cầm chứng cứ mới
+quyết định.**
+
+Và đường pool trượt tiêu chí **không phải vì "không ai kiểm"** — nó có bốn lớp kiểm liệt kê ở trên,
+đắt hơn hẳn đường lease. Nó trượt vì **người kiểm không phải người chịu thiệt**. Đây là phân biệt
+load-bearing: siết thêm phép kiểm **không** đưa đường pool sang `W = 0`; chỉ đổi được **ai gánh sai
+số** mới đổi được hạng. Ai đọc bảng này thành "pool kém an toàn hơn lease" là đọc sai — hai đường
+hỏng theo hai kiểu khác nhau.
+
+⚠ **Đừng trích `allocate_rewards` (V1) làm chứng cứ.** Nhánh `:92-94` (`share × pool`, chia tỉ lệ mù
+trên pool cố định) mang nhãn `**[LEGACY V1]**` ngay trong mã (`allocate.rs:26-31`) và bị chính mã đó
+tuyên là **vi phạm INV-R14 của V2**. Một vòng rà soát trước của nhà này đã trích đúng nhánh chết
+này; con số dẫn ra vẫn đúng với V1 nhưng **không mô tả đường đang chạy**.
+
+### 13.3 Hệ quả thi công — **một** kiểu, không hai
+
+`pending` với `W = 0` **chính là** entitlement. Nên lược đồ datum viết **đúng một** kiểu biên nhận
+mang tham số `W`, đặt `W = 0` cho đường lease. Tách làm hai kiểu là tự sinh ra một đường di trú
+không cần có.
+
+### 13.4 Bốn điều PHẢI viết kèm — thiếu là đặc tả nói dối
+
+1. 🔴 **`pending` KHÔNG phải cổng chống Sybil.** Điều kiện thăng `pending → entitlement` là *"qua
+   `W` epoch không phát hiện lỗi"*, **không phải** chứng minh danh tính. Đường supply-claim
+   ([`../bench/DOI-CHIEU.md`](../bench/DOI-CHIEU.md) §1 — không đốt gì, chỉ khai **cung**, lãi dương
+   với mọi `ρ` và mọi `α`) đi qua cửa `pending` y hệt node thật. Ai đọc `pending` như *"đã vá
+   Sybil"* là tưởng nhầm.
+2. 🔴 **Giá một danh tính trên đường lease đo được bằng 0 — nhưng nó không mua được gì.** Vào cửa
+   `/v1/mobile/lease` chỉ cần một cặp khoá Ed25519 tự sinh: không ký quỹ, không phí, không
+   attestation, không tra sổ peer; toàn bộ phép xác thực là *"ký được bằng khoá riêng của khoá công
+   mình vừa tự khai"* (`mobile_settle.rs:215-220`), tuần hoàn. Không có rate-limit nào áp lên nhóm
+   route `/v1/mobile/*` (đối chiếu router `lampnet-node.rs:1510-1515`). **Nhưng** `expected_hash`
+   chặn ở cửa trả tiền, và giá phẳng nên `N` danh tính không nhân tiền lên — nút thắt là **công tính
+   toán thật**. ⟹ danh tính miễn phí chỉ thành đòn bẩy ở nơi phần thưởng **co giãn theo số danh
+   tính**, tức đường pool. Ở đó cổng danh tính là `loa ≥ 1` (`allocate.rs:213-222`) — **và tôi chưa
+   nghiệm được đường dữ liệu nào nạp `loa` thật**: mọi lần gán ngoài `types.rs:584` đều nằm trong
+   test. Cổng có trong hàm; chưa đủ chứng cứ nói nó có hiệu lực trên sản xuất.
+3. ⚠ **`pending` trên đường pool KHÔNG phải nhãn rỗng — nhưng cũng chưa phải lá chắn công bố
+   được.** Có cơ chế phát hiện thật (PoR, quorum, bond, `loa`). Bốn chốt PA-4 mà LampNet hứa — hạn
+   tự-thăng cứng · gom batch đơn định · M-of-N vai neo · `W` theo tài nguyên — thì **chưa**. Mục này
+   nói `W > 0` là **đúng nguyên lý**, và nói cơ chế phát hiện **có tồn tại**; nó **không** nói mức
+   bảo đảm đã đo được.
+4. ⚠ **Không được bê lập luận của đường này sang đường kia.** Đường lease **không có** pool trần
+   (`mobile_settle.rs:27`), nên mọi lập luận dựa trên "pool có trần" không áp được sang nó. Ngược
+   lại, đường pool V2 **không** chia tỉ lệ mù — nó chỉ co khi vượt trần — nên lập luận "mọi khai
+   vống đều pha loãng người khác" cũng không áp được sang nó. Hai vòng rà soát trước của nhà này
+   ghép sai theo đúng hai chiều này.
+
+### 13.5 Quan hệ với hạng chứng thực `EV-*`
+
+`T-RECEIPT` **siết chặt** `EV-1` chứ không thay nó. `EV-1` hỏi *ai **ký***; `T-RECEIPT` hỏi *ai
+**kiểm**, và kiểm bằng gì*. Một biên nhận đường lease chỉ có **một** chữ ký — của chính bên hưởng
+lợi — nên đọc theo chữ `EV-*` thì nó là `EV-0`; nhưng nó vẫn thoả `T-RECEIPT` vì phép kiểm nằm ở bên
+trả. Hai thang đo hai thứ khác nhau, và **`T-RECEIPT` không nâng hạng `EV-*` của bất kỳ dòng khai
+nào** — đừng dùng mục này để xin hạng cao hơn ở hồ sơ đăng ký.
+
+**Nguồn.** Chốt 2026-08-15 sau khi hội đồng bốn chuyên gia không hội tụ; bản luận đầy đủ và đường
+dẫn tới bản nháp cơ chế phí ghi ở [`../ChangeLog.md`](../ChangeLog.md).
+
+---
+
 ## §14. Giới hạn — thứ KHÔNG chứng minh được
 
 Mục này viết để không ai đọc §7 rồi tưởng mọi thứ đã được chứng minh.
@@ -500,7 +606,8 @@ Chưa có bên thứ ba nào audit. Bắt buộc trước mainnet.
 
 ### L8 — `receipt` chưa có
 
-PK11. Mọi lời hứa về uy tín dựa trên `app_id` hiện **không có nền**.
+PK11. Mọi lời hứa về uy tín dựa trên `app_id` hiện **không có nền**. §13 chốt **tiêu chí** phân
+định biên nhận (`T-RECEIPT`) nhưng **không** thi công gì: L8 vẫn mở nguyên.
 
 ---
 

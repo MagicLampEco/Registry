@@ -11,6 +11,21 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-08-15 — Tiêu chí biên nhận `T-RECEIPT` vào đặc tả toán (`Specs/Math-Spec.md` §13)
+
+- **Đổi gì:** câu hỏi *"biên nhận đã ký = quyền ngay, hay đơn chờ tới khi neo on-chain?"* được chốt
+  là **hỏi sai kiểu** và thay bằng một tiêu chí cấu trúc: biên nhận thành quyền ngay lúc ký ⟺ **bên
+  chịu thiệt nếu nó sai chính là bên đã kiểm nó**, bằng chứng cứ bên đòi tiền không bịa được
+  (`T-RECEIPT`, dẫn từ `T-NO-THIRD-PARTY`). Hệ quả thi công: **một** kiểu biên nhận mang tham số
+  `W`, không hai kiểu. Nội dung này trước nằm trong một bản nháp ở `_Agents/` — thư mục bị
+  `.gitignore`, nên một quyết định load-bearing đang sống ngoài repo. Nay chuyển vào đặc tả.
+- **Vì sao:** hội đồng bốn chuyên gia không hội tụ vì hai bên đang nói về hai đường thanh toán khác
+  nhau của LampNet. Tiêu chí cấu trúc giải tán câu hỏi thay vì chọn một vế.
+- **Gãy gì nếu bám bản cũ:** ai đang chờ một quyết định "entitlement hay pending" cho **mọi** biên
+  nhận sẽ chờ mãi — câu trả lời phụ thuộc đường thanh toán. Và ai định siết thêm phép kiểm để đưa
+  đường pool về `W = 0` đang làm việc vô ích: `T-RECEIPT` hỏi **ai chịu thiệt**, không hỏi kiểm
+  chặt tới đâu.
+
 ## 2026-08-13 — Tách đặc tả toán ra tệp riêng (`Specs/Math-Spec.md`)
 
 - **Đổi gì:** phát biểu hình thức của mười một bất biến `PK1…PK11`, mô hình tin cậy khi định tuyến

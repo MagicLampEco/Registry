@@ -211,6 +211,11 @@ máy chủ tự ký bằng khoá nằm trên chính nó, hoặc một node ký b
 nên mọi node đều có cùng khoá — cả hai đều vẫn là `EV-0`. Cái thứ hai không phải "tự ký", nó là
 **không ký**.
 
+> **`EV-*` hỏi ai *ký*. Có một câu hỏi khác, hỏi ai *kiểm*.** Khi một biên nhận được dùng để **đòi
+> tiền**, hạng `EV-*` không đủ để biết nó có tạo ra nghĩa vụ hay không — tiêu chí đó là `T-RECEIPT`,
+> ở [`Specs/Math-Spec.md`](Specs/Math-Spec.md) §13. Hai thang đo hai thứ khác nhau, và **`T-RECEIPT`
+> không nâng hạng `EV-*` của bất kỳ dòng khai nào** — đừng viện nó để xin hạng cao hơn trong hồ sơ.
+
 ## 4. Quy trình bốn bước
 
 ```
