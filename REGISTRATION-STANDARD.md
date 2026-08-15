@@ -211,6 +211,11 @@ máy chủ tự ký bằng khoá nằm trên chính nó, hoặc một node ký b
 nên mọi node đều có cùng khoá — cả hai đều vẫn là `EV-0`. Cái thứ hai không phải "tự ký", nó là
 **không ký**.
 
+> **`EV-*` hỏi ai *ký*. Có một câu hỏi khác, hỏi ai *kiểm*.** Khi một biên nhận được dùng để **đòi
+> tiền**, hạng `EV-*` không đủ để biết nó có tạo ra nghĩa vụ hay không — tiêu chí đó là `T-RECEIPT`,
+> ở [`Specs/Math-Spec.md`](Specs/Math-Spec.md) §13. Hai thang đo hai thứ khác nhau, và **`T-RECEIPT`
+> không nâng hạng `EV-*` của bất kỳ dòng khai nào** — đừng viện nó để xin hạng cao hơn trong hồ sơ.
+
 ## 4. Quy trình bốn bước
 
 ```
@@ -290,10 +295,28 @@ rà soát của chính hồ sơ** — kèm dấu thời gian — ít nhất
 - **≥ 2 lần thử**,
 - **cách nhau ≥ 7 ngày**,
 - trên **≥ 2 kênh khác nhau** trong số kênh hồ sơ đã khai, và **một trong hai phải là kênh công
-  khai** (issue hoặc PR trên repo của hồ sơ).
+  khai** (issue hoặc PR trên repo của hồ sơ), và
+- lần thử trên kênh công khai phải **gọi đích danh đầu mối người thật** mà hồ sơ khai ở ô "Đầu mối
+  liên hệ" (`@tên` trong issue/PR, hoặc gán người đó làm assignee) — mở một issue trống trên repo
+  **không** tính là một lần thử.
 
-Đủ ba điều kiện thì hồ sơ chuyển `tồn liên lạc` và **treo niêm yết**; nó **hồi lại ngay khi bên nộp
-trả lời** — khác hẳn `bị từ chối`, thứ không hồi.
+Đủ **bốn** điều kiện thì hồ sơ chuyển `tồn liên lạc` và **treo niêm yết**; nó **hồi lại ngay khi bên
+nộp trả lời** — khác hẳn `bị từ chối`, thứ không hồi.
+
+> **Vì sao có điều kiện thứ tư** (thêm 2026-08-15, do ProofChat nêu). Ngày càng nhiều hồ sơ do một
+> **agent** giữ, và agent chỉ đọc kênh công khai **khi có người mở phiên cho nó chạy** — không có
+> phiên thì issue nằm đó y như thư trong hộp không ai quét. Mốc "≥ 7 ngày" đo bằng lịch khi đó có
+> thể ứng với **0 lần đọc**.
+>
+> Chỗ này **không** nới điều kiện cho bên nộp, mà **siết** nghĩa vụ của bên gửi, và siết đúng chiều:
+> `tồn liên lạc` treo niêm yết của người khác, nên chi phí phải đặt lên bên **hành động** (Registry),
+> không đặt lên bên **im lặng** — bên mà ta chưa biết vì sao im. Nghĩa vụ theo hồ sơ là nghĩa vụ của
+> **người thật** đã khai ở ô đầu mối, không phải của agent đưa thư; nên lần thử phải chạm được đúng
+> người đó thì đồng hồ mới có nghĩa.
+>
+> Ngược lại, khi đã gọi đích danh mà vẫn im **quá 7 ngày**, thì đây là ca hiếm mà sự cố nằm ở phía
+> bên nộp **và** bên nộp sửa được — khác hẳn ca (ii) ở trên, chỗ sự cố là của người gửi. Đó là lý do
+> `tồn liên lạc` được phép tồn tại còn R2 mở rộng thì không.
 
 Ranh giới giữa hai bước là ranh giới của phép phủ định: bước 1 phủ định được (mở tệp ra là thấy);
 bước 2 thì không, nên bước 2 không được phép là căn cứ từ chối.

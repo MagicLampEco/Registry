@@ -15,7 +15,7 @@
 
 ```json registration
 {
-  "platform_id": "join",
+  "platform_id": "lampnet",
   "spec_version": 2,
 
   "declares": {
@@ -81,18 +81,27 @@
 Đặc tả: `Join/Join-Feat.md`, `Join/Join-Tech.md`, `Join/Join-Math.md`, `Join/LDC-Community.md`;
 bộ 4 đặc tả hạ tầng L1 đã rời repo Join về LampNet (quyết định 2026-08-05).
 
-> **Ghi chú về `platform_id` — một câu chờ chủ sở hữu.** Hồ sơ này nay khai cả LampNet, mà `platform_id`
-> vẫn là `join` (lớp tích hợp). LampNet agent đã nêu ở thư 2026-08-07 rằng sổ trỏ vào một chỗ nội dung đã
-> rời đi. Registry **không tự đổi**: `platform_id` là một trong sáu trường định danh bất biến, đổi sau khi
-> lên chuỗi là phải đăng ký mới và mất lịch sử. Hôm nay **chưa có gì trên bất kỳ mạng nào**, nên đổi còn
-> miễn phí — **và miễn phí không giới hạn số lần, cho tới đúng lúc đúc beacon**. Bản trước của dòng này
-> viết *"chỉ một lần này"*; đó là **sai**, và nó tự chế ra một sự cấp bách không có. Đo được: tên này đã
-> đổi miễn phí **hai lần** rồi — `4ff1852` (`joinnet` → `join`) và `bbe56e9` (gộp ba bản hồ sơ về một).
-> Kiểm: `git cat-file -t 4ff1852 bbe56e9` (phải trả `commit` cả hai).
+> **`platform_id` — chủ sở hữu ĐÃ CHỐT 2026-08-15: `join` → `lampnet`.** Registry không tự đổi trường
+> này (một trong sáu trường định danh bất biến); câu treo từ thư LampNet agent 2026-08-07 nay có người
+> trả lời có thẩm quyền.
 >
-> Nên đây **không** phải quyết định gấp. Chủ sở hữu chốt giữ `join` hay đổi sang `lampnet` trước khi
-> niêm yết, và cái chặn hồ sơ này ở L0 **không phải cái tên** — là hai ô `governance_ref` và trục danh
-> tính, cộng ba ô đầu mối người thật còn trống (`:29`, `:78-79`, `:158`).
+> Lý do ghi lại để lần sau khỏi suy lại: `join` là **lớp tích hợp**, còn kho và bằng chứng nằm ở
+> `LampNetCloud/lampnet-hivemind`. Quy tắc rút ra — **trường định danh bất biến đặt tên cho tầng giữ
+> kho và giữ bằng chứng, không phải tầng giữ thương hiệu.**
+>
+> Đổi được vì **chưa có gì trên bất kỳ mạng nào**, và miễn phí **không giới hạn số lần** cho tới đúng
+> lúc đúc beacon. Tên này đã đổi miễn phí hai lần trước đó — `4ff1852` (`joinnet` → `join`) và
+> `bbe56e9` (gộp ba bản hồ sơ về một); kiểm bằng `git cat-file -t 4ff1852 bbe56e9`. Một bản trước của
+> khối này viết *"miễn phí, nhưng chỉ một lần này"* — **sai**, và nó tự chế ra một sự cấp bách không có.
+>
+> ⚠ Cái chặn hồ sơ này ở L0 **không phải cái tên** và không được đổi bởi lần đổi tên này: vẫn là hai ô
+> `governance_ref` + trục danh tính, cộng ba ô đầu mối người thật còn trống (`:29`, `:78-79`, `:158`).
+>
+> ⚠ Từ đây trở đi việc đổi tên **không còn rẻ vì lý do thứ hai**, độc lập với chuyện đúc beacon: R1
+> (trùng `platform_id`) **không kiểm được bằng máy** — `REGISTRATION-STANDARD.md:99`, và
+> `tools/check-registration.mjs` chỉ kiểm ô trống, **không dedup `platform_id`**. Chừng nào chưa có
+> `CODEOWNERS` + branch protection cho `Registrations/` (`DevStatus.md:54`) thì một PR sau vẫn ghi đè
+> được tên này mà không ai phải duyệt. Khoá tên bằng văn bản không thay được khoá tên bằng quyền gộp.
 
 ## (b) Giải thích bốn mã đã chọn
 
@@ -172,3 +181,4 @@ tả, không phải hình phạt — hệ không có quyền phạt (anh Đức 
 | 2026-08-04 | Registry ánh xạ sang khung mẫu; đổi `platform_id` `joinnet` → `join` | Thiếu **2.4**, **đầu mối liên hệ**, **người tiếp nhận** |
 | 2026-08-07 | Chép nguyên văn lời khai Join agent (thư 2026-08-05) vào ba ô trống; hạ mức bảo đảm `did:phoenix` xuống đúng mức đo được | **2.4** khai xong. **Người tiếp nhận** ghi nhận, chưa khoá. **Đầu mối liên hệ** vẫn CHƯA KHAI |
 | 2026-08-13 | Anh Đức chốt **một hồ sơ chung cho LampNet + Join** (ngược đề nghị (A) của LampNet agent, lý do và cách bù đã gửi thư). Chuyển sang khuôn khai-bằng-mã v2. Chép tám dòng `evidence` từ thư LampNet 2026-08-07 và 2026-08-11 | Hạng tính ra: **L0 — đã tiếp nhận**. Chặn lên `L1` bởi **đúng hai ô**: `governance_ref` và trục danh tính `ID-0`. Ba ô người-thật (`đầu mối liên hệ` × 2 con trỏ, `ai nhận nếu cả hai ngừng`) vẫn CHƯA KHAI — Registry không điền hộ |
+| 2026-08-15 | Chủ sở hữu chốt `platform_id` `join` → `lampnet`; đổi tên tệp `join.md` → `lampnet.md`; gỡ **tên thứ ba** `LampNetJoin` khỏi fixture `tests/shapeMirror.test.ts:81` | Hạng **không đổi: L0**. Cái chặn `L1` vẫn là đúng hai ô cũ, không phải cái tên. Bộ kiểm sau khi đổi: `npm test` **202/202 · 12 tệp**, `tools/test-check.sh` **4 đúng · 0 sai** |

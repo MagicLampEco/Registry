@@ -1,0 +1,35 @@
+# Chủ sở hữu mã — ai buộc phải xem trước khi gộp.
+#
+# ⚠ ĐỌC TRƯỚC KHI TIN TỆP NÀY.
+#
+# Kho này PRIVATE trên gói GitHub Free. Trên nền đó CODEOWNERS **không** tự yêu cầu review và
+# **không** chặn được gộp — GitHub chỉ cưỡng chế nó khi kho public, hoặc khi tài khoản lên Pro /
+# Team / Enterprise. Đo được 2026-08-15:
+#
+#     GET /repos/MagicLampNetwork/Registry/rulesets
+#     → 403 "Upgrade to GitHub Pro or make this repository public to enable this feature."
+#
+# Nên hôm nay tệp này là **tài liệu về trách nhiệm**, chưa phải cổng. Cổng thật đang chạy là
+# `.github/workflows/kiem-ho-so.yml` — nó chấm hồ sơ và bắt `platform_id` trùng, và nó chạy được
+# trên gói Free. Đừng đọc tệp này như một lá chắn cho tới khi kho lên Pro; lúc đó bật
+# "Require review from Code Owners" thì nó có hiệu lực ngay, không phải sửa gì ở đây.
+
+# Mặc định
+*                           @AladinContract
+
+# Hồ sơ đăng ký — chỗ một chữ ký cấp cho người ngoài quyền mang tên hệ đi thuyết phục người dùng.
+# Tính duy nhất `platform_id` không có bảo đảm mật mã (`Specs/Math-Spec.md` §14 L1); nó dựa vào
+# đúng hai thứ: phép kiểm trùng trong CI, và người ký không ký hai lần cùng một tên.
+/Registrations/             @AladinContract
+/REGISTRATION-STANDARD.md   @AladinContract
+
+# Validator — sửa là đổi script hash là đổi địa chỉ. Xem `Specs/Math-Spec.md` §17 để biết cách so
+# hash trước/sau.
+/onchain/                   @AladinContract
+
+# Đặc tả — nguồn của mọi bất biến mà cả hệ đang bám.
+/Specs/                     @AladinContract
+
+# Chính cổng gác. Sửa được cổng thì lách được mọi thứ cổng gác.
+/.github/                   @AladinContract
+/tools/                     @AladinContract

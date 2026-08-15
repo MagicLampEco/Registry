@@ -11,6 +11,77 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-08-15 — `T-RECEIPT` có **miền** (`D-RECEIPT`), và `tồn liên lạc` có điều kiện thứ tư
+
+- **Đổi gì (hai chỗ, hai nhà nêu).**
+  - `Specs/Math-Spec.md` §13.1.1 **mới**: `T-RECEIPT` chỉ áp cho lời khai **phát biểu sai được** về
+    một sự việc **ngoài chính lời khai**. Lời khai tự chứng (khoá là `hash(dạng chuẩn tắc)`) nằm
+    **ngoài** miền — nó là một cái **tên**, không phải biên nhận, nên không có nghĩa vụ nào phát
+    sinh để mà phân hạng. Kèm phép thử của PhoenixKey (*"khai vống thì khai thế nào?"*) đã siết:
+    phải hỏi về **mệnh đề mà khoản tiền phụ thuộc vào**, không hỏi về thứ được băm.
+  - `REGISTRATION-STANDARD.md` §5 bước 2: `tồn liên lạc` từ **ba** điều kiện lên **bốn** — lần thử
+    trên kênh công khai phải **gọi đích danh đầu mối người thật** trong hồ sơ; mở issue trống không
+    tính.
+- **Vì sao.**
+  - PhoenixKey đề nghị thêm một **nhánh** *"hoặc (b) nội dung tự chứng"* vào phép tuyển. Không nhận
+    cách phát biểu đó: nhánh (b) là một **đường cấp quyền**, và ai cũng đi được bằng cách băm lời
+    khai của mình lại — `hash("tôi đã phục vụ 1000 yêu cầu")` tự chứng hoàn hảo trong khi con số
+    1000 thì bịa. Đặt làm **miền** thì cái chặn nằm trong cấu trúc: ngoài miền = **không có quyền
+    nào được cấp**, không phải quyền cấp theo lối khác.
+  - ProofChat nêu: hồ sơ do **agent** giữ chỉ đọc kênh công khai khi có người mở phiên, nên mốc
+    "≥7 ngày" đo bằng lịch có thể ứng với 0 lần đọc. `tồn liên lạc` treo niêm yết của người khác ⇒
+    chi phí phải đặt lên bên **hành động**, không đặt lên bên **im lặng**.
+- **Gãy gì nếu bám bản cũ:** ai đang định dùng "nội dung của tôi content-addressed" làm căn cứ đòi
+  entitlement sẽ không còn cửa — tự chứng đưa ra khỏi miền, không đưa lên hạng. Và ai đã ghi nhật ký
+  rà soát đủ ba điều kiện cũ mà lần thử công khai **không gọi đích danh** thì nhật ký đó chưa đủ:
+  chưa đặt được `tồn liên lạc`, phải thử lại cho đúng hình.
+
+## 2026-08-15 — `pending` không những không chặn Sybil, nó **nghiêng về phía kẻ giả**
+
+- **Đổi gì:** `Specs/Math-Spec.md` §13.4 mục 1 nâng lên: điều kiện thăng *"qua `W` epoch không phát
+  hiện lỗi"* thưởng đúng thứ Sybil dư mà người thật thiếu — **thời gian không tốn chi phí**. Node
+  thật phải chạy máy `W` epoch; node giả chỉ cần **không làm gì** `W` epoch. (PhoenixKey nêu.) Cùng
+  mục, chứng cứ về cổng `loa ≥ 1` siết chặt hơn: **mọi** chỗ dựng `EpochContributionV2` trong toàn
+  kho `lampnet-hivemind` đều nằm trong `#[cfg(test)]` — cổng đó gác một con đường chưa ai đi.
+- **Vì sao:** bản trước mới nói `pending` *"không chặn"*. Nói thế còn nhẹ và còn để ngỏ cho một người
+  đọc lạc quan nghĩ rằng nới `W` sẽ chặt hơn.
+- **Gãy gì nếu bám bản cũ:** ai đang coi `W` là tham số chờ hiệu chuẩn đang giải sai bài. Không phải
+  hiệu chuẩn sai — **sai loại điều kiện**. *"Không bị bắt lỗi"* thì cả hai bên đều đạt bằng cách nằm
+  im, nên không con số `W` nào tách được họ. Đổi số vô ích; phải đổi loại.
+
+## 2026-08-15 — `R1` chuyển từ lời hứa của người sang phép kiểm của máy; và bộ chấm thôi đỏ khi hồ sơ chỉ THIẾU
+
+- **Đổi gì:** chuẩn đã có căn cứ từ chối `R1` (trùng `platform_id`) từ đầu, nhưng **không có gì
+  kiểm** — nó chỉ là một dòng chữ chờ người ký nhớ ra. Nay `tools/check-registration.mjs` quét
+  **toàn** thư mục hồ sơ kể cả khi được gọi để chấm lẻ một tệp, vì `R1` là tính chất của **tập** hồ
+  sơ chứ không của một tệp. Trùng khít ⇒ đỏ. Trùng **sau chuẩn hoá đồng hình** (bỏ dấu tiếng Việt,
+  `0↔o`, `1↔l↔i`, `5↔s`, bỏ ký tự phân cách) ⇒ chỉ **nêu ra**, không tự từ chối — "gây nhầm lẫn" là
+  phán đoán của người, không phải của máy. Cùng lúc, mã thoát tách `thiếu dữ kiện` khỏi `sai hình
+  dạng`: thiếu **không** còn làm bộ chấm đỏ.
+- **Vì sao:** hai chỗ nói ngược nhau. Chuẩn §2 viết *khai đúng thì hồ sơ được tiếp nhận, dù khai
+  "chưa đạt"; chỉ khai sai sự thật mới là căn cứ từ chối* — nhưng bộ chấm gộp THIẾU vào rổ hỏng, nên
+  một hồ sơ hợp lệ khai thật lòng "tôi chưa đạt" vẫn làm cổng đỏ. Cổng đỏ vĩnh viễn là cổng bị người
+  ta học cách bỏ qua, và lúc đó nó không gác gì nữa.
+- **Gãy gì nếu bám bản cũ:** kịch bản nào đang đọc mã thoát của `check-registration.mjs` như "0 =
+  mọi hồ sơ đã đủ dữ kiện" sẽ hiểu sai — 0 nay chỉ nói *không có hồ sơ nào sai hình dạng và không có
+  `platform_id` trùng khít*; hồ sơ thiếu dữ kiện vẫn cho 0. Muốn biết còn thiếu thì đọc dòng tổng
+  kết, đừng đọc mã thoát.
+
+## 2026-08-15 — Tiêu chí biên nhận `T-RECEIPT` vào đặc tả toán (`Specs/Math-Spec.md` §13)
+
+- **Đổi gì:** câu hỏi *"biên nhận đã ký = quyền ngay, hay đơn chờ tới khi neo on-chain?"* được chốt
+  là **hỏi sai kiểu** và thay bằng một tiêu chí cấu trúc: biên nhận thành quyền ngay lúc ký ⟺ **bên
+  chịu thiệt nếu nó sai chính là bên đã kiểm nó**, bằng chứng cứ bên đòi tiền không bịa được
+  (`T-RECEIPT`, dẫn từ `T-NO-THIRD-PARTY`). Hệ quả thi công: **một** kiểu biên nhận mang tham số
+  `W`, không hai kiểu. Nội dung này trước nằm trong một bản nháp ở `_Agents/` — thư mục bị
+  `.gitignore`, nên một quyết định load-bearing đang sống ngoài repo. Nay chuyển vào đặc tả.
+- **Vì sao:** hội đồng bốn chuyên gia không hội tụ vì hai bên đang nói về hai đường thanh toán khác
+  nhau của LampNet. Tiêu chí cấu trúc giải tán câu hỏi thay vì chọn một vế.
+- **Gãy gì nếu bám bản cũ:** ai đang chờ một quyết định "entitlement hay pending" cho **mọi** biên
+  nhận sẽ chờ mãi — câu trả lời phụ thuộc đường thanh toán. Và ai định siết thêm phép kiểm để đưa
+  đường pool về `W = 0` đang làm việc vô ích: `T-RECEIPT` hỏi **ai chịu thiệt**, không hỏi kiểm
+  chặt tới đâu.
+
 ## 2026-08-13 — Tách đặc tả toán ra tệp riêng (`Specs/Math-Spec.md`)
 
 - **Đổi gì:** phát biểu hình thức của mười một bất biến `PK1…PK11`, mô hình tin cậy khi định tuyến

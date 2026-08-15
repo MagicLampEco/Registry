@@ -7,7 +7,7 @@
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Người viết | Registry agent |
 | Người duyệt | **chưa ai duyệt** |
-| Cập nhật cuối | 2026-08-13 |
+| Cập nhật cuối | 2026-08-15 |
 | Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 Registry ở **tầng hạ tầng nền** và là hai validator on-chain, nên theo chuẩn StandardSpec tầng này
@@ -17,7 +17,7 @@ Registry ở **tầng hạ tầng nền** và là hai validator on-chain, nên t
 | File | Trả lời câu hỏi | Trạng thái |
 |---|---|---|
 | [CONTRACT.md](CONTRACT.md) | Interface khoá + chỉ mục 11 bất biến `PK1…PK11`. Cái gì KHÔNG ai được đổi. | `DRAFT` |
-| [Math-Spec.md](Math-Spec.md) | **Phát biểu hình thức** của 11 bất biến, mô hình tin cậy, bảng kẻ tấn công, mục giới hạn. | `DRAFT` |
+| [Math-Spec.md](Math-Spec.md) | **Phát biểu hình thức** của 11 bất biến, mô hình tin cậy, bảng kẻ tấn công, **tiêu chí biên nhận `T-RECEIPT` (§13)**, mục giới hạn. | `DRAFT` |
 | [Feat-Spec.md](Feat-Spec.md) | Hành vi: ba cửa onboarding, adapter thu phí, discover, vòng đời niêm yết. | `DRAFT` |
 | [Tech-Spec.md](Tech-Spec.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + mô hình đe doạ + phụ lục blockchain. | `DRAFT` |
 | [Exec-Spec.md](Exec-Spec.md) | Lộ trình bootstrap M0…M6 (mười thành phần mỗi mốc), rủi ro vận hành. | `DRAFT` |

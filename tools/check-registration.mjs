@@ -7,7 +7,7 @@
 // từ vai người phán xử sang vai người đối chiếu.
 //
 //   node tools/check-registration.mjs                      # chấm mọi hồ sơ
-//   node tools/check-registration.mjs Registrations/join.md # chấm một hồ sơ
+//   node tools/check-registration.mjs Registrations/lampnet.md # chấm một hồ sơ
 //
 // Mã thoát: 0 = mọi hồ sơ hợp lệ về hình thức; 1 = có hồ sơ sai hình thức.
 // LƯU Ý ĐÚNG PHẠM VI: tệp này chỉ kiểm hồ sơ có khai ĐỦ và ĐÚNG HÌNH DẠNG không. Nó KHÔNG
@@ -135,6 +135,7 @@ const files = args.length
       .map((f) => join('Registrations', f))
 
 let hong = 0
+let thieu = 0
 let chuaNop = 0
 for (const f of files) {
   const r = checkOne(resolve(ROOT, f))
@@ -153,11 +154,77 @@ for (const f of files) {
   for (const l of r.loi ?? []) console.log(`  ✗ ${l}`)
   for (const c of r.canh ?? []) console.log(`  ! ${c}`)
   if (r.chua_nop) chuaNop++
+  else if (chiThieu) thieu++
   else if (!r.hop_le) hong++
 }
 console.log(
-  `\n${files.length} tệp · ${files.length - hong - chuaNop} hợp lệ về hình dạng · ` +
-  `${hong} sai hình dạng · ${chuaNop} chưa nộp`
+  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop} hợp lệ về hình dạng · ` +
+  `${thieu} thiếu dữ kiện · ${hong} sai hình dạng · ${chuaNop} chưa nộp`
 )
-// Chưa nộp KHÔNG phải lỗi — đội chưa điền là chuyện bình thường. Chỉ SAI hình dạng mới đỏ.
-process.exit(hong === 0 ? 0 : 1)
+
+// ── R1: platform_id trùng hoặc gây nhầm lẫn ──
+//
+// Vì sao quét TOÀN thư mục kể cả khi chỉ chấm một tệp: R1 là một tính chất của TẬP hồ sơ, không
+// phải của một hồ sơ. Chấm lẻ một tệp mà không so với các tệp khác thì không bao giờ thấy trùng —
+// đúng cái lỗ mà `Specs/Math-Spec.md` §14 L1 nói validator không đóng được, nên nó phải đóng ở đây.
+//
+// PHẠM VI: chỉ thấy được các hồ sơ NẰM TRONG repo này. Một beacon đã đúc trên chuỗi mà chưa có hồ
+// sơ ở đây thì phép kiểm này KHÔNG thấy — van đó là `discoverPlatforms` phía SDK, không phải tệp này.
+const CHUAN_HOA = (s) =>
+  String(s)
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')  // bỏ dấu tiếng Việt
+    .replace(/[0o]/g, '0')            // 0 ↔ o
+    .replace(/[1li]/g, '1')           // 1 ↔ l ↔ i
+    .replace(/[5s]/g, '5')            // 5 ↔ s
+    .replace(/[^a-z0-9]/g, '')        // bỏ gạch, chấm, khoảng trắng
+
+const toanBo = readdirSync(join(ROOT, 'Registrations'))
+  .filter((f) => f.endsWith('.md') && !BO_QUA.has(f))
+  .map((f) => {
+    const r = checkOne(resolve(ROOT, 'Registrations', f))
+    return { file: `Registrations/${f}`, pid: r.platform_id }
+  })
+  .filter((x) => x.pid)
+
+const theoChuan = new Map()
+for (const x of toanBo) {
+  const k = CHUAN_HOA(x.pid)
+  if (!theoChuan.has(k)) theoChuan.set(k, [])
+  theoChuan.get(k).push(x)
+}
+
+let trungY = 0   // trùng khít — căn cứ từ chối R1, đỏ
+let deNham = 0   // chuẩn hoá về một chuỗi nhưng viết khác nhau — người phải quyết, vàng
+for (const nhom of theoChuan.values()) {
+  if (nhom.length < 2) continue
+  const khit = new Set(nhom.map((x) => x.pid)).size === 1
+  if (khit) {
+    trungY++
+    console.log(`\n✗ R1 — platform_id TRÙNG KHÍT: "${nhom[0].pid}"`)
+  } else {
+    deNham++
+    console.log(`\n! R1? — platform_id GÂY NHẦM LẪN sau chuẩn hoá: ${nhom.map((x) => `"${x.pid}"`).join(' ~ ')}`)
+  }
+  for (const x of nhom) console.log(`    ${x.file}`)
+}
+if (trungY === 0 && deNham === 0) {
+  console.log(`R1 — ${toanBo.length} platform_id, không trùng, không cặp nào gây nhầm lẫn`)
+} else if (deNham > 0 && trungY === 0) {
+  console.log(
+    `\nR1 — ${deNham} cặp gây nhầm lẫn. KHÔNG tự động từ chối: "gây nhầm lẫn" là phán đoán của ` +
+    `người, máy chỉ nêu cặp đáng nhìn. Người đối chiếu phải quyết và ghi lý do vào nhật ký hồ sơ.`
+  )
+}
+
+// ── mã thoát: chỉ hai thứ mới đỏ ──
+//
+// Đỏ = SAI HÌNH DẠNG (JSON vỡ, mã ngoài tập đóng) hoặc R1 TRÙNG KHÍT. Cả hai đều là "khai sai".
+//
+// KHÔNG đỏ: CHƯA NỘP và THIẾU DỮ KIỆN. Đây không phải khoan dung, nó là chính chuẩn:
+// `REGISTRATION-STANDARD.md` §2 — *"khai đúng thì hồ sơ được tiếp nhận, dù khai 'chưa đạt'…
+// Chỉ khai sai sự thật mới là căn cứ từ chối."* Ô trống hạ HẠNG NIÊM YẾT (in ở trên), nó không
+// phải căn cứ từ chối. Bản trước gộp THIẾU vào cùng rổ với SAI, nên bộ chấm nói ngược chuẩn mà
+// nó phục vụ — và một cổng CI dựng trên nó sẽ đỏ vĩnh viễn vì một hồ sơ hợp lệ đang chờ đội điền.
+process.exit(hong === 0 && trungY === 0 ? 0 : 1)
