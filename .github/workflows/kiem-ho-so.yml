@@ -1,0 +1,44 @@
+# Cổng gác hồ sơ đăng ký.
+#
+# Vì sao có tệp này thay vì branch protection: kho PRIVATE trên gói Free nên ruleset/branch
+# protection trả 403 (xem `.github/CODEOWNERS`). Workflow thì chạy được, và nó gác đúng thứ cần
+# gác — lời khai trong hồ sơ, và tính duy nhất `platform_id`.
+#
+# Nó KHÔNG thay được người: căn cứ từ chối R3 ("khai không đúng sự thật") không kiểm bằng máy được,
+# và "gây nhầm lẫn" ở R1 chỉ được nêu ra chứ không tự từ chối.
+
+name: Kiểm hồ sơ đăng ký
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kiem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cài phụ thuộc
+        run: npm ci
+
+      # Chấm hồ sơ + R1 (trùng `platform_id`). Thoát 1 khi sai hình dạng hoặc trùng khít.
+      - name: Chấm hồ sơ đăng ký + kiểm trùng platform_id
+        run: node tools/check-registration.mjs
+
+      # Bộ kiểm khẳng định của tài liệu — sống TÁCH khỏi `npm test` có chủ ý: 202 test off-chain
+      # không đọc thư mục hồ sơ, nên đổi tên một tệp hồ sơ không làm test nào đỏ (đo 2026-08-15).
+      - name: Bộ kiểm khẳng định tài liệu
+        run: bash tools/test-check.sh
+
+      - name: Bộ kiểm off-chain
+        run: npm test

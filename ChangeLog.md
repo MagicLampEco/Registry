@@ -11,6 +11,24 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-08-15 — `R1` chuyển từ lời hứa của người sang phép kiểm của máy; và bộ chấm thôi đỏ khi hồ sơ chỉ THIẾU
+
+- **Đổi gì:** chuẩn đã có căn cứ từ chối `R1` (trùng `platform_id`) từ đầu, nhưng **không có gì
+  kiểm** — nó chỉ là một dòng chữ chờ người ký nhớ ra. Nay `tools/check-registration.mjs` quét
+  **toàn** thư mục hồ sơ kể cả khi được gọi để chấm lẻ một tệp, vì `R1` là tính chất của **tập** hồ
+  sơ chứ không của một tệp. Trùng khít ⇒ đỏ. Trùng **sau chuẩn hoá đồng hình** (bỏ dấu tiếng Việt,
+  `0↔o`, `1↔l↔i`, `5↔s`, bỏ ký tự phân cách) ⇒ chỉ **nêu ra**, không tự từ chối — "gây nhầm lẫn" là
+  phán đoán của người, không phải của máy. Cùng lúc, mã thoát tách `thiếu dữ kiện` khỏi `sai hình
+  dạng`: thiếu **không** còn làm bộ chấm đỏ.
+- **Vì sao:** hai chỗ nói ngược nhau. Chuẩn §2 viết *khai đúng thì hồ sơ được tiếp nhận, dù khai
+  "chưa đạt"; chỉ khai sai sự thật mới là căn cứ từ chối* — nhưng bộ chấm gộp THIẾU vào rổ hỏng, nên
+  một hồ sơ hợp lệ khai thật lòng "tôi chưa đạt" vẫn làm cổng đỏ. Cổng đỏ vĩnh viễn là cổng bị người
+  ta học cách bỏ qua, và lúc đó nó không gác gì nữa.
+- **Gãy gì nếu bám bản cũ:** kịch bản nào đang đọc mã thoát của `check-registration.mjs` như "0 =
+  mọi hồ sơ đã đủ dữ kiện" sẽ hiểu sai — 0 nay chỉ nói *không có hồ sơ nào sai hình dạng và không có
+  `platform_id` trùng khít*; hồ sơ thiếu dữ kiện vẫn cho 0. Muốn biết còn thiếu thì đọc dòng tổng
+  kết, đừng đọc mã thoát.
+
 ## 2026-08-15 — Tiêu chí biên nhận `T-RECEIPT` vào đặc tả toán (`Specs/Math-Spec.md` §13)
 
 - **Đổi gì:** câu hỏi *"biên nhận đã ký = quyền ngay, hay đơn chờ tới khi neo on-chain?"* được chốt
