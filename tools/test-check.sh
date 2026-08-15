@@ -41,7 +41,7 @@ kiem tools/fixtures/token-chua-qua-cong-TKX.md \
      "đây là căn cứ TỪ CHỐI" \
      "TK-X là căn cứ từ chối duy nhất trong bốn trục"
 
-kiem Registrations/join.md \
+kiem Registrations/lampnet.md \
      "L0 —" \
      "hồ sơ thật của LampNet+Join tính ra L0 — đã tiếp nhận"
 

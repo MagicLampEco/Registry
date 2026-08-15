@@ -11,7 +11,8 @@ khỏi phải đoán.
 
 | Ngày | File cũ | Nay ở đâu | Vì sao |
 |---|---|---|---|
-| 2026-08-04 | `Registrations/joinnet.md` | [`Registrations/join.md`](../Registrations/join.md) | Cùng một dịch vụ tồn tại ba bản: một khung rỗng do Registry mở sẵn, một bản khai thật của đội Join đã gộp vào `main`, và một bản đổi tên. Ba bản đó nay là một: nội dung khai của đội Join, đặt trong khung `Registrations/template.md`, `platform_id` là `join`. Bản cũ tra ở lịch sử `main` trước ngày này. |
+| 2026-08-04 | `Registrations/joinnet.md` | [`Registrations/lampnet.md`](../Registrations/lampnet.md) | Cùng một dịch vụ tồn tại ba bản: một khung rỗng do Registry mở sẵn, một bản khai thật của đội Join đã gộp vào `main`, và một bản đổi tên. Ba bản đó nay là một: nội dung khai của đội Join, đặt trong khung `Registrations/template.md`. Bản cũ tra ở lịch sử `main` trước ngày này. (`platform_id` lúc đó là `join`; xem dòng 2026-08-15.) |
+| 2026-08-15 | `Registrations/join.md` (`platform_id: "join"`) | [`Registrations/lampnet.md`](../Registrations/lampnet.md) (`platform_id: "lampnet"`) | Chủ sở hữu chốt. `join` là **lớp tích hợp**; kho và bằng chứng nằm ở `LampNetCloud/lampnet-hivemind`. Quy tắc rút ra: **trường định danh bất biến đặt tên cho tầng giữ kho và giữ bằng chứng, không phải tầng giữ thương hiệu.** Đổi được vì chưa đúc beacon trên mạng nào — lần đổi **thứ ba** miễn phí, không phải lần cuối. Đổi kèm: `Registrations/README.md`, `tests/shapeMirror.test.ts` (fixture đang mang **tên thứ ba** `LampNetJoin` mà không test nào đỏ — chính là bằng chứng cái tên chưa gánh gì). |
 
 ## Quy tắc dùng thư mục này
 

@@ -5,7 +5,7 @@
 //
 //  1. Off-chain CHẶN đúng thứ on-chain vừa mở — hồ sơ KHÔNG KHO (custody rỗng hết, accepted
 //     rỗng, cut_bps 0, governance_ref vẫn bắt buộc). Đó là ca LampNet+Join (`Registrations/
-//     join.md` khai `custody: CU-N`) — chính ca mà đợt sửa on-chain sinh ra để mở.
+//     lampnet.md` khai `custody: CU-N`) — chính ca mà đợt sửa on-chain sinh ra để mở.
 //  2. Off-chain LỎNG hơn on-chain — `governance_ref` phải ĐÚNG 28 byte (không chỉ khác rỗng),
 //     và khác hash của chính validator registry (R-GOVSELF / S-GOVSELF).
 //  3. Hợp đồng ttl — R-EPOCH đọc `validity_range`, nên tx phải ĐẶT validFrom/validTo và cửa sổ
@@ -78,7 +78,7 @@ const custodialEntry = (): PlatformEntry => planRegister({
 // RỖNG HẾT: instanceId, custodyHash, seedPolicy; acceptedAssets rỗng; cutBps 0.
 // `governanceRef` VẪN bắt buộc (không để gác tiền — để hồ sơ luôn có MỘT bên đồng thuận được).
 const nonCustodialConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig => ({
-  platformId: asciiToHex("LampNetJoin"),
+  platformId: asciiToHex("lampnet"),
   instanceId: "",
   acceptedAssets: [],
   buckets: [],
@@ -120,8 +120,8 @@ describe("LỆCH 1 · hồ sơ KHÔNG KHO (CU-N) dựng được giao dịch đ�
     expect(entryWellFormed(plan.entry)).toBe(true);
 
     // Beacon NFT vẫn đúng như hồ sơ có kho — hạng không kho không phải hạng hai.
-    expect(plan.nftName).toBe(asciiToHex("LampNetJoin"));
-    expect(plan.entryValue[`${BEACON_POLICY}|${asciiToHex("LampNetJoin")}`]).toBe(1n);
+    expect(plan.nftName).toBe(asciiToHex("lampnet"));
+    expect(plan.entryValue[`${BEACON_POLICY}|${asciiToHex("lampnet")}`]).toBe(1n);
     expect(plan.requiredSigner).toBe(AUTHORITY);
 
     const back: PlatformEntry = decodePlatformEntry(Data.from(plan.entryDatumCbor));

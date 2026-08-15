@@ -7,7 +7,7 @@
 // từ vai người phán xử sang vai người đối chiếu.
 //
 //   node tools/check-registration.mjs                      # chấm mọi hồ sơ
-//   node tools/check-registration.mjs Registrations/join.md # chấm một hồ sơ
+//   node tools/check-registration.mjs Registrations/lampnet.md # chấm một hồ sơ
 //
 // Mã thoát: 0 = mọi hồ sơ hợp lệ về hình thức; 1 = có hồ sơ sai hình thức.
 // LƯU Ý ĐÚNG PHẠM VI: tệp này chỉ kiểm hồ sơ có khai ĐỦ và ĐÚNG HÌNH DẠNG không. Nó KHÔNG
