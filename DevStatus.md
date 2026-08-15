@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-08-13**.
+Cập nhật cuối: **2026-08-14**.
 
 ---
 
@@ -22,14 +22,14 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 
 | Thứ | Trạng thái | Neo | Lệnh kiểm | Chặn cái gì | Cập nhật |
 |---|---|---|---|---|---|
-| Validator on-chain v2 (`registry.ak`, `registry_beacon.ak`, `platform.ak`, `util.ak`) | `đang làm (nhánh feat/khep-issue-3-4-5-6-7)` — sửa nhưng CHƯA commit | nhánh `feat/khep-issue-3-4-5-6-7` | `git status --short -- onchain/` ; `cd onchain && aiken check && aiken build` | Math-Spec, Tech-Spec §1–§5, toàn bộ SDK off-chain | 2026-08-13 |
-| Kiểm thử on-chain (`registry_test.ak`, `registry_beacon_test.ak`) | `đang làm (nhánh feat/khep-issue-3-4-5-6-7)` — CHƯA commit | cùng nhánh | `cd onchain && aiken check` | mốc M2, M3 của Exec-Spec | 2026-08-13 |
-| SDK off-chain (`offchain/`) | 🔴 `làm ngoài git (CHƯA track)` | thư mục `offchain/` trong cây làm việc | `git status --short -- offchain/` ; `cd offchain && npm test` | mốc M4, M5 | 2026-08-13 |
-| `bench/`, `examples/`, `tests/` | 🔴 `làm ngoài git (CHƯA track)` | các thư mục cùng tên | `git status --short -- bench/ examples/ tests/` | đo ExUnit, kịch bản E2E | 2026-08-13 |
-| `Specs/Math-Spec.md` (đặc tả toán, mới) | 🔴 `làm ngoài git (CHƯA track)` | `Specs/Math-Spec.md` | `git log --all --oneline -- Specs/Math-Spec.md` (rỗng = chưa vào git) | cổng duyệt của cả bốn đặc tả | 2026-08-13 |
-| `Specs/{CONTRACT,Tech-Spec,Feat-Spec,Exec-Spec,README}.md` + `onboarding.md` | `đang làm (nhánh feat/khep-issue-3-4-5-6-7)` — sửa/đổi tên, CHƯA commit | cùng nhánh | `git status --short -- Specs/` | — | 2026-08-13 |
-| `Registrations/codes.json` | 🔴 `làm ngoài git (CHƯA track)` | `Registrations/codes.json` | `git status --short -- Registrations/` | hồ sơ đăng ký | 2026-08-13 |
-| Nhánh `feat/khep-issue-3-4-5-6-7` | `đang làm` — chưa có upstream, chưa push, chưa PR | — | `git branch -vv \| grep khep-issue` (không có `[origin/...]` = chưa push) | mọi thứ ở trên | 2026-08-13 |
+| Validator on-chain v2 (`registry.ak`, `registry_beacon.ak`, `platform.ak`, `util.ak`) | `có PR (#8)` | commit `1b5b2b0`, `af48041` trên nhánh `feat/khep-issue-3-4-5-6-7` | `git status --short -- onchain/` (rỗng = đã commit hết) ; `git log --oneline -- onchain/` ; `cd onchain && aiken check && aiken build` | Math-Spec, Tech-Spec §1–§5, toàn bộ SDK off-chain | 2026-08-14 |
+| Kiểm thử on-chain (`registry_test.ak`, `registry_beacon_test.ak`) | `có PR (#8)` | cùng nhánh, cùng hai commit | `git status --short -- onchain/` (rỗng = đã commit hết) ; `cd onchain && aiken check` | mốc M2, M3 của Exec-Spec | 2026-08-14 |
+| SDK off-chain (`offchain/`) | `có PR (#8)` | commit `c7dd8d7` trên cùng nhánh | `git ls-files offchain/` (có tệp = đã track) ; `git status --short -- offchain/` (rỗng = không còn sửa treo) ; `cd offchain && npm test` | mốc M4, M5 | 2026-08-14 |
+| `bench/`, `examples/`, `tests/` | `có PR (#8)` | commit `872ad86` trên cùng nhánh | `git ls-files bench/ examples/ tests/` (có tệp = đã track) ; `git status --short -- bench/ examples/ tests/` (rỗng = không còn sửa treo) | đo ExUnit, kịch bản E2E | 2026-08-14 |
+| `Specs/Math-Spec.md` (đặc tả toán, mới) | `có PR (#8)` | commit `a679350` | `git log --all --oneline -- Specs/Math-Spec.md` (**có** dòng = đã vào git) | cổng duyệt của cả bốn đặc tả | 2026-08-14 |
+| `Specs/{CONTRACT,Tech-Spec,Feat-Spec,Exec-Spec,README}.md` + `onboarding.md` | `có PR (#8)` | cùng nhánh | `git status --short -- Specs/ onboarding.md` (rỗng = đã commit hết) | — | 2026-08-14 |
+| `Registrations/codes.json` | `có PR (#8)` | commit `fdfe522` trên cùng nhánh | `git ls-files Registrations/` (có tệp = đã track) ; `git status --short -- Registrations/` (rỗng = không còn sửa treo) | hồ sơ đăng ký | 2026-08-14 |
+| Nhánh `feat/khep-issue-3-4-5-6-7` | `có PR (#8)` — đã push; nhánh local vẫn **chưa cấu hình upstream** (không cản gì, chỉ phải nêu remote khi push) | PR #8, base `main` | `GH_TOKEN=$TOKEN gh pr list --repo MagicLampNetwork/Registry --head feat/khep-issue-3-4-5-6-7 --state open` (có dòng = đã push và có PR) ; `git rev-parse --abbrev-ref @{u}` (báo `no upstream` = chưa cấu hình upstream) | mọi thứ ở trên | 2026-08-14 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-13 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-13 |
 
@@ -48,8 +48,10 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | Chưa audit ngoài | bắt buộc trước mainnet | `Specs/Math-Spec.md` §14 L7 |
 | `registry_authority` chưa chốt ngưỡng multisig | chưa có committee thật | `Specs/Math-Spec.md` §14 L2 |
 | Chưa đo kích thước script và ExUnit | chưa đặt ngưỡng | `Specs/Tech-Spec.md` §22.F bảng chỉ tiêu |
-| **Hai gương off-chain còn TUỲ CHỌN trong khi ràng buộc on-chain là VÔ ĐIỀU KIỆN** — `RegisterParams.registryHash?` và `UpdateOptions.ownRegistryHash?`. Bỏ trống thì R-GOVSELF / S-GOVSELF-vào / U-GOVSELF-ra **không chạy** ở tầng off-chain. Hai đường gọi thật (`scripts/03_register_platform.ts` và `onboard`) đều truyền, nên **hôm nay không hỏng** — nhưng một bên tích hợp thứ ba vẫn dựng được tx mà chain từ chối. | Bỏ dấu `?` là đúng, nhưng nó buộc sửa ~10 chỗ gọi trong test cùng lúc; để riêng một đợt thay vì làm cuối phiên | `grep -n 'registryHash?: string\|ownRegistryHash?: string' offchain/src/registrationBuilder.ts` (phải trả 2 dòng; sửa xong thì trả 0) |
-| Bốn ràng buộc on-chain chưa có gương off-chain nào: `R-VALUE`, `U-SINGLE`, `U-MINT-0`, `M-MINT-0` | ba cái sau là ràng buộc tầng-tx trên nhánh Update/Migrate mà repo chưa có script dựng; `R-VALUE` thì `entryValue` trả đúng nhưng không hàm nào chặn bên gọi nhét token lạ | `grep -rn 'R-VALUE\|U-SINGLE\|U-MINT-0\|M-MINT-0' offchain/ scripts/ tests/` |
+| **Ba gương off-chain còn TUỲ CHỌN trong khi ràng buộc on-chain là VÔ ĐIỀU KIỆN** — `RegisterParams.registryHash?` và `UpdateOptions.ownRegistryHash?` (`offchain/src/registrationBuilder.ts`), cộng `registryHash?` của `onboard` (`offchain/src/onboard.ts`, chuyển tiếp **có điều kiện** xuống bước đăng ký). Bỏ trống thì R-GOVSELF / S-GOVSELF-vào / U-GOVSELF-ra **không chạy** ở tầng off-chain. Hai đường gọi thật (`scripts/03_register_platform.ts` và `onboard`) đều truyền, nên **hôm nay không hỏng** — nhưng một bên tích hợp thứ ba vẫn dựng được tx mà chain từ chối. | Bỏ dấu `?` là đúng, nhưng nó buộc sửa ~10 chỗ gọi trong test cùng lúc; để riêng một đợt thay vì làm cuối phiên | `command grep -rn 'registryHash?: string\|ownRegistryHash?: string' offchain/src/` (phải trả **3** dòng — chỉ soi `registrationBuilder.ts` là bỏ sót chỗ thứ ba và báo "đã vá" khi mới vá 2/3; sửa xong thì trả 0) |
+| Bốn ràng buộc on-chain chưa có gương off-chain nào: `R-VALUE`, `U-SINGLE`, `U-MINT-0`, `M-MINT-0` | ba cái sau là ràng buộc tầng-tx trên nhánh Update/Migrate mà repo chưa có script dựng; `R-VALUE` thì `entryValue` trả đúng nhưng không hàm nào chặn bên gọi nhét token lạ | `command grep -rn 'R-VALUE\|U-SINGLE\|U-MINT-0\|M-MINT-0' offchain/ scripts/ tests/` (rỗng = chưa có gương nào) |
+| Khối "⛔ CẢNH BÁO PHIÊN BẢN" của `Specs/Tech-Spec.md` **cũ hơn mã**: nó liệt ràng buộc v2 nhưng thiếu sáu mã mà đợt vá on-chain thêm vào (`R-GOVLIVE`, `R-GOVSELF`, `U-GOV2`, `U-GOVSELF-OUT`, `U-REVIVE`, `U-SHAPE`) | khối cảnh báo được viết trước đợt vá và không cập nhật theo; nguy hơn thân §1–§5 lỗi thời vì nó **tự xưng là bản đã cập nhật** nên người đọc tin nó | `for m in R-GOVLIVE R-GOVSELF U-GOV2 U-GOVSELF-OUT U-REVIVE U-SHAPE; do printf "%s " $m; command grep -c "$m" Specs/Tech-Spec.md; done` (mọi số phải > 0) |
+| Chưa có `CODEOWNERS`, chưa bật branch protection ⇒ **quyền gộp vào repo chưa bị ràng bởi thứ gì kiểm được** | §7 của chuẩn đăng ký khai là phải siết trước mainnet; hiện chưa tới mốc đó nên chưa làm — nhưng phải siết TRƯỚC hồ sơ đầu tiên lên chuỗi, không phải sau | `find . -iname CODEOWNERS -not -path './node_modules/*'` (rỗng = chưa siết) |
 
 ---
 

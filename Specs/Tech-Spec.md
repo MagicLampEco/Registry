@@ -55,10 +55,10 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 
 ---
 
-> ⛔ **CẢNH BÁO PHIÊN BẢN — mục §1 đến §5 dưới đây mô tả lược đồ v1, đang lỗi thời.** Đợt sửa
-> validator **v2** đã đổi những thứ sau; chưa chép vào các mục đó:
+> ⛔ **CẢNH BÁO PHIÊN BẢN — §1 và §4 dưới đây còn mô tả lược đồ v1, đang lỗi thời.** Đợt sửa
+> validator **v2** đã đổi những thứ sau:
 >
-> | Đổi gì | v1 (mô tả ở §1–§5) | v2 (mã trên đĩa) |
+> | Đổi gì | v1 | v2 (mã trên đĩa) |
 > |---|---|---|
 > | Số trường datum | 9 | **11** — thêm `spec_version` (đầu) và `beacon_policy` |
 > | Chiều tham số | `registry(authority, beacon_policy)`, `registry_beacon(authority)` | **đảo**: `registry(authority)`, `registry_beacon(authority, registry_hash)` |
@@ -66,10 +66,19 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 > | Định danh bất biến | 5 trường | **6** — thêm `beacon_policy` |
 > | Redeemer spend | chỉ `UpdateEntry` | thêm **`MigrateEntry`** (constr 1) |
 > | `→ Retired` / đổi `cut_bps`… | một chữ ký authority là đủ | đòi **thêm** đồng thuận quản trị (U-GOV) |
-> | Ràng buộc mới | — | R-POLICY, R-VER, R-VALUE, R-EPOCH, U-VER, U-VALUE, M-* |
+> | Hạng hình dạng hồ sơ | chỉ một hạng (mọi hồ sơ phải có kho) | **hai** hạng loại trừ nhau: `shape_custodial` / `shape_non_custodial` |
+> | `governance_ref` | `≠ ""` | **`len == 28`** (ĐÚNG một script hash) ở cả R-WF lẫn U-MUT/M-MUT |
+> | Ràng buộc mới | — | **đúc:** R-POLICY, R-VER, R-VALUE, R-EPOCH, R-GOVSELF, R-GOVLIVE · **chung hai nhánh spend:** S-GOVSELF · **Update:** U-VER, U-VALUE, U-GOV, U-REVIVE, U-GOVSELF-OUT, U-GOV2, U-SHAPE · **Migrate:** toàn bộ 13 mã M-SIG, M-GOV, M-DEST, M-MINT-0, M-ID, M-STATUS, M-VER, M-MUT, M-GOVSELF-OUT, M-GOV2, M-SHAPE, M-NFT, M-VALUE |
 >
-> Phát biểu hình thức của trạng thái **sau** v2: [`Math-Spec.md`](./Math-Spec.md) §5 và §7. Mục §9 và
-> §22.F ở cuối tài liệu này đã viết theo v2. Việc chép v2 vào §1–§5 là **việc còn treo** — ghi ở
+> Tổng mã ràng buộc v2 (đếm từ mã): **13** `R-*` (cửa đúc) + **1** `S-*` (chung hai nhánh spend) +
+> **14** `U-*` (nhánh Update) + **13** `M-*` (nhánh Migrate).
+>
+> **Đã chép sang v2 trong tài liệu này:** §2 (datum 11 trường, identity 6, redeemer 2 nhánh), §3 mục
+> `R-WF`, §4 mục `U-MUT` (phần `governance_ref`), §5 (phá vòng — chiều tham số đã đảo), §7, §9, §22.F.
+> **CÒN v1, chưa chép:** §1 (sơ đồ: tham số + danh sách ràng buộc), §3 (các mục R-* khác — thiếu hẳn
+> R-POLICY/R-VER/R-VALUE/R-EPOCH/R-GOVSELF/R-GOVLIVE), §4 (tham số validator + thiếu hẳn nhánh
+> `MigrateEntry` và các mã U-* mới). Phát biểu hình thức của trạng thái **sau** v2:
+> [`Math-Spec.md`](./Math-Spec.md) §5 và §7. Việc chép nốt là **việc còn treo** — ghi ở
 > [`../DevStatus.md`](../DevStatus.md), không ghi ở đây.
 
 ---
@@ -123,17 +132,20 @@ pub type PlatformStatus {
   Retired      // 2
 }
 
-// PlatformEntry — Constr 0, 9 field theo thứ tự (off-chain Data.Object phải khớp ĐÚNG thứ tự):
+// PlatformEntry — Constr 0, 11 field theo thứ tự (v2 — off-chain Data.Object phải khớp ĐÚNG thứ tự).
+// Nguồn: platform.ak:59-76.
 pub type PlatformEntry {
-  platform_id     : ByteArray,        // 0  = beacon NFT name (duy nhất, authority kiểm duyệt)
-  instance_id     : ByteArray,        // 1  Treasury custody instance_id (= seed NFT name)
-  custody_hash    : ByteArray,        // 2  script hash custody.ak của platform
-  seed_policy     : ByteArray,        // 3  policy NFT authenticity custody (custody_seed)
-  governance_ref  : ByteArray,        // 4  script hash DAO/committee gác release (RIÊNG — PK6)
-  accepted_assets : List<AssetKey>,   // 5  assets platform thu (AssetKey{policy,name} — types.ak)
-  cut_bps         : Int,              // 6  protocol_cut_bps của instance
-  created_epoch   : Int,              // 7  epoch đăng ký
-  status          : PlatformStatus,   // 8
+  spec_version    : Int,              // 0  phiên bản lược đồ hồ sơ (v2 = 2)  ← THÊM Ở v2
+  platform_id     : ByteArray,        // 1  = beacon NFT name (duy nhất, authority kiểm duyệt)
+  instance_id     : ByteArray,        // 2  Treasury custody instance_id (= seed NFT name)
+  custody_hash    : ByteArray,        // 3  script hash custody.ak của platform
+  seed_policy     : ByteArray,        // 4  policy NFT authenticity custody (custody_seed)
+  beacon_policy   : ByteArray,        // 5  policy beacon NFT — tự khai, ép khớp lúc mint (R-POLICY)  ← THÊM Ở v2
+  governance_ref  : ByteArray,        // 6  script hash DAO/committee gác release (RIÊNG — PK6). LUÔN 28 byte.
+  accepted_assets : List<AssetKey>,   // 7  assets platform thu (AssetKey{policy,name} — types.ak)
+  cut_bps         : Int,              // 8  protocol_cut_bps của instance
+  created_epoch   : Int,              // 9  ô-thời-gian đăng ký (ô 5 ngày kể từ mốc Unix, KHÔNG phải epoch Cardano)
+  status          : PlatformStatus,   // 10
 }
 ```
 
@@ -141,29 +153,47 @@ pub type PlatformEntry {
 > `BucketKey`. Lý do: entry niêm yết chỉ cần `(policy, name)` của asset — KHÔNG có khái niệm bucket ở
 > tầng registry (bucket là chuyện kế toán nội bộ custody). Dùng `AssetKey{policy,name}` gọn + đúng tầng.
 
-**Identity (5 field bất biến — PK4):** `platform_id`(0), `instance_id`(1), `custody_hash`(2),
-`seed_policy`(3), `created_epoch`(7). Khóa cứng ở `UpdateEntry` (U-ID). Đổi = platform mới, đăng ký lại.
+**Identity (6 field bất biến — PK4, v2):** `platform_id`(1), `instance_id`(2), `custody_hash`(3),
+`seed_policy`(4), `beacon_policy`(5), `created_epoch`(9). Khóa cứng ở **cả** `UpdateEntry` (U-ID) **lẫn**
+`MigrateEntry` (M-ID) — `platform.identity_preserved`. Đổi = platform mới, đăng ký lại. `spec_version`
+KHÔNG nằm trong nhóm này: nó bất biến ở nhánh Update (ép riêng U-VER) và **tăng** ở nhánh Migrate (M-VER).
 
-**Mutable (4 field — DAO/authority chỉnh):** `governance_ref`(4), `accepted_assets`(5), `cut_bps`(6),
-`status`(8). Đổi qua `UpdateEntry` (authority ký). `status` đi đường vòng đời (Active⇄Paused→Retired).
+**Mutable (4 field — DAO/authority chỉnh):** `governance_ref`(6), `accepted_assets`(7), `cut_bps`(8),
+`status`(10). Đổi qua `UpdateEntry` (authority ký). Ba trường đầu + `→ Retired` đòi **thêm** đồng thuận
+quản trị của chính platform (U-GOV). `status` đi đường vòng đời (Active⇄Paused→Retired).
 
 ### Redeemer
 
 ```aiken
-pub type RegistryBeaconRedeemer { RegisterPlatform }   // minting (cửa 2)
-pub type RegistryRedeemer        { UpdateEntry }        // spend (cập nhật/đổi status)
+pub type RegistryBeaconRedeemer { RegisterPlatform }   // minting (cửa 2) — MỘT action
+
+pub type RegistryRedeemer {                             // spend — HAI action (v2)
+  UpdateEntry                                           // constr 0 — cập nhật field khả biến
+  MigrateEntry { new_registry_hash: ByteArray,          // constr 1 — di trú sang registry validator MỚI
+                 new_spec_version: Int }
+}
 ```
 
-Mỗi validator **một action** (đơn nhánh) — không cần phân biệt mint một loại / spend một loại; đơn giản
-hóa lý luận an toàn (else-fail mọi nhánh khác).
+`registry_beacon` **một action** (`RegisterPlatform`); `registry` **hai action** (`UpdateEntry` constr 0,
+`MigrateEntry` constr 1 — `platform.ak:85-92`). Mọi nhánh khác else-fail.
+
+> **Nhánh di trú CỐ Ý KHÔNG áp `U-TERMINAL`** (`registry.ak:112-114`; ràng buộc `entry_in.status !=
+> Retired` chỉ nằm ở nhánh Update — `registry.ak:172`). Lý do: nếu áp cả hai nhánh thì mỗi lần xoay quyền
+> đăng ký (đổi `registry_authority` ⇒ đổi script hash ⇒ phải di trú từng hồ sơ) sẽ làm **mọi hồ sơ
+> `Retired` kẹt vĩnh viễn** ở validator cũ — beacon NFT không đi theo được, phá thẳng cam kết PK5 "beacon
+> sống suốt đời, dấu vết kiểm toán không đứt". Di trú không phải cửa Retire trá hình: M-STATUS ép
+> `status` KHÔNG đổi khi di trú.
 
 ---
 
 ## 3. `registry_beacon` (minting) — đăng ký platform (cửa 2)
 
 `validator registry_beacon(registry_authority: ByteArray)` — param **chỉ** `registry_authority` (KHÔNG
-param `registry_hash` → phá vòng, §5). Kiểm bảy ràng buộc (R-SIG/R-MINT-1/**R-MINT-2**/R-OUT-1/R-NAME/
-R-WF/R-BIND + BURN cấm):
+param `registry_hash` → phá vòng, §5). Kiểm **mười ba** ràng buộc — R-SIG / R-MINT-1 / **R-MINT-2** /
+R-OUT-1 / R-NAME / R-POLICY / R-VER / R-WF / R-GOVSELF / R-GOVLIVE / R-VALUE / R-EPOCH / R-BIND, cộng
+BURN cấm (else fail). Bảy mục chép dưới đây là bản v1; sáu mã còn lại (R-POLICY, R-VER, R-VALUE,
+R-EPOCH, R-GOVSELF, R-GOVLIVE) chỉ có ở `registry_beacon.ak:15-47` và [`Math-Spec.md`](./Math-Spec.md)
+§5.1 — **chưa** chép vào đây:
 
 ```
 R-SIG     authority ký:  list.has(tx.extra_signatories, registry_authority)
@@ -194,10 +224,22 @@ R-OUT-1   ĐÚNG 1 output mang NFT đó (SELF-REF), ở SCRIPT (registry validat
 R-NAME    entry.platform_id == platform_id   // datum khai đúng tên NFT đã mint
           ⇒ platform_id trong datum == asset name → entry không thể nói dối định danh.
 
-R-WF      platform.entry_well_formed(entry):
-            platform_id≠"" ∧ instance_id≠"" ∧ custody_hash≠"" ∧ governance_ref≠"" ∧ seed_policy≠""
-            ∧ accepted_assets≠[] ∧ 0≤cut_bps≤10000 ∧ created_epoch≥0 ∧ status==Active
-          ⇒ entry phải well-formed + **khởi tạo Active** (không cho register thẳng vào Paused/Retired).
+R-WF      platform.entry_well_formed(entry)  — v2, nguồn `platform.ak:99-126`:
+
+          (a) phần CHUNG cho mọi hồ sơ:
+                platform_id≠""  ∧  len(governance_ref)==28  ∧  len(beacon_policy)==28
+                ∧ created_epoch≥0  ∧  status==Active
+
+          (b) VÀ hồ sơ phải thuộc ĐÚNG MỘT trong hai HẠNG HÌNH DẠNG (or{...}):
+
+              shape_custodial      — hồ sơ CÓ KHO (mã niêm yết `CU-1`):
+                len(instance_id)>0 ∧ len(custody_hash)==28 ∧ len(seed_policy)==28
+                ∧ accepted_assets≠[] ∧ 0≤cut_bps≤10000
+
+              shape_non_custodial  — hồ sơ KHÔNG KHO (mã niêm yết `CU-N`):
+                instance_id=="" ∧ custody_hash=="" ∧ seed_policy=="" ∧ accepted_assets==[] ∧ cut_bps==0
+
+          ⇒ entry well-formed + **khởi tạo Active** (không register thẳng vào Paused/Retired).
 
 R-BIND    entry PHẢI trỏ custody THẬT (đóng audit #6 ở mức đăng ký):
             expect Some(cust_ref) = list.find(tx.reference_inputs, fn(i) {
