@@ -484,12 +484,37 @@ ghi khác, không phải bản đang tranh chấp. Không có bên kiểm, và c
 > Phát biểu nổi câu khai vống ⇒ ở **trong** miền, `T-RECEIPT` áp, và nó hỏi ai gánh. Không phát biểu
 > nổi ⇒ **ngoài** miền, không có gì để phân hạng.
 
-⚠ **Đặt câu hỏi lên đúng vật thì phép thử mới chạy.** Phải hỏi về **mệnh đề mà khoản tiền phụ thuộc
-vào**, không hỏi về thứ được băm. Ví dụ phản chứng: `hash(dạng chuẩn tắc của "tôi đã phục vụ 1000
-yêu cầu"))` là một băm hoàn toàn tự chứng — hỏi *"khai vống cái băm thế nào?"* thì trả lời được là
-"không thể", và người đọc kết luận nhầm rằng mình ở ngoài miền. Nhưng khoản tiền không phụ thuộc vào
-cái băm, nó phụ thuộc vào **con số 1000**; băm một con số bịa vẫn ra một băm hợp lệ. Hỏi đúng vật thì
-câu khai vống phát biểu được ngay ⇒ ở trong miền ⇒ `T-RECEIPT` áp ⇒ hỏi tiếp ai chịu thiệt.
+⚠ **Đặt câu hỏi lên đúng vật thì phép thử mới chạy.** Phải hỏi về **mệnh đề mà nghĩa vụ đối với bên
+thứ ba phụ thuộc vào**, không hỏi về thứ được băm. Ví dụ phản chứng: `hash(dạng chuẩn tắc của "tôi
+đã phục vụ 1000 yêu cầu"))` là một băm hoàn toàn tự chứng — hỏi *"khai vống cái băm thế nào?"* thì
+trả lời được là "không thể", và người đọc kết luận nhầm rằng mình ở ngoài miền. Nhưng nghĩa vụ không
+phụ thuộc vào cái băm, nó phụ thuộc vào **con số 1000**; băm một con số bịa vẫn ra một băm hợp lệ.
+Hỏi đúng vật thì câu khai vống phát biểu được ngay ⇒ ở trong miền ⇒ `T-RECEIPT` áp ⇒ hỏi tiếp ai
+chịu thiệt.
+
+**Vì sao "nghĩa vụ" chứ không phải "khoản tiền"** (đính chính theo PhoenixKey, thư 2026-08-15 §3 —
+nhận nguyên): miền `D-RECEIPT` dựng trên *lời khai phát biểu sai được về sự việc ngoài nó*, mà tập đó
+**rộng hơn** tập lời khai có tiền treo vào. Hai câu lệch cân thì lời khai phi-tiền-tệ lọt ra ngoài
+bằng đúng lối vừa bịt. Ca thật, không phải giả định:
+
+```
+claim = "DID X là bên điều khiển anchor Y"
+```
+
+Không đồng nào treo vào nó. Hỏi *"khoản tiền phụ thuộc vào mệnh đề nào?"* → không có khoản tiền nào
+⇒ ngoài miền ⇒ không ai kiểm. Nhưng nó phát biểu sai được, nó nói về sự việc ngoài chính nó, và bên
+thứ ba tra `Y` ra `X` sẽ hành xử theo. Đó đúng là ca `T-RECEIPT` sinh ra để bắt. PhoenixKey ghi
+nhận đây là loại lời khai họ phát ra nhiều nhất.
+
+**Nghĩa vụ đo bằng phép thử phản-thực, không bằng cảm nhận** — nếu không thì chữ "nghĩa vụ" mơ hồ
+hơn chữ "khoản tiền" và đổi chữ thành đổi tệ đi:
+
+> Có **nghĩa vụ** ⟺ tồn tại một bên thứ ba **hành xử khác đi** nếu biết lời khai là sai.
+
+Áp lại cả ba ca: `content_cid` — không ai đổi cách hành xử vì nó, nó chỉ là khoá tra cứu ⇒ **ngoài
+miền** (giữ nguyên kết luận cũ). `"phục vụ 1000 yêu cầu"` ⇒ bên trả tiền đổi cách hành xử ⇒ trong
+miền ⇒ `pending` (giữ nguyên). `"X điều khiển Y"` ⇒ bên tra cứu đổi cách hành xử ⇒ **nay vào miền**,
+trước thì lọt.
 
 Vì sao `D-RECEIPT` là **miền** chứ không phải nhánh thứ ba của phép tuyển: nếu viết thành *"quyền ⟸
 (a) bên chịu thiệt là bên đã kiểm, **hoặc** (b) nội dung tự chứng"*, thì (b) trở thành một **đường
