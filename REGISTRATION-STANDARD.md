@@ -194,6 +194,41 @@ git cat-file -e main:<đường dẫn>     # tệp có tồn tại trên main kh
 Đây không phải nghi ngờ thiện chí: một chứng cứ chỉ sống trên nhánh riêng thì bên thứ ba không tái
 lập được, nên nó chưa phải chứng cứ — nó là một lời hứa có địa chỉ.
 
+### Con trỏ vào **kho riêng tư** — thoả hình thức mà không thoả lý do
+
+Luật ba-thứ ở trên giả định người thứ ba **chạy được `main`**. Với một kho private thì không: con
+trỏ có đủ `file:line` + nhánh + SHA, máy chấm không phân biệt được, mà người ngoài vẫn không mở
+được. Nó thoả **hình thức** của luật và trượt đúng **lý do** viết ra luật.
+
+Điều phải mua ở đây là **kiểm được độc lập**, không phải **mã nguồn mở**. Hai thứ đó hay bị nhập
+làm một, và nhập vào là sai: mở mã là quyết định của chủ từng nhà, còn kiểm được là điều kiện của
+chứng cứ. Nên chuẩn này **không** đòi ai mở kho. Nó phân biệt hai loại con trỏ:
+
+| Loại | Ai kiểm lại được | Trần hạng |
+|---|---|---|
+| **Con trỏ công khai** | bất kỳ ai trong hệ | không bị trần bởi mục này |
+| **Con trỏ riêng tư** | chỉ người được cấp quyền đọc | **trần `L1`** |
+
+Trần `L1` không phải hình phạt, nó là phát biểu về khán giả. `L0`–`L1` là hồ sơ được tiếp nhận và
+niêm yết, và người phải kiểm là **bên duyệt** — bên đó có thể được cấp quyền đọc. `L2`–`L3` cấp uy
+tín và **quyền biểu quyết ở tầng hệ**, khán giả là **mọi thành viên của hệ, kể cả đối thủ**; ở đó
+"một bên duyệt đã xem" không thay được "ai cũng xem lại được".
+
+Kho riêng tư vẫn lên `L2`–`L3` được, bằng **hai** đường không đòi mở mã:
+
+1. **Chứng cứ tái lập được thay cho quyền đọc mã** — lệnh chạy + hash đầu ra công bố, người khác
+   chạy lại lệnh đó và so hash. Cái được kiểm là **hành vi**, không phải mã nguồn.
+2. **`EV-2`** — neo on-chain, hoặc một bên **không hưởng lợi** ký vào chính lời khẳng định đó. Bên
+   ký cần quyền đọc; người tra lại thì không.
+
+Hai điều kiện phụ, ghi ra để không phải cãi từng ca:
+
+- **Từ chối cấp quyền đọc cho bên duyệt ⇒ con trỏ tính như KHÔNG CÓ**, không phải `R3`. Không mở
+  kho là quyền của nhà đó, không phải lời khai sai — hệ quả là hạ hạng, không phải từ chối.
+- **Máy chưa phân biệt được hai loại con trỏ.** `tools/check-registration.mjs` hôm nay chỉ soi cú
+  pháp, nên một con trỏ riêng tư vẫn qua. Cho tới khi bộ chấm biết hỏi kho có công khai không, mục
+  này do **người duyệt** áp — và chỗ đó phải ghi rõ, đừng để ai đọc bộ chấm xanh ra thành đã kiểm.
+
 ### Hạng chứng thực — và một câu phải đọc kỹ
 
 | Hạng | Nghĩa |
