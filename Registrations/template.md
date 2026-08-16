@@ -24,7 +24,7 @@
   "declares": {
     "identity": "ID-0",
     "token":    "TK-0",
-    "custody":  "CU-0",
+    "custody":  "<CHỌN: CU-N | CU-0 | CU-1>",
     "infra":    "IN-0"
   },
 
@@ -61,6 +61,13 @@
 [`codes.json`](codes.json). Chọn mã cao hơn thực tế = khai sai sự thật = căn cứ từ chối **R3**.
 Chọn đúng mã thấp = hồ sơ vẫn được tiếp nhận.
 
+> ⚠ **Trục `custody` không có mặc định, và cố ý không có.** Ba trục kia mặc định là mã **thấp
+> nhất** — để nguyên thì hồ sơ chỉ tự hạ hạng, không nói sai điều gì. Trục `custody` khác: `CU-0`
+> **không** phải "chưa có gì", nó là lời khai *"có thu asset, nhưng đang giữ ở sổ nội bộ"*. Một
+> dịch vụ **không thu asset** mà để nguyên mặc định thì vừa tự tụt hai hạng (`CU-N` là hạng 2),
+> vừa khai một điều không đúng sự thật — tức tự đặt mình vào **R3** bằng cách không làm gì cả.
+> Nên ô này để chỗ trống có chữ, và bộ chấm sẽ **đỏ** nếu bạn quên. Đỏ ồn ào đúng hơn im lặng sai.
+
 ## (a) Nhận dạng dịch vụ
 
 | Trường | Giá trị |
@@ -73,6 +80,17 @@ Chọn đúng mã thấp = hồ sơ vẫn được tiếp nhận.
 ## (b) Giải thích bốn mã đã chọn
 
 Mỗi dòng: vì sao chọn mã đó, con trỏ kiểm được, và nếu chưa đạt thì thiếu gì.
+
+> **Khuôn con trỏ — máy đọc được.** Chuẩn (`../REGISTRATION-STANDARD.md` §3) đòi con trỏ mã nguồn
+> mang **ba** thứ: `file:line`, **tên nhánh**, **SHA**. Chuẩn không cho cú pháp, nên bộ chấm nhận
+> quy ước tối thiểu sau — viết khác đi thì máy không nhận ra và **hạ hạng**, dù con trỏ đúng:
+>
+> - tên nhánh viết **sau chữ `nhánh` hoặc `branch`** — `nhánh main`, `branch feat/abc`;
+> - SHA là một chuỗi 7–40 ký tự hex;
+> - chưa gộp thì ghi đúng chữ hoa **`CHƯA GỘP`** kèm tên nhánh, đừng bỏ trống.
+>
+> Đủ khuôn: `Core/rice.js:136, nhánh main, 7916d2e` · `rust/mls.rs:88, branch feat/mls, CHƯA GỘP`.
+> Chứng cứ on-chain thì thay bằng **tx hash 64 hex**, không cần ba thứ trên.
 
 | Trục | Mã | Vì sao | Con trỏ kiểm được | Thiếu gì để lên mã cao hơn |
 |---|---|---|---|---|
