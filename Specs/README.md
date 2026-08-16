@@ -7,12 +7,12 @@
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Người viết | Registry agent |
 | Người duyệt | **chưa ai duyệt** |
-| Cập nhật cuối | 2026-08-15 |
+| Cập nhật cuối | 2026-08-17 |
 | Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 Registry ở **tầng hạ tầng nền** và là hai validator on-chain, nên theo chuẩn StandardSpec tầng này
 đòi **đủ bốn** đặc tả — Feat, Math, Tech, Exec — không được cắt bớt. Bốn đặc tả đó, cộng bản hợp
-đồng interface và một tài liệu hướng dẫn:
+đồng interface, một tài liệu hướng dẫn, và một từ điển đơn vị đo:
 
 | File | Trả lời câu hỏi | Trạng thái |
 |---|---|---|
@@ -22,6 +22,7 @@ Registry ở **tầng hạ tầng nền** và là hai validator on-chain, nên t
 | [Tech-Spec.md](Tech-Spec.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + mô hình đe doạ + phụ lục blockchain. | `DRAFT` |
 | [Exec-Spec.md](Exec-Spec.md) | Lộ trình bootstrap M0…M6 (mười thành phần mỗi mốc), rủi ro vận hành. | `DRAFT` |
 | [onboarding.md](onboarding.md) | Hướng dẫn từng bước cho team muốn onboard (a→f). | `DRAFT` |
+| [Resource-Dictionary.md](Resource-Dictionary.md) | **Đơn vị đo** tài nguyên (`op_type` → lớp/đơn vị/quy ước đo) để hai dịch vụ so giá được. KHÔNG chứa đơn giá — đơn giá ở beacon từng platform, theo ranh giới [Feat-Spec §0.3](Feat-Spec.md). | `DRAFT` |
 
 > ⚠ **Chưa tệp nào được duyệt.** Chuẩn StandardSpec quy định phía sau chỉ được bắt đầu khi đặc tả
 > phía trước **đã duyệt**. SDK off-chain đã dựng xong trên nền một đặc tả chưa qua cổng đó. Ghi ra để
