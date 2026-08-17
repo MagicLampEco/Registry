@@ -64,15 +64,23 @@ const GIU_CHO = new Set(['x', 'xx', 'n/a', 'tbd', 'todo', '-', '?'])
 // Con trỏ chứng cứ phải mang BA thứ: `file:line` + tên nhánh + SHA — hoặc chữ "CHƯA GỘP" kèm
 // tên nhánh. Nguồn: REGISTRATION-STANDARD.md §3, mục "Con trỏ vào mã nguồn phải mang ba thứ".
 // Chuẩn KHÔNG cho cú pháp máy đọc, nên quy ước tối thiểu đặt ở đây: tên nhánh viết sau chữ
-// "nhánh" / "branch". Quy ước này cần được chép vào Registrations/template.md ở lần cập nhật
-// chuẩn kế tiếp — bằng không bên nộp không đoán được máy chờ gì.
+// "nhánh" / "branch". Quy ước đã được chép sang Registrations/template.md:84-93 — sửa một bên
+// thì phải sửa bên kia, bằng không bên nộp không đoán được máy chờ gì.
+//
+// ⚠ Đây là phép kiểm ĐỊNH DẠNG, không phải phép kiểm sự thật. Nó KHÔNG chạy `git branch
+// --contains` hay `git cat-file -e` như chuẩn §3 mô tả, nên một SHA bịa đúng hình dạng vẫn qua.
+// Hai lệnh đó là việc của NGƯỜI duyệt. Đừng đọc bộ chấm xanh ra thành "con trỏ đã được kiểm".
 const CT_FILELINE = /[\w./-]+\.[A-Za-z0-9]+:\d+/
-const CT_SHA = /\b[0-9a-f]{7,40}\b/
+const CT_SHA = /\b[0-9a-fA-F]{7,40}\b/
 const CT_NHANH = /(?:nhánh|nhanh|branch)\s+\S+/i
 const CT_CHUA_GOP = /CHƯA GỘP/
 
 function conTroDuBaThu(v) {
   const t = String(v)
+  // Chứng cứ on-chain thay được cả ba thứ: một tx hash tra được bằng explorer thì không cần
+  // nhánh với SHA. Nhánh này là thứ Registrations/template.md:93 đã hứa với bên nộp; thiếu nó
+  // thì mẫu và máy nói ngược nhau — và CT_SHA {7,40} cũng không đỡ được, vì 64 hex trượt khuôn.
+  if (CO_TX.test(t)) return true
   if (CT_CHUA_GOP.test(t)) return CT_NHANH.test(t)
   return CT_FILELINE.test(t) && CT_SHA.test(t) && CT_NHANH.test(t)
 }
@@ -139,7 +147,7 @@ function extractBlock(src) {
 }
 
 /** rank của một mã trên một trục. ID-A mượn hạng của hệ danh tính được trỏ tới. */
-function rankOf(axis, code, declared) {
+function rankOf(axis, code) {
   const spec = CODES.axes[axis].codes[code]
   if (!spec) return null
   if (spec.rank !== null) return spec.rank
@@ -193,7 +201,7 @@ export function checkOne(path) {
       saiKhuon = true
       continue
     }
-    ranks[axis] = rankOf(axis, code, data.declares)
+    ranks[axis] = rankOf(axis, code)
     if (ranks[axis] === null) canh.push(`trục "${axis}" mã "${code}": hạng phải tra hồ sơ khác, chưa chấm tự động được`)
 
     // 3. mã nào đòi thêm dữ kiện thì phải có đủ VÀ ĐÚNG HÌNH DẠNG
@@ -244,7 +252,7 @@ export function checkOne(path) {
     if (khuyet) ranks[axis] = null
 
     if (spec.tu_choi) {
-      loi.push(`trục "${axis}" mã "${code}": đây là căn cứ TỪ CHỐI (${CODES.tu_choi.R3 ? '' : ''}${spec.label})`)
+      loi.push(`trục "${axis}" mã "${code}": đây là căn cứ TỪ CHỐI (${spec.label})`)
     }
   }
 
@@ -252,6 +260,12 @@ export function checkOne(path) {
   //
   // EV-1/EV-2 là lời xin uy tín, nên con trỏ của nó phải kiểm được. Không đạt thì HẠ về EV-0 và
   // nói rõ vì sao — không làm đỏ: chuẩn §3 viết "EV-0 vẫn bán được", nó chỉ không cấp uy tín.
+  //
+  // Luật ba-thứ áp cho CẢ EV-1, không riêng EV-2. Bản trước chỉ áp từ hạng 2 trở lên, nên EV-1
+  // chỉ phải qua sàn tối thiểu (≥8 ký tự, không phải giữ chỗ) — đo được: đổi một dòng khẳng định
+  // của tools/fixtures/day-du-L3.md sang EV-1 với con trỏ "khong-co-gi-o-day" thì hồ sơ vẫn chấm
+  // ra L3, tức hạng cấp uy tín và quyền biểu quyết, mở bằng một chuỗi bịa 17 ký tự. Chuẩn §3 viết
+  // "MỌI con trỏ chứng cứ phải mang ba thứ" — chỗ này là chỗ máy nói hẹp hơn chuẩn nó phục vụ.
   let evMin = null
   for (const e of data.evidence ?? []) {
     const t = CODES.evidence_tiers[e.tier]
@@ -264,11 +278,11 @@ export function checkOne(path) {
       if (kem) {
         canh.push(`lời khẳng định "${e.claim}" khai ${e.tier} nhưng con trỏ ${kem} — HẠ về EV-0`)
         rank = 0
-      } else if (rank >= 2 && !conTroDuBaThu(p) && !CO_TX.test(String(p))) {
+      } else if (!conTroDuBaThu(p)) {
         canh.push(
           `lời khẳng định "${e.claim}" khai ${e.tier} nhưng con trỏ không mang đủ ba thứ ` +
-          `(file:line + tên nhánh + SHA) và cũng không có tx hash 64 hex — HẠ về EV-0. ` +
-          `Nhận được: ${moTa(p)}`
+          `(file:line + tên nhánh + SHA, hoặc "CHƯA GỘP" kèm tên nhánh) và cũng không có tx hash ` +
+          `64 hex — HẠ về EV-0. Nhận được: ${moTa(p)}`
         )
         rank = 0
       }
@@ -276,15 +290,22 @@ export function checkOne(path) {
     evMin = evMin === null ? rank : Math.min(evMin, rank)
   }
 
-  // 5. hai căn cứ từ chối kiểm được bằng máy (R2 kiểm được, R1/R3 thì không)
+  // 5. vế MÁY ĐỌC ĐƯỢC của R2 (R1 ở tệp CLI vì nó cần cả tập hồ sơ; R3 không kiểm bằng máy)
   //
-  // R2 là CĂN CỨ TỪ CHỐI, không phải cảnh báo — bản trước đẩy vào `canh` nên hồ sơ không khai
-  // đầu mối vẫn `hop_le = true`, tức bộ chấm nói ngược chuẩn mà nó phục vụ.
+  // R2 có HAI vế và chuẩn nối chúng bằng "VÀ": ô đầu mối trống **và** mục (e) không nêu ai tiếp
+  // nhận khi đội ngừng duy trì. Máy chỉ đọc được vế thứ nhất — vế thứ hai là văn xuôi trong mục
+  // (e), không có ô json nào giữ nó (`pointers.nguoi_tiep_nhan_khi_ngung` có trong mẫu nhưng
+  // không mã nào đòi và không dòng mã nào đọc). Nên chỗ này NÊU vế 1, KHÔNG kết luận R2: kết
+  // luận là việc của người duyệt sau khi đọc mục (e). Bản trước phát biểu thẳng "đây là CĂN CỨ
+  // TỪ CHỐI", tức máy kết một điều nó mới thấy một nửa.
+  let r2Ve1 = false
   const lienHe = data.pointers?.dau_moi_lien_he
   if (lienHe === undefined || lienHe === null || String(lienHe).trim() === '') {
+    r2Ve1 = true
     loi.push(
-      'R2 — ô đầu mối chịu trách nhiệm (pointers.dau_moi_lien_he) đang trống. Đây là CĂN CỨ TỪ ' +
-      'CHỐI theo REGISTRATION-STANDARD.md §5 (tập từ chối, R2), không phải một cảnh báo.'
+      'R2 vế 1/2 — ô đầu mối chịu trách nhiệm (pointers.dau_moi_lien_he) đang trống. CHƯA đủ để ' +
+      'kết luận R2: vế 2 là "mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì", và máy không ' +
+      'đọc được văn xuôi mục (e). Người duyệt đọc mục (e) rồi kết — REGISTRATION-STANDARD.md §5.'
     )
   } else {
     const sai = KHUON_NEED.dau_moi_lien_he(lienHe)
@@ -300,6 +321,9 @@ export function checkOne(path) {
   return {
     path, hop_le: loi.length === 0, loi, canh, tier,
     platform_id: data.platform_id, pid_hop_khuon: pidHopKhuon, sai_khuon: saiKhuon, ranks, evMin,
+    // Cờ để CLI gắn đúng nhãn. Không dò chữ trong thông báo — thông báo là để người đọc, cờ là
+    // để máy đọc; buộc hai thứ vào nhau thì sửa câu chữ là làm hỏng phân loại.
+    r2_ve1: r2Ve1,
     // Khối khai THÔ đã rút ra được. CLI không đọc trường này; nó có ở đây để chặng sau của
     // luồng (dựng giao dịch) lấy được lời khai từ CHÍNH lượt chấm, thay vì tự bóc lại khối
     // json một lần nữa. Hai đường bóc là hai đường lệch nhau được — một đường thì không.
@@ -310,18 +334,33 @@ export function checkOne(path) {
 function tinhHang(ranks, evMin, data) {
   const dat = (req) => {
     for (const [k, v] of Object.entries(req)) {
-      if (k === 'token_not') { if (v.includes(data.declares?.token)) return false; continue }
+      if (k === 'token_not') {
+        // "không phải mã X" KHÔNG được thoả bằng cách không khai gì. Bản trước chỉ hỏi
+        // `v.includes(data.declares?.token)`, nên một hồ sơ vắng hẳn trục token — kể cả bản sao
+        // mẫu chưa điền — vẫn đạt L0 vì `undefined` không nằm trong danh sách cấm.
+        const khai = data.declares?.token
+        if (khai === undefined || khai === null || String(khai).trim() === '') return false
+        if (v.includes(khai)) return false
+        continue
+      }
       if (k === 'evidence_min') { if (evMin === null || evMin < v) return false; continue }
       const axis = k.replace(/_min$/, '')
       if (ranks[axis] === null || ranks[axis] === undefined || ranks[axis] < v) return false
     }
     return true
   }
+  // Lấy hạng CAO NHẤT thoả, theo trường `rank` khai trong codes.json. Bản trước lấy "cái cuối
+  // cùng thoả" theo thứ tự khoá JSON — đúng kết quả hôm nay chỉ vì listing_tiers tình cờ viết
+  // tăng dần; đảo thứ tự hai khoá là đổi hạng của mọi hồ sơ trong im lặng.
   let best = null
   for (const [id, spec] of Object.entries(CODES.listing_tiers)) {
     if (id.startsWith('_')) continue
-    if (dat(spec.require)) best = { id, label: spec.label }
+    if (typeof spec.rank !== 'number') {
+      throw new Error(`listing_tiers.${id} thiếu trường "rank" — không xếp được thứ tự hạng`)
+    }
+    if (!dat(spec.require)) continue
+    if (best === null || spec.rank > best.rank) best = { id, label: spec.label, rank: spec.rank }
   }
-  return best
+  return best === null ? null : { id: best.id, label: best.label }
 }
 

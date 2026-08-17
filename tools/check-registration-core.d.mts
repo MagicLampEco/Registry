@@ -17,7 +17,7 @@ export declare const ROOT: string
 export declare const CODES: {
   spec_version: string
   axes: Record<string, { codes: Record<string, unknown> }>
-  listing_tiers: Record<string, { label: string; require: Record<string, unknown> }>
+  listing_tiers: Record<string, { rank: number; label: string; require: Record<string, unknown> }>
 }
 
 /** `null` = đạt khuôn. Ngược lại là thông báo nêu khuôn mong đợi + ký tự vi phạm đầu tiên. */
@@ -39,6 +39,8 @@ export interface KetQuaCham {
   pid_hop_khuon?: boolean
   ranks?: Record<string, number | null>
   evMin?: number | null
+  /** Vế 1/2 của R2 đã thoả (ô đầu mối trống). CHƯA phải kết luận R2 — vế 2 máy không đọc được. */
+  r2_ve1?: boolean
   /** Khối khai THÔ. Chặng sau lấy lời khai từ CHÍNH lượt chấm, không tự bóc lại. */
   khai?: Record<string, any>
 }

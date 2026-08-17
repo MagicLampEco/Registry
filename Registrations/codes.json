@@ -1,6 +1,6 @@
 {
   "spec_version": 2,
-  "updated": "2026-08-13",
+  "updated": "2026-08-17",
   "_doc": "Tập đóng các mã khai báo của cổng đăng ký MagicLamp. Đây là NGUỒN DUY NHẤT: mẫu hồ sơ, chuẩn đăng ký và tools/check-registration.mjs đều đọc từ đây. Thêm một dạng dịch vụ mới = thêm một MÃ ở đây, không phải mở một ngoại lệ.",
 
   "axes": {
@@ -22,7 +22,7 @@
       "condition": "2.2",
       "label": "Hệ token dùng chung",
       "gate": "hard",
-      "_gate_doc": "hard = đây là ba điều kiện duy nhất của whitepaper (tiêu MAGIC · dùng CARP · đăng ký). Chỉ trục này chặn niêm yết.",
+      "_gate_doc": "hard = đây là ba điều kiện duy nhất của whitepaper (tiêu MAGIC · dùng CARP · đăng ký). Chỉ trục này chặn TIẾP NHẬN: TK-X là mã duy nhất khiến hồ sơ không đạt nổi L0. Đừng đọc thành 'chỉ trục này ảnh hưởng niêm yết' — L1 (nhãn 'đã niêm yết') còn đòi identity_min 1, custody_min 2, infra_min 1, nên ba trục soft vẫn là NGƯỠNG của niêm yết, chỉ không phải CỔNG của tiếp nhận.",
       "codes": {
         "TK-0": { "rank": 0, "label": "chưa nối hệ token", "needs": ["moc_du_kien"] },
         "TK-1": { "rank": 1, "label": "tiêu MAGIC, dùng CARP, không đốt LAMP, không mở đường đổi MAGIC ngược ra tài sản ngoài hệ", "needs": ["con_tro"] },
@@ -72,31 +72,35 @@
   },
 
   "listing_tiers": {
-    "_doc": "Hạng niêm yết TÍNH RA từ các mã đã khai, không do người duyệt chấm. Đây là chỗ 'kiểm duyệt' thôi là 'quyền từ chối tuỳ ý' và thành 'phép kiểm khai báo'.",
+    "_doc": "Hạng niêm yết TÍNH RA từ các mã đã khai, không do người duyệt chấm. Đây là chỗ 'kiểm duyệt' thôi là 'quyền từ chối tuỳ ý' và thành 'phép kiểm khai báo'. Trường rank xếp thứ tự hạng — bộ chấm lấy hạng có rank CAO NHẤT trong các hạng thoả, không lấy hạng đứng cuối trong tệp này; nhờ vậy đảo thứ tự khoá không đổi kết quả.",
     "L0": {
+      "rank": 0,
       "label": "đã tiếp nhận — chưa đủ điều kiện niêm yết",
       "require": { "token_not": ["TK-X"] },
-      "_doc": "Mọi hồ sơ khai đúng sự thật đều đạt L0, kể cả khi mọi trục đều ở mã 0."
+      "_doc": "Mọi hồ sơ khai đúng sự thật đều đạt L0, kể cả khi mọi trục đều ở mã 0. Nhưng phải CÓ khai trục token: bỏ trống không thoả 'không phải TK-X'."
     },
     "L1": {
+      "rank": 1,
       "label": "đã niêm yết",
       "require": { "token_min": 1, "identity_min": 1, "custody_min": 2, "infra_min": 1 }
     },
     "L2": {
+      "rank": 2,
       "label": "niêm yết đủ điều kiện",
       "require": { "token_min": 1, "identity_min": 2, "custody_min": 2, "infra_min": 2 }
     },
     "L3": {
+      "rank": 3,
       "label": "đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ",
       "require": { "token_min": 1, "identity_min": 3, "custody_min": 2, "infra_min": 2, "evidence_min": 1 },
-      "_doc": "evidence_min = 1 nghĩa là KHÔNG lời khẳng định nào còn ở EV-0. Số liệu tự khai bán được, nhưng không cấp uy tín — bất biến RE-5."
+      "_doc": "evidence_min = 1 nghĩa là mọi lời khẳng định đều từ EV-1 trở lên VÀ hồ sơ phải có ít nhất một lời khẳng định — hồ sơ không khai khẳng định nào thì không đạt, dù đọc theo chữ thì 'không lời nào còn ở EV-0' là đúng. Số liệu tự khai bán được, nhưng không cấp uy tín — bất biến RE-5 (nguồn ngoài repo: bench/README.md:4-5)."
     }
   },
 
   "tu_choi": {
     "_doc": "Tập ĐÓNG các căn cứ từ chối. Không có căn cứ nào ngoài ba mục này. Cạnh tranh với thành phần sẵn có KHÔNG phải căn cứ từ chối.",
     "R1": "platform_id TRÙNG KHÍT với một lời KHAI khác trong Registrations/ — không chỉ với entry đã niêm yết. Máy quét toàn thư mục vì R1 là tính chất của TẬP hồ sơ. Hai mức, đừng gộp: (a) trùng khít giữa hai lời khai (cả hai đều có khối json registration) ⇒ từ chối, máy chặn được; (b) trùng với một tên NHÁP (lấy từ tên tệp, chưa khai trong khối json), hoặc chỉ 'gây nhầm lẫn' sau chuẩn hoá đồng hình ⇒ KHÔNG tự từ chối, nêu cho người duyệt quyết. 'Gây nhầm lẫn' là phán đoán về nhận thức người đọc, máy không kết luận thay.",
-    "R2": "hồ sơ KHÔNG KHAI đầu mối chịu trách nhiệm — ô \"Đầu mối liên hệ\" (pointers.dau_moi_lien_he) trống, hoặc mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Kiểm bằng ĐỌC hồ sơ. Hồ sơ CÓ KHAI mà gửi thư không thấy trả lời thì KHÔNG phải R2 — đó là trạng thái 'tồn liên lạc' (REGISTRATION-STANDARD.md §5 bước 2), treo niêm yết chứ không từ chối.",
+    "R2": "hồ sơ KHÔNG KHAI đầu mối chịu trách nhiệm — ô \"Đầu mối liên hệ\" (pointers.dau_moi_lien_he) trống VÀ mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Hai vế nối bằng VÀ, không phải HOẶC: còn một trong hai thì vẫn có người chịu trách nhiệm, chưa phải căn cứ từ chối. Kiểm bằng ĐỌC hồ sơ. Máy chỉ đọc được vế 1 (ô json trống); vế 2 là văn xuôi mục (e) nên máy NÊU chứ không kết luận, và R2 KHÔNG làm cổng CI đỏ — cổng xanh không có nghĩa hồ sơ đã qua R2. Hồ sơ CÓ KHAI mà gửi thư không thấy trả lời thì KHÔNG phải R2 — đó là trạng thái 'tồn liên lạc' (REGISTRATION-STANDARD.md §5 bước 2), treo niêm yết chứ không từ chối.",
     "R3": "khai không đúng sự thật — khác hẳn với khai chưa xong"
   }
 }

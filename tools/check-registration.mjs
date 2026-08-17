@@ -34,15 +34,21 @@ const files = args.length
 let hong = 0
 let thieu = 0
 let chuaNop = 0
+let choNguoiDuyet = 0
 for (const f of files) {
   const r = checkOne(resolve(ROOT, f))
   // Phân biệt hai kiểu hỏng: khai THIẾU (ô trống) khác hẳn khai SAI (mã lạ, JSON vỡ, sai khuôn).
   // Nhãn lấy theo cờ `sai_khuon` do checkOne đặt, không dò chữ trong thông báo.
   const chiThieu = (r.loi ?? []).length > 0 && !r.sai_khuon
-  const nhan = r.chua_nop ? 'CHƯA NỘP     '
-    : r.hop_le ? 'HỢP LỆ       '
-    : chiThieu ? 'THIẾU DỮ KIỆN'
-    : 'SAI HÌNH DẠNG'
+  // R2 vế 1 có nhãn RIÊNG. Trước đây nó rơi chung rổ "THIẾU DỮ KIỆN" — đọc ra thành "đội chưa
+  // điền xong", trong khi nó là nửa đầu của một CĂN CỨ TỪ CHỐI đang chờ người duyệt đọc nốt mục
+  // (e). Hai thứ đó dẫn tới hai hành động khác nhau, nên không được mang chung một nhãn.
+  const nhan = r.chua_nop ? 'CHƯA NỘP      '
+    : r.hop_le ? 'HỢP LỆ        '
+    : r.sai_khuon ? 'SAI HÌNH DẠNG '
+    : r.r2_ve1 ? 'CHỜ NGƯỜI DUYỆT'
+    : chiThieu ? 'THIẾU DỮ KIỆN '
+    : 'SAI HÌNH DẠNG '
   console.log(`\n${nhan}  ${f}${r.platform_id ? `  (platform_id=${r.platform_id})` : ''}`)
   if (!r.chua_nop) {
     // Hồ sơ SAI HÌNH DẠNG vẫn tính ra được một hạng từ các trục, nhưng in trần con số đó là mời
@@ -55,12 +61,15 @@ for (const f of files) {
   for (const l of r.loi ?? []) console.log(`  ✗ ${l}`)
   for (const c of r.canh ?? []) console.log(`  ! ${c}`)
   if (r.chua_nop) chuaNop++
+  else if (r.sai_khuon) hong++
+  else if (r.r2_ve1) choNguoiDuyet++
   else if (chiThieu) thieu++
   else if (!r.hop_le) hong++
 }
 console.log(
-  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop} hợp lệ về hình dạng · ` +
-  `${thieu} thiếu dữ kiện · ${hong} sai hình dạng · ${chuaNop} chưa nộp`
+  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop - choNguoiDuyet} hợp lệ về hình dạng · ` +
+  `${thieu} thiếu dữ kiện · ${choNguoiDuyet} chờ người duyệt (R2 vế 1) · ` +
+  `${hong} sai hình dạng · ${chuaNop} chưa nộp`
 )
 
 // ── R1: platform_id trùng hoặc gây nhầm lẫn ──
@@ -165,4 +174,13 @@ if (trungY === 0 && deNham === 0) {
 // Chỉ khai sai sự thật mới là căn cứ từ chối."* Ô trống hạ HẠNG NIÊM YẾT (in ở trên), nó không
 // phải căn cứ từ chối. Bản trước gộp THIẾU vào cùng rổ với SAI, nên bộ chấm nói ngược chuẩn mà
 // nó phục vụ — và một cổng CI dựng trên nó sẽ đỏ vĩnh viễn vì một hồ sơ hợp lệ đang chờ đội điền.
+//
+// CŨNG KHÔNG đỏ: CHỜ NGƯỜI DUYỆT (R2 vế 1). Cân nhắc kỹ chỗ này vì nó dễ đọc nhầm theo hai chiều.
+// R2 là căn cứ từ chối THẬT, nên bản năng đầu là làm nó đỏ. Nhưng máy mới thấy MỘT trong hai vế
+// (vế 2 nằm trong văn xuôi mục (e), máy không đọc), nên đỏ ở đây là để máy tuyên một bản án nó
+// chưa đủ dữ kiện để tuyên. Và hệ quả vận hành thì nặng: một hồ sơ đã nằm trên `main` mà thiếu ô
+// đầu mối sẽ làm MỌI PR sau đó đỏ, cho tới khi đội chủ hồ sơ điền — mà hồ sơ thì Registry không
+// được điền hộ. Cổng đỏ vĩnh viễn là cổng bị bỏ qua. Nên: máy NÊU, người duyệt KẾT.
+//
+// Đừng đọc mã thoát 0 thành "mọi hồ sơ đã qua R2". Số hồ sơ chờ người duyệt in ở dòng tổng kết.
 process.exit(hong === 0 && trungY === 0 ? 0 : 1)

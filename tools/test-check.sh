@@ -93,10 +93,32 @@ kiem tools/fixtures/o-toan-x-khong-duoc-len-L3.md \
      "SAI HÌNH DẠNG" \
      "tám ô gõ chữ \"x\" bị bắt là SAI HÌNH DẠNG, khác nhãn với ô đang trống"
 
-# Lỗ R-05: R2 là căn cứ TỪ CHỐI theo chuẩn §5, không phải một dòng cảnh báo.
+# Cùng lỗ R-04 nhưng trên trục CHỨNG THỰC, sót lại sau khi bốn trục khai báo đã bịt: luật ba-thứ
+# trước đây chỉ áp từ EV-2 trở lên, nên EV-1 mở được L3 bằng một chuỗi bịa 17 ký tự (đo 2026-08-17).
+kiem_khong tools/fixtures/EV1-con-tro-rac-khong-len-L3.md \
+     "L3 —" \
+     "EV-1 với con trỏ rác KHÔNG còn mở được L3"
+
+kiem tools/fixtures/EV1-con-tro-rac-khong-len-L3.md \
+     "HẠ về EV-0" \
+     "con trỏ EV-1 không đủ ba thứ bị hạ về EV-0, kèm lý do đọc được"
+
+# Lỗ R-05: R2 là căn cứ TỪ CHỐI theo chuẩn §5, không phải một dòng cảnh báo. Nhưng máy chỉ đọc
+# được VẾ 1 của R2 (ô json trống); vế 2 nằm trong văn xuôi mục (e). Nên hai khẳng định, không một:
+# máy phải NÊU vế 1 như một lỗi, và phải nói rõ nó CHƯA kết luận R2.
 kiem Registrations/lampnet.md \
-     "R2 — ô đầu mối chịu trách nhiệm" \
-     "ô đầu mối trống rơi vào lỗi R2, không còn là cảnh báo"
+     "R2 vế 1/2 — ô đầu mối chịu trách nhiệm" \
+     "ô đầu mối trống rơi vào lỗi R2 vế 1, không còn là cảnh báo"
+
+kiem Registrations/lampnet.md \
+     "CHƯA đủ để kết luận R2" \
+     "máy tự thú nó mới thấy một nửa R2, không tuyên bản án thay người duyệt"
+
+# Nhãn riêng: một hồ sơ chờ người duyệt xử R2 không được mang chung nhãn với hồ sơ đội chưa
+# điền xong — hai thứ đó dẫn tới hai hành động khác nhau.
+kiem Registrations/lampnet.md \
+     "CHỜ NGƯỜI DUYỆT" \
+     "R2 vế 1 có nhãn riêng, không rơi chung rổ THIẾU DỮ KIỆN"
 
 echo
 echo "Kiểm R1 — trùng platform_id (tính chất của TẬP hồ sơ)"
