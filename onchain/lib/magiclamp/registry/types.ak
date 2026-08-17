@@ -1,7 +1,7 @@
 // Registry onchain types — phần schema dùng chung với Treasury.
 //
 // ⚠️ RÀNG BUỘC LIÊN REPO: `AssetKey` ở đây phải khớp BYTE-PERFECT với `AssetKey`
-// của Treasury (`MagicLampNetwork/LAMP` — `Treasury/onchain/lib/magiclamp/treasury/
+// của Treasury (`MagicLampEcosystem/LAMP` — `Treasury/onchain/lib/magiclamp/treasury/
 // types.ak`) vì `PlatformEntry.accepted_assets` được đối soát với `CustodyDatum.
 // accepted_assets` của custody. Cấu trúc: Constr 0 với đúng 2 field ByteArray theo
 // thứ tự (policy, name). Đổi thứ tự hay thêm field ở một bên mà không đổi bên kia

@@ -6,7 +6,7 @@
   "declares": { "identity": "ID-3", "token": "TK-1", "custody": "CU-1", "infra": "IN-3" },
   "pointers": {
     "dau_moi_lien_he": "ai-do@vi-du.example",
-    "repo": "MagicLampNetwork/vi-du",
+    "repo": "MagicLampEcosystem/vi-du",
     "con_tro": "src/danh-tinh/phoenixkey.ts:142 · nhánh main · SHA 5c0da0371f2b8ae4",
     "instance_id": "vi-du-instance-01",
     "custody_hash": "e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b",
