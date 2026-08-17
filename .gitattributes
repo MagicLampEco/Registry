@@ -1,0 +1,9 @@
+# Lockfile phải NẰM TRONG kho (xem `.gitignore` — `npm ci` từ chối chạy khi thiếu nó), nhưng
+# không cần ai đọc diff của nó. Hai cờ dưới đây gập nó lại trên GitHub và trong `git diff`:
+#
+#   linguist-generated  → GitHub gập sẵn khối diff và không tính vào thống kê ngôn ngữ
+#   -diff               → `git diff` in "Binary files differ" thay vì 4000 dòng
+#
+# Cần xem thật thì `git diff --text -- package-lock.json`.
+package-lock.json          linguist-generated=true -diff
+scripts/package-lock.json  linguist-generated=true -diff

@@ -18,8 +18,14 @@ dist/
 *.tsbuildinfo
 **/.vite/
 
-# npm lockfile — tự sinh, phình diff khi review (npm install/ci tái tạo được)
-**/package-lock.json
+# npm lockfile: TRƯỚC ĐÂY bị loại ở đây với lý do "tự sinh, phình diff khi review". Lý do đó có
+# thật, nhưng nó đã làm hỏng đúng thứ nó không định đụng tới: `.github/workflows/kiem-ho-so.yml`
+# chạy `npm ci`, và `npm ci` TỪ CHỐI chạy khi không có lockfile. Hệ quả đo được — mọi lần chạy CI
+# đều đỏ ở bước cài (run 31887238222 trên `main`, 2026-08-15: "npm error code EUSAGE"), nên bốn
+# bước kiểm phía sau CHƯA TỪNG chạy một lần nào. Cổng gác duy nhất của kho đã đứng đó mà không gác.
+#
+# Nên lockfile nay được theo dõi. Vế "phình diff" xử bằng `.gitattributes` (`linguist-generated`),
+# không xử bằng cách vứt tệp — vứt tệp là đổi một phiền toái khi review lấy một cổng gác chết.
 
 # ── Aiken build artifacts ──
 **/onchain/build/
