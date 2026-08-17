@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// Chấm hồ sơ đăng ký bằng máy.
+// Chấm hồ sơ đăng ký bằng máy — VỎ DÒNG LỆNH.
+//
+// Phép chấm một hồ sơ nằm ở `tools/check-registration-core.mjs` (thuần, nhập được, không in gì).
+// Tệp này giữ đúng ba việc mà lõi cố ý không làm: chọn tệp để chấm, IN ra màn hình, và kiểm R1
+// — tính chất của TẬP hồ sơ, không của một hồ sơ.
 //
 // Vì sao có tệp này: chừng nào hồ sơ còn là văn xuôi thì "duyệt" là một hành vi của con người,
 // và một hành vi của con người thì không kiểm lại được. Hồ sơ khai bằng MÃ từ tập đóng
@@ -10,120 +14,13 @@
 //   node tools/check-registration.mjs Registrations/lampnet.md # chấm một hồ sơ
 //
 // Mã thoát: 0 = mọi hồ sơ hợp lệ về hình thức; 1 = có hồ sơ sai hình thức.
-// LƯU Ý ĐÚNG PHẠM VI: tệp này chỉ kiểm hồ sơ có khai ĐỦ và ĐÚNG HÌNH DẠNG không. Nó KHÔNG
+// LƯU Ý ĐÚNG PHẠM VI: bộ chấm chỉ kiểm hồ sơ có khai ĐỦ và ĐÚNG HÌNH DẠNG không. Nó KHÔNG
 // kiểm lời khai có đúng sự thật không — căn cứ từ chối R3 vẫn là việc của người đối chiếu.
 
-import { readFileSync, readdirSync } from 'node:fs'
-import { join, dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const CODES = JSON.parse(readFileSync(join(ROOT, 'Registrations/codes.json'), 'utf8'))
-
-const AXES = ['identity', 'token', 'custody', 'infra']
-
-/** Rút khối ```json registration ... ``` khỏi một hồ sơ. */
-function extractBlock(src) {
-  const m = src.match(/```json\s+registration\s*\n([\s\S]*?)\n```/)
-  if (!m) return { chua_nop: true, err: 'chưa có khối ```json registration — hồ sơ chưa được nộp' }
-  try {
-    return { data: JSON.parse(m[1]) }
-  } catch (e) {
-    return { err: `khối registration không phải JSON hợp lệ: ${e.message}` }
-  }
-}
-
-/** rank của một mã trên một trục. ID-A mượn hạng của hệ danh tính được trỏ tới. */
-function rankOf(axis, code, declared) {
-  const spec = CODES.axes[axis].codes[code]
-  if (!spec) return null
-  if (spec.rank !== null) return spec.rank
-  if (axis === 'identity' && code === 'ID-A') {
-    // Không tự suy được — phải tra hồ sơ của hệ danh tính kia. Ở đây trả về null và
-    // báo "chưa chấm được", thay vì đoán một hạng.
-    return null
-  }
-  return null
-}
-
-function checkOne(path) {
-  const src = readFileSync(path, 'utf8')
-  const loi = []
-  const canh = []
-
-  const { data, err, chua_nop } = extractBlock(src)
-  if (err) return { path, hop_le: false, chua_nop, loi: [err], tier: null }
-
-  // 1. trường bắt buộc
-  for (const f of ['platform_id', 'spec_version', 'declares']) {
-    if (data[f] === undefined) loi.push(`thiếu trường bắt buộc: ${f}`)
-  }
-  if (data.spec_version !== CODES.spec_version) {
-    canh.push(`spec_version hồ sơ = ${data.spec_version}, codes.json = ${CODES.spec_version}`)
-  }
-
-  // 2. mọi trục phải khai, và mã phải thuộc tập đóng
-  const ranks = {}
-  for (const axis of AXES) {
-    const code = data.declares?.[axis]
-    if (!code) { loi.push(`trục "${axis}" chưa khai mã`); continue }
-    const spec = CODES.axes[axis].codes[code]
-    if (!spec) {
-      loi.push(`trục "${axis}": mã "${code}" không có trong tập đóng — xem Registrations/codes.json`)
-      continue
-    }
-    ranks[axis] = rankOf(axis, code, data.declares)
-    if (ranks[axis] === null) canh.push(`trục "${axis}" mã "${code}": hạng phải tra hồ sơ khác, chưa chấm tự động được`)
-
-    // 3. mã nào đòi thêm dữ kiện thì phải có đủ
-    for (const need of spec.needs ?? []) {
-      const v = data.pointers?.[need]
-      const rong = v === undefined || v === null || v === '' ||
-                   (Array.isArray(v) && v.length === 0)
-      if (rong) loi.push(`trục "${axis}" mã "${code}" đòi pointers.${need} — đang trống`)
-    }
-
-    if (spec.tu_choi) {
-      loi.push(`trục "${axis}" mã "${code}": đây là căn cứ TỪ CHỐI (${CODES.tu_choi.R3 ? '' : ''}${spec.label})`)
-    }
-  }
-
-  // 4. hạng chứng thực của từng lời khẳng định
-  let evMin = null
-  for (const e of data.evidence ?? []) {
-    const t = CODES.evidence_tiers[e.tier]
-    if (!t) { loi.push(`hạng chứng thực "${e.tier}" không có trong tập đóng`); continue }
-    evMin = evMin === null ? t.rank : Math.min(evMin, t.rank)
-  }
-
-  // 5. hai căn cứ từ chối kiểm được bằng máy (R2 kiểm được, R1/R3 thì không)
-  if (!data.pointers?.dau_moi_lien_he) {
-    canh.push('chưa có đầu mối liên hệ (căn cứ từ chối R2) — hồ sơ vẫn tiếp nhận được, nhưng không niêm yết được')
-  }
-
-  // 6. tính hạng niêm yết
-  const tier = tinhHang(ranks, evMin, data)
-
-  return { path, hop_le: loi.length === 0, loi, canh, tier, platform_id: data.platform_id, ranks, evMin }
-}
-
-function tinhHang(ranks, evMin, data) {
-  const dat = (req) => {
-    for (const [k, v] of Object.entries(req)) {
-      if (k === 'token_not') { if (v.includes(data.declares?.token)) return false; continue }
-      if (k === 'evidence_min') { if (evMin === null || evMin < v) return false; continue }
-      const axis = k.replace(/_min$/, '')
-      if (ranks[axis] === null || ranks[axis] === undefined || ranks[axis] < v) return false
-    }
-    return true
-  }
-  let best = null
-  for (const [id, spec] of Object.entries(CODES.listing_tiers)) {
-    if (id.startsWith('_')) continue
-    if (dat(spec.require)) best = { id, label: spec.label }
-  }
-  return best
-}
+import { ROOT, checkOne, loiKhuonPid } from './check-registration-core.mjs'
 
 // ── chạy ──
 const args = process.argv.slice(2)
@@ -137,29 +34,42 @@ const files = args.length
 let hong = 0
 let thieu = 0
 let chuaNop = 0
+let choNguoiDuyet = 0
 for (const f of files) {
   const r = checkOne(resolve(ROOT, f))
-  // Phân biệt hai kiểu hỏng: khai THIẾU (ô trống) khác hẳn khai SAI (mã lạ, JSON vỡ).
-  const chiThieu = (r.loi ?? []).length > 0 && (r.loi ?? []).every((l) => l.includes('đang trống'))
-  const nhan = r.chua_nop ? 'CHƯA NỘP     '
-    : r.hop_le ? 'HỢP LỆ       '
-    : chiThieu ? 'THIẾU DỮ KIỆN'
-    : 'SAI HÌNH DẠNG'
+  // Phân biệt hai kiểu hỏng: khai THIẾU (ô trống) khác hẳn khai SAI (mã lạ, JSON vỡ, sai khuôn).
+  // Nhãn lấy theo cờ `sai_khuon` do checkOne đặt, không dò chữ trong thông báo.
+  const chiThieu = (r.loi ?? []).length > 0 && !r.sai_khuon
+  // R2 vế 1 có nhãn RIÊNG. Trước đây nó rơi chung rổ "THIẾU DỮ KIỆN" — đọc ra thành "đội chưa
+  // điền xong", trong khi nó là nửa đầu của một CĂN CỨ TỪ CHỐI đang chờ người duyệt đọc nốt mục
+  // (e). Hai thứ đó dẫn tới hai hành động khác nhau, nên không được mang chung một nhãn.
+  const nhan = r.chua_nop ? 'CHƯA NỘP      '
+    : r.hop_le ? 'HỢP LỆ        '
+    : r.sai_khuon ? 'SAI HÌNH DẠNG '
+    : r.r2_ve1 ? 'CHỜ NGƯỜI DUYỆT'
+    : chiThieu ? 'THIẾU DỮ KIỆN '
+    : 'SAI HÌNH DẠNG '
   console.log(`\n${nhan}  ${f}${r.platform_id ? `  (platform_id=${r.platform_id})` : ''}`)
   if (!r.chua_nop) {
-    if (r.tier) console.log(`  hạng niêm yết tính ra: ${r.tier.id} — ${r.tier.label}`)
+    // Hồ sơ SAI HÌNH DẠNG vẫn tính ra được một hạng từ các trục, nhưng in trần con số đó là mời
+    // người đọc lướt tin vào nó. Hạng của một hồ sơ khai sai chưa có hiệu lực — nói thẳng ra.
+    const treo = r.sai_khuon ? '  (TẠM TÍNH — hồ sơ đang SAI HÌNH DẠNG nên hạng chưa có hiệu lực)' : ''
+    if (r.tier) console.log(`  hạng niêm yết tính ra: ${r.tier.id} — ${r.tier.label}${treo}`)
     else console.log('  hạng niêm yết tính ra: KHÔNG ĐẠT hạng nào')
     if (r.ranks) console.log(`  hạng từng trục: ${JSON.stringify(r.ranks)}${r.evMin !== null && r.evMin !== undefined ? `  evidence_min=${r.evMin}` : ''}`)
   }
   for (const l of r.loi ?? []) console.log(`  ✗ ${l}`)
   for (const c of r.canh ?? []) console.log(`  ! ${c}`)
   if (r.chua_nop) chuaNop++
+  else if (r.sai_khuon) hong++
+  else if (r.r2_ve1) choNguoiDuyet++
   else if (chiThieu) thieu++
   else if (!r.hop_le) hong++
 }
 console.log(
-  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop} hợp lệ về hình dạng · ` +
-  `${thieu} thiếu dữ kiện · ${hong} sai hình dạng · ${chuaNop} chưa nộp`
+  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop - choNguoiDuyet} hợp lệ về hình dạng · ` +
+  `${thieu} thiếu dữ kiện · ${choNguoiDuyet} chờ người duyệt (R2 vế 1) · ` +
+  `${hong} sai hình dạng · ${chuaNop} chưa nộp`
 )
 
 // ── R1: platform_id trùng hoặc gây nhầm lẫn ──
@@ -170,23 +80,50 @@ console.log(
 //
 // PHẠM VI: chỉ thấy được các hồ sơ NẰM TRONG repo này. Một beacon đã đúc trên chuỗi mà chưa có hồ
 // sơ ở đây thì phép kiểm này KHÔNG thấy — van đó là `discoverPlatforms` phía SDK, không phải tệp này.
+//
+// Bảng đồng hình chỉ gấp các cặp MỘT ký tự. KHÔNG thêm luật gấp nếp nhiều ký tự (`rn→m`, `vv→w`)
+// một cách CỐ Ý: ProofChat nêu đúng — chúng đẻ dương tính giả trên tên thật ("govern" → "govem",
+// "network" → "netwok"), mà dương tính giả ở đây bắt người đối chiếu phán xử một cặp vô hại, tức
+// trả lại đúng cái quyền tuỳ ý mà §5 vừa gỡ đi.
 const CHUAN_HOA = (s) =>
   String(s)
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')  // bỏ dấu tiếng Việt
+    .replace(/[̀-ͯ]/g, '') // bỏ dấu tiếng Việt
     .replace(/[0o]/g, '0')            // 0 ↔ o
     .replace(/[1li]/g, '1')           // 1 ↔ l ↔ i
+    .replace(/[2z]/g, '2')            // 2 ↔ z
+    .replace(/[3e]/g, '3')            // 3 ↔ e
+    .replace(/[4a]/g, '4')            // 4 ↔ a
     .replace(/[5s]/g, '5')            // 5 ↔ s
-    .replace(/[^a-z0-9]/g, '')        // bỏ gạch, chấm, khoảng trắng
+    .replace(/[6g]/g, '6')            // 6 ↔ g
+    .replace(/[7t]/g, '7')            // 7 ↔ t
+    .replace(/[8b]/g, '8')            // 8 ↔ b
+    .replace(/-/g, '')                // bỏ gạch nối (chuỗi đã qua cổng ký tự nên chỉ còn [a-z0-9-])
 
-const toanBo = readdirSync(join(ROOT, 'Registrations'))
-  .filter((f) => f.endsWith('.md') && !BO_QUA.has(f))
-  .map((f) => {
-    const r = checkOne(resolve(ROOT, 'Registrations', f))
-    return { file: `Registrations/${f}`, pid: r.platform_id }
-  })
-  .filter((x) => x.pid)
+// Hồ sơ CHƯA NỘP cũng phải nằm trong tập so trùng. Bản trước lọc `.filter((x) => x.pid)` nên ba
+// hồ sơ chưa có khối json (chat/trace/work) vô hình với R1: ai mở PR khai `platform_id: "chat"`
+// hôm nay thì máy không thấy gì. Tên DỰ KIẾN của hồ sơ chưa nộp = tên tệp bỏ đuôi .md, và nó
+// được đánh dấu nguồn `nháp` — tên nháp CHƯA phải một lời khai, nên nó chỉ NÊU chứ không làm đỏ.
+const toanBo = []
+for (const f of readdirSync(join(ROOT, 'Registrations')).filter((f) => f.endsWith('.md') && !BO_QUA.has(f))) {
+  const r = checkOne(resolve(ROOT, 'Registrations', f))
+  const file = `Registrations/${f}`
+  if (r.platform_id !== undefined && r.platform_id !== null && r.platform_id !== '') {
+    if (!r.pid_hop_khuon) {
+      console.log(`\n! R1 — bỏ ${file} khỏi tập so trùng: platform_id ${loiKhuonPid(r.platform_id)}`)
+      continue
+    }
+    toanBo.push({ file, pid: String(r.platform_id), nguon: 'khai' })
+    continue
+  }
+  const duKien = f.replace(/\.md$/, '')
+  if (loiKhuonPid(duKien)) {
+    console.log(`\n! R1 — bỏ ${file} khỏi tập so trùng: tên tệp không dùng làm tên dự kiến được (${loiKhuonPid(duKien)})`)
+    continue
+  }
+  toanBo.push({ file, pid: duKien, nguon: 'nháp' })
+}
 
 const theoChuan = new Map()
 for (const x of toanBo) {
@@ -195,19 +132,28 @@ for (const x of toanBo) {
   theoChuan.get(k).push(x)
 }
 
-let trungY = 0   // trùng khít — căn cứ từ chối R1, đỏ
-let deNham = 0   // chuẩn hoá về một chuỗi nhưng viết khác nhau — người phải quyết, vàng
+const nguonCua = (x) => `${x.file}  (tên "${x.pid}" — nguồn: ${x.nguon})`
+
+let trungY = 0   // trùng khít giữa hai lời KHAI — căn cứ từ chối R1, đỏ
+let deNham = 0   // có bên là tên nháp, hoặc chuẩn hoá về một chuỗi mà viết khác — người quyết, vàng
 for (const nhom of theoChuan.values()) {
   if (nhom.length < 2) continue
   const khit = new Set(nhom.map((x) => x.pid)).size === 1
-  if (khit) {
+  const deuKhai = nhom.every((x) => x.nguon === 'khai')
+  if (khit && deuKhai) {
     trungY++
     console.log(`\n✗ R1 — platform_id TRÙNG KHÍT: "${nhom[0].pid}"`)
+  } else if (khit) {
+    deNham++
+    console.log(
+      `\n! R1? — tên TRÙNG KHÍT nhưng ít nhất một bên mới là tên NHÁP (lấy từ tên tệp, chưa khai ` +
+      `trong khối json): "${nhom[0].pid}". Tên nháp chưa phải lời khai nên KHÔNG tự từ chối.`
+    )
   } else {
     deNham++
     console.log(`\n! R1? — platform_id GÂY NHẦM LẪN sau chuẩn hoá: ${nhom.map((x) => `"${x.pid}"`).join(' ~ ')}`)
   }
-  for (const x of nhom) console.log(`    ${x.file}`)
+  for (const x of nhom) console.log(`    ${nguonCua(x)}`)
 }
 if (trungY === 0 && deNham === 0) {
   console.log(`R1 — ${toanBo.length} platform_id, không trùng, không cặp nào gây nhầm lẫn`)
@@ -220,11 +166,21 @@ if (trungY === 0 && deNham === 0) {
 
 // ── mã thoát: chỉ hai thứ mới đỏ ──
 //
-// Đỏ = SAI HÌNH DẠNG (JSON vỡ, mã ngoài tập đóng) hoặc R1 TRÙNG KHÍT. Cả hai đều là "khai sai".
+// Đỏ = SAI HÌNH DẠNG (JSON vỡ, mã ngoài tập đóng, dữ kiện sai khuôn) hoặc R1 TRÙNG KHÍT giữa hai
+// lời khai. Cả hai đều là "khai sai".
 //
 // KHÔNG đỏ: CHƯA NỘP và THIẾU DỮ KIỆN. Đây không phải khoan dung, nó là chính chuẩn:
 // `REGISTRATION-STANDARD.md` §2 — *"khai đúng thì hồ sơ được tiếp nhận, dù khai 'chưa đạt'…
 // Chỉ khai sai sự thật mới là căn cứ từ chối."* Ô trống hạ HẠNG NIÊM YẾT (in ở trên), nó không
 // phải căn cứ từ chối. Bản trước gộp THIẾU vào cùng rổ với SAI, nên bộ chấm nói ngược chuẩn mà
 // nó phục vụ — và một cổng CI dựng trên nó sẽ đỏ vĩnh viễn vì một hồ sơ hợp lệ đang chờ đội điền.
+//
+// CŨNG KHÔNG đỏ: CHỜ NGƯỜI DUYỆT (R2 vế 1). Cân nhắc kỹ chỗ này vì nó dễ đọc nhầm theo hai chiều.
+// R2 là căn cứ từ chối THẬT, nên bản năng đầu là làm nó đỏ. Nhưng máy mới thấy MỘT trong hai vế
+// (vế 2 nằm trong văn xuôi mục (e), máy không đọc), nên đỏ ở đây là để máy tuyên một bản án nó
+// chưa đủ dữ kiện để tuyên. Và hệ quả vận hành thì nặng: một hồ sơ đã nằm trên `main` mà thiếu ô
+// đầu mối sẽ làm MỌI PR sau đó đỏ, cho tới khi đội chủ hồ sơ điền — mà hồ sơ thì Registry không
+// được điền hộ. Cổng đỏ vĩnh viễn là cổng bị bỏ qua. Nên: máy NÊU, người duyệt KẾT.
+//
+// Đừng đọc mã thoát 0 thành "mọi hồ sơ đã qua R2". Số hồ sơ chờ người duyệt in ở dòng tổng kết.
 process.exit(hong === 0 && trungY === 0 ? 0 : 1)

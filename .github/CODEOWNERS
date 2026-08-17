@@ -3,16 +3,30 @@
 # ⚠ ĐỌC TRƯỚC KHI TIN TỆP NÀY.
 #
 # Kho này PRIVATE trên gói GitHub Free. Trên nền đó CODEOWNERS **không** tự yêu cầu review và
-# **không** chặn được gộp — GitHub chỉ cưỡng chế nó khi kho public, hoặc khi tài khoản lên Pro /
-# Team / Enterprise. Đo được 2026-08-15:
+# **không** chặn được gộp — GitHub chỉ cưỡng chế nó khi kho public, hoặc khi gói lên Pro / Team /
+# Enterprise.
 #
-#     GET /repos/MagicLampNetwork/Registry/rulesets
+# Kho đã chuyển từ tài khoản người dùng `MagicLampNetwork` sang tổ chức `MagicLampEcosystem`.
+# (Tài khoản người dùng đó nay đổi tên thành `MagicResearch`; chuỗi `MagicLampNetwork` đã trống —
+#  `gh api users/MagicLampNetwork` → 404. Đừng gõ nó vào tệp này như một chủ sở hữu.)
+#
+# `@AladinContract` phải là thành viên org có quyền ghi thì GitHub mới coi là chủ sở hữu hợp lệ —
+# một owner không đủ quyền bị **bỏ qua trong im lặng**, không báo lỗi. Đo 2026-08-17:
+#     GET /repos/MagicLampEcosystem/Registry/collaborators/AladinContract/permission → "write"  ✓
+# Đo lại sau khi chuyển, 2026-08-17 — **chuyển tổ chức KHÔNG gỡ được ràng buộc này**:
+#
+#     GET /repos/MagicLampEcosystem/Registry/rulesets
 #     → 403 "Upgrade to GitHub Pro or make this repository public to enable this feature."
+#     GET /orgs/MagicLampEcosystem  → plan "free", private true
+#
+# Ghi rõ vì bản trước của chú thích này gợi ý sai nguyên nhân. Cửa khoá **không** phải "vì chủ là
+# tài khoản người dùng, không có team". Cửa khoá là **gói free + kho private**, và đó là một phép
+# nhân: gỡ một trong hai vế thì mở. Chuyển tổ chức chỉ đổi thứ thứ ba, nên nó không mở gì cả.
 #
 # Nên hôm nay tệp này là **tài liệu về trách nhiệm**, chưa phải cổng. Cổng thật đang chạy là
-# `.github/workflows/kiem-ho-so.yml` — nó chấm hồ sơ và bắt `platform_id` trùng, và nó chạy được
-# trên gói Free. Đừng đọc tệp này như một lá chắn cho tới khi kho lên Pro; lúc đó bật
-# "Require review from Code Owners" thì nó có hiệu lực ngay, không phải sửa gì ở đây.
+# `.github/workflows/kiem-ho-so.yml` — nó chấm hồ sơ, bắt `platform_id` trùng và kiểm kiểu, và nó
+# chạy được trên gói Free. Đừng đọc tệp này như một lá chắn cho tới khi một trong hai vế kia được
+# gỡ; lúc đó bật "Require review from Code Owners" thì nó có hiệu lực ngay, không phải sửa gì ở đây.
 
 # Mặc định
 *                           @AladinContract

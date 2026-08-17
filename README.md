@@ -51,7 +51,7 @@ không khoá được dòng tiền ở kho. Chi tiết ở [`Specs/CONTRACT.md`]
 
 ## Di chuyển từ repo LAMP (2026-07-29)
 
-Lớp đăng ký này trước đây nằm trong repo [`MagicLampNetwork/LAMP`](https://github.com/MagicLampNetwork/LAMP)
+Lớp đăng ký này trước đây nằm trong repo [`MagicLampEcosystem/LAMP`](https://github.com/MagicLampEcosystem/LAMP)
 dưới tên **PlatformKit**, chung cây với Treasury. Nó tách sang repo riêng vì đúng ranh giới
 trách nhiệm: Treasury là **kho** của từng dịch vụ, Registry là **sổ niêm yết** của cả hệ — hai
 việc khác nhau, hai vòng đời khác nhau.

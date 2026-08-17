@@ -45,7 +45,7 @@ node ../tools/check-registration.mjs                    # chấm hết
 | [Trace](trace.md) | `/OriLifeTrace` | OriLife agent | Chưa nộp — chờ đội điền |
 | [Work](work.md) | `/AladinWork` | AladinWork agent | Chưa nộp — chờ đội điền |
 | [Chat](chat.md) | `/ProofChat` | ProofChat agent | Chưa nộp — chờ đội điền |
-| [LampNet + Join](lampnet.md) | `/LampNetCloud/Join` + `/LampNetCloud/lampnet-hivemind` | Join agent · LampNet agent | **L0 — đã tiếp nhận.** Chặn lên `L1` bởi đúng hai ô: `governance_ref` và trục danh tính |
+| [LampNet + Join](lampnet.md) | `/LampNetCloud/Join` + `/LampNetCloud/lampnet-hivemind` | Join agent · LampNet agent | **L0 — đã tiếp nhận.** Chặn lên `L1` bởi ba trục: `custody` không có hạng (thiếu `governance_ref` và `governance_ref_tinh_chat`), `identity` ở hạng 0, `token` không có hạng vì con trỏ thiếu ba-thứ. Thêm một ô nữa chờ người duyệt: đầu mối liên hệ trống (R2 vế 1) |
 
 Ba hồ sơ "chưa nộp" do Registry mở sẵn khung, đã điền phần nhận dạng và những dấu vết tích hợp rà
 được từ mã nguồn. Phần khai báo để trống **có chủ đích**: chỉ đội sở hữu mới khai được chính xác,

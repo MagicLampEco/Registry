@@ -24,7 +24,7 @@
   "declares": {
     "identity": "ID-0",
     "token":    "TK-0",
-    "custody":  "CU-0",
+    "custody":  "<CHỌN: CU-N | CU-0 | CU-1>",
     "infra":    "IN-0"
   },
 
@@ -40,7 +40,7 @@
     "governance_ref": "",
     "governance_ref_tinh_chat": "",
     "accepted_assets": [],
-    "cut_bps": 0,
+    "cut_bps": "<số nguyên bps trong [0, 10000] — ghi 0 nếu không thu>",
 
     "thu_o_dau": "",
     "danh_sach_phu_thuoc": [],
@@ -61,6 +61,13 @@
 [`codes.json`](codes.json). Chọn mã cao hơn thực tế = khai sai sự thật = căn cứ từ chối **R3**.
 Chọn đúng mã thấp = hồ sơ vẫn được tiếp nhận.
 
+> ⚠ **Trục `custody` không có mặc định, và cố ý không có.** Ba trục kia mặc định là mã **thấp
+> nhất** — để nguyên thì hồ sơ chỉ tự hạ hạng, không nói sai điều gì. Trục `custody` khác: `CU-0`
+> **không** phải "chưa có gì", nó là lời khai *"có thu asset, nhưng đang giữ ở sổ nội bộ"*. Một
+> dịch vụ **không thu asset** mà để nguyên mặc định thì vừa tự tụt hai hạng (`CU-N` là hạng 2),
+> vừa khai một điều không đúng sự thật — tức tự đặt mình vào **R3** bằng cách không làm gì cả.
+> Nên ô này để chỗ trống có chữ, và bộ chấm sẽ **đỏ** nếu bạn quên. Đỏ ồn ào đúng hơn im lặng sai.
+
 ## (a) Nhận dạng dịch vụ
 
 | Trường | Giá trị |
@@ -74,6 +81,17 @@ Chọn đúng mã thấp = hồ sơ vẫn được tiếp nhận.
 
 Mỗi dòng: vì sao chọn mã đó, con trỏ kiểm được, và nếu chưa đạt thì thiếu gì.
 
+> **Khuôn con trỏ — máy đọc được.** Chuẩn (`../REGISTRATION-STANDARD.md` §3) đòi con trỏ mã nguồn
+> mang **ba** thứ: `file:line`, **tên nhánh**, **SHA**. Chuẩn không cho cú pháp, nên bộ chấm nhận
+> quy ước tối thiểu sau — viết khác đi thì máy không nhận ra và **hạ hạng**, dù con trỏ đúng:
+>
+> - tên nhánh viết **sau chữ `nhánh` hoặc `branch`** — `nhánh main`, `branch feat/abc`;
+> - SHA là một chuỗi 7–40 ký tự hex;
+> - chưa gộp thì ghi đúng chữ hoa **`CHƯA GỘP`** kèm tên nhánh, đừng bỏ trống.
+>
+> Đủ khuôn: `Core/rice.js:136, nhánh main, 7916d2e` · `rust/mls.rs:88, branch feat/mls, CHƯA GỘP`.
+> Chứng cứ on-chain thì thay bằng **tx hash 64 hex**, không cần ba thứ trên.
+
 | Trục | Mã | Vì sao | Con trỏ kiểm được | Thiếu gì để lên mã cao hơn |
 |---|---|---|---|---|
 | **2.1** Danh tính | | | | |
@@ -83,21 +101,25 @@ Mỗi dòng: vì sao chọn mã đó, con trỏ kiểm được, và nếu chưa
 
 ## (c) Tham số kỹ thuật
 
-> Chỉ điền khi `custody = CU-1`. Với `CU-N` (không thu asset ở tầng này) thì bỏ trống mọi ô
-> trừ `governance_ref`, và ghi rõ tiền — nếu có — chảy vào đâu.
+> **`CU-1` điền cả bảng. `CU-N` cũng phải điền ba ô**, đừng đọc thành "CU-N thì bỏ trống hết":
+> `governance_ref`, `governance_ref_tinh_chat` và `thu_o_dau` là `needs` của chính `CU-N`
+> (`codes.json`), bỏ trống thì bộ chấm báo thiếu và trục kho **không có hạng**. Không thu asset ở
+> tầng này thì vẫn phải nói tiền — nếu có — chảy vào đâu, và ai gác cửa chi.
 > Ý nghĩa từng trường: [`../Specs/CONTRACT.md`](../Specs/CONTRACT.md) §2.
 
-| Trường | Giá trị | Ghi chú |
-|---|---|---|
-| `instance_id` | | = tên NFT xác thực của kho |
-| `custody_hash` | | script hash kho của dịch vụ |
-| `seed_policy` | | policy NFT xác thực kho |
-| `governance_ref` | | cổng quản trị gác chi của **riêng** dịch vụ này — bắt buộc kể cả với `CU-N` |
-| `accepted_assets` | | rỗng nếu `CU-N` |
-| `cut_bps` | | ∈ [0, 10000]; bằng 0 nếu `CU-N` |
-| Bucket kế toán | | id + nhãn từng khoang |
-| `genesis_ref` | | UTxO tiêu khi dựng kho (một lần) |
-| `created_epoch` | | do giao dịch đăng ký ép, không tự khai được |
+| Trường | Giá trị | Bắt buộc với | Ghi chú |
+|---|---|---|---|
+| `instance_id` | | `CU-1` | = tên NFT xác thực của kho |
+| `custody_hash` | | `CU-1` | script hash kho của dịch vụ |
+| `seed_policy` | | `CU-1` | policy NFT xác thực kho |
+| `governance_ref` | | `CU-1` · `CU-N` | cổng quản trị gác chi của **riêng** dịch vụ này |
+| `governance_ref_tinh_chat` | | `CU-1` · `CU-N` | bốn tính chất G1–G4, xem `codes.json` mục `governance_ref_yeu_cau` |
+| `accepted_assets` | | `CU-1` | rỗng nếu `CU-N` |
+| `cut_bps` | | `CU-1` | ∈ [0, 10000]; bằng 0 nếu `CU-N` |
+| `thu_o_dau` | | `CU-N` | không thu ở tầng này thì tiền chảy vào đâu |
+| Bucket kế toán | | — | id + nhãn từng khoang; không mã nào đòi, khai để người đọc hiểu dòng tiền |
+| `genesis_ref` | | — | UTxO tiêu khi dựng kho (một lần); không mã nào đòi |
+| `created_epoch` | | — | do giao dịch đăng ký ép, không tự khai được |
 
 ## (d) Lời khẳng định và hạng chứng thực
 

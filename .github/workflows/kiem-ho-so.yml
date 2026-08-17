@@ -35,10 +35,19 @@ jobs:
       - name: Chấm hồ sơ đăng ký + kiểm trùng platform_id
         run: node tools/check-registration.mjs
 
-      # Bộ kiểm khẳng định của tài liệu — sống TÁCH khỏi `npm test` có chủ ý: 202 test off-chain
-      # không đọc thư mục hồ sơ, nên đổi tên một tệp hồ sơ không làm test nào đỏ (đo 2026-08-15).
+      # Bộ kiểm khẳng định của tài liệu — sống TÁCH khỏi `npm test` có chủ ý: bộ test off-chain
+      # không đọc thư mục hồ sơ, nên đổi tên một tệp hồ sơ không làm test nào đỏ (đo 2026-08-15
+      # trên 202 test; số test đổi theo thời gian, cơ chế thì không).
       - name: Bộ kiểm khẳng định tài liệu
         run: bash tools/test-check.sh
 
       - name: Bộ kiểm off-chain
         run: npm test
+
+      # Vì sao tách khỏi `npm test`: vitest biên dịch TypeScript bằng esbuild, tức là NÉM BỎ kiểu
+      # chứ không kiểm kiểu. Đo 2026-08-17 — gieo `const x: number = "chuỗi"` vào một tệp test:
+      # vitest vẫn 206/206 xanh, chỉ `tsc` bắt (TS2322). Không có bước này thì mọi lỗi kiểu đi
+      # thẳng qua CI, kể cả lệch giữa `check-registration-core.mjs` và tệp khai kiểu `.d.mts` của
+      # nó — chỗ duy nhất giữ hai bản đó khớp nhau.
+      - name: Kiểm kiểu
+        run: npm run typecheck

@@ -79,6 +79,27 @@ Nguồn: whitepaper §8 bước 2 (*"định danh qua PhoenixKey (hoặc danh t�
 > tự đăng ký như một thành phần, và bên dùng nó khai mã `ID-A` kèm `platform_id` của hệ đó. Một
 > dịch vụ **thường** thì dùng PhoenixKey, không tự dựng hệ danh tính riêng.
 
+**Năm mã của trục này.** Hạng ở cột giữa là thứ bảng niêm yết §3 so ngưỡng — `L2` đòi
+`identity ≥ 2`, `L3` đòi `≥ 3`. Nguồn máy đọc: `Registrations/codes.json` → `axes.identity.codes`.
+
+| Mã | Hạng | Nghĩa | Con trỏ bắt buộc |
+|---|---|---|---|
+| `ID-0` | 0 | chưa nối danh tính hệ | `moc_du_kien` — mốc dự kiến nối |
+| `ID-1` | 1 | dùng PhoenixKey DID, **nhưng dịch vụ còn giữ khoá riêng của người dùng** | `con_tro` + `moc_du_kien` |
+| `ID-2` | 2 | dùng PhoenixKey DID, **khoá riêng nằm ở thiết bị người dùng** | `con_tro` |
+| `ID-3` | 3 | như `ID-2`, **và** dịch vụ đọc `personhood_level` khi cấp uy tín hoặc quyền biểu quyết | `con_tro` |
+| `ID-A` | *lấy theo hệ kia* | dùng một hệ danh tính khác **đã đăng ký** trong hệ | `platform_id_he_danh_tinh` |
+
+Đường lên đọc từ dưới lên: `ID-0` → `ID-1` là nối được DID; `ID-1` → `ID-2` là **thôi giữ hộ khoá**,
+chuyển khoá riêng về thiết bị người dùng — đây là bậc nhảy đắt nhất và là bậc duy nhất mở được `L2`;
+`ID-2` → `ID-3` là dùng `personhood_level` ở chỗ cấp uy tín/biểu quyết. ⚠ `ID-3` **không** làm cho
+`personhood_level` đáng tin hơn: nó vẫn là cờ nhị phân bị gán cứng `true` ở một chỗ đo được
+(`Specs/Resource-Dictionary.md` §5). `ID-3` chỉ khai rằng dịch vụ có ĐỌC nó, không khai rằng nó đúng.
+
+`ID-A` là mã có hạng **rỗng cho tới khi tra được**: hạng lấy theo hạng của hệ danh tính được trỏ tới,
+nên trỏ vào một `platform_id` chưa đăng ký thì trục này không có hạng, và hồ sơ trượt mọi ngưỡng
+`L1`–`L3` — trượt vì *chưa tra được*, không phải vì *bị chấm thấp*.
+
 ### 2.2 Dùng chung hệ token LAMP · MAGIC · CARP · trục `token` — **cổng cứng**
 
 | Token | Vai trò | Ràng buộc với bên đăng ký |
@@ -92,8 +113,33 @@ cổng của nó, không tự ý. Token neo policy LAMP thì đăng ký quyền 
 Registry** (`LAMP/Genesis/onchain/lib/magiclamp/genesis/registry.ak`) — sổ khác với sổ niêm yết
 platform trong repo này, đừng nhầm hai cái. CARP instance riêng thì theo điều kiện của đặc tả CARP.
 
-**Đây là trục duy nhất chặn niêm yết.** Mã `TK-X` — có token riêng chưa qua cổng phát hành — là căn
-cứ từ chối. Không phải vì cạnh tranh: vì nó phá đúng hệ token dùng chung mà mọi bên khác đang dựa vào.
+**Đây là trục duy nhất chặn *tiếp nhận*** — và hai chuyện hay bị nhập làm một ở đây, nên tách rõ.
+Mã `TK-X` — có token riêng chưa qua cổng phát hành — là căn cứ từ chối: hồ sơ khai `TK-X` không đạt
+nổi `L0`. Không phải vì cạnh tranh: vì nó phá đúng hệ token dùng chung mà mọi bên khác đang dựa vào.
+
+Ba trục còn lại **không** chặn tiếp nhận, nhưng chúng có **ngưỡng**: `L1` — nhãn "đã niêm yết" — đòi
+`identity` ≥ 1, `custody` ≥ 2, `infra` ≥ 1 (bảng hạng ở §3). Nên câu "chỉ trục `token` chặn niêm yết"
+là câu sai; câu đúng là chỉ trục `token` chặn **tiếp nhận**, còn niêm yết thì cả bốn trục đều có
+tiếng nói. Nguồn máy đọc: `Registrations/codes.json` mục `axes.token._gate_doc` và `listing_tiers`.
+
+**Bốn mã của trục này.** Nguồn máy đọc: `Registrations/codes.json` → `axes.token.codes`.
+
+| Mã | Hạng | Nghĩa | Con trỏ bắt buộc |
+|---|---|---|---|
+| `TK-0` | 0 | chưa nối hệ token | `moc_du_kien` |
+| `TK-1` | 1 | tiêu MAGIC, dùng CARP, **không đốt LAMP**, **không mở đường đổi MAGIC ngược ra tài sản ngoài hệ** | `con_tro` |
+| `TK-2` | 2 | như `TK-1`, **và** có token riêng đã qua đúng cổng (Mint-Authority Registry, hoặc điều kiện CARP instance) | `con_tro` + `con_tro_cong_phat_hanh` |
+| `TK-X` | **−1** | có token riêng **CHƯA** qua cổng phát hành | `con_tro` |
+
+Hai chỗ dễ đọc nhầm ở bảng này:
+
+- **`TK-2` cao hơn `TK-1`, `TK-X` thì âm** — và khác nhau giữa hai cái *không* nằm ở chỗ có token
+  riêng hay không, mà nằm ở chỗ **đã qua cổng phát hành hay chưa**. Cùng một dịch vụ, cùng một token,
+  chỉ khác cái con trỏ `con_tro_cong_phat_hanh`: có thì `TK-2`, chưa có thì `TK-X` và bị từ chối.
+  Đường thoát khỏi `TK-X` vì vậy luôn tồn tại và luôn là cùng một việc — đi đăng ký ở đúng sổ.
+- **`TK-0` không phải căn cứ từ chối.** Chưa nối hệ token là khai đúng một thực trạng; hồ sơ vẫn
+  được tiếp nhận ở `L0`. Chỉ `TK-X` mới chặn, và chặn vì nó phá hệ token dùng chung — không vì nó
+  cạnh tranh.
 
 ### 2.3 Kho giá trị on-chain · trục `custody`
 
@@ -116,7 +162,7 @@ là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô �
 
 | | Yêu cầu | Vi phạm thì sao |
 |---|---|---|
-| **G1** | Phải là một script hash **28 byte**, và phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Độ dài 28 byte bị validator ép cứng — `onchain/lib/magiclamp/registry/platform.ak:122`; sai độ dài thì giao dịch đăng ký hỏng ngay tại cổng. |
+| **G1** | Phải là một script hash **28 byte**, và phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Độ dài 28 byte bị validator ép cứng ở hai chỗ — `onchain/lib/magiclamp/registry/platform.ak:134` (`entry_well_formed`, lúc đăng ký) và `:163` (`mutable_fields_valid`, lúc cập nhật hoặc di trú); hằng `script_hash_len` ở `:52`. Sai độ dài thì giao dịch đăng ký hỏng ngay tại cổng. |
 | **G2** | **Không** được là hash của chính validator registry. | Cổng đồng thuận tự thoả vĩnh viễn ⇒ quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, đích di trú. |
 | **G3** | **Không** nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). | Registry chỉ ép được *"script đó **chạy** trong giao dịch"*, **không** ép được *"script đó **phê duyệt đúng** thay đổi này"*. Nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. **Đây là giả định load-bearing: an toàn của cổng đồng thuận bằng đúng an toàn của script mà chính bên đăng ký khai.** |
 | **G4** | Nếu nhánh đồng thuận cần **mint/burn** token — mẫu phổ thông là đốt NFT đề xuất khi thực thi — thì nó xung đột với ràng buộc least-authority của cổng đúc: giao dịch đăng ký không được gánh policy mint ngoài. | Hồ sơ **không đăng ký được**. Hai đường vòng hợp lệ: dùng **withdrawal-0**, hoặc một **nhánh spend không mint**. |
@@ -158,8 +204,15 @@ node tools/check-registration.mjs Registrations/<ten-dich-vu>.md
 **(b) Giải thích bốn mã** — vì sao chọn mã đó, con trỏ kiểm được, và **thiếu gì để lên mã cao hơn**.
 Cột cuối là cột quan trọng nhất: nó biến hồ sơ thành một đường đi, không phải một bản án.
 
-**(c) Tham số kỹ thuật** — `instance_id`, `custody_hash`, `seed_policy`, `governance_ref`,
-`accepted_assets`, `cut_bps`, bucket kế toán. Chỉ bắt buộc khi `CU-1`.
+**(c) Tham số kỹ thuật** — danh sách bắt buộc **khác nhau theo mã kho**, không phải "chỉ khi `CU-1`":
+
+- `CU-1` (có kho on-chain) đòi bảy ô: `instance_id`, `custody_hash`, `seed_policy`, `governance_ref`,
+  `governance_ref_tinh_chat`, `accepted_assets`, `cut_bps`.
+- `CU-N` (không thu asset ở tầng này) đòi ba ô: `governance_ref`, `governance_ref_tinh_chat`,
+  `thu_o_dau`. Kho trống nhưng cổng đồng thuận thì không được trống — lý do ở §2.3.
+- `CU-0` (còn ở sổ nội bộ) đòi `moc_du_kien`.
+
+Nguồn máy đọc: `Registrations/codes.json` mục `axes.custody`.
 
 **(d) Lời khẳng định và hạng chứng thực** — liệt kê **mọi** con số dịch vụ khai ra rồi tính tiền
 hoặc xin uy tín dựa trên nó, mỗi dòng một hạng `EV-0` / `EV-1` / `EV-2`. Một dịch vụ khai nhiều
@@ -181,10 +234,18 @@ chứng cứ, tệp đó **không có trên `main`**, chỉ có trên một nhá
 thư 2026-08-13).
 
 > **Mọi con trỏ chứng cứ phải mang ba thứ: `file:line`, **tên nhánh**, và **SHA đã gộp vào `main`**
-> — hoặc chữ **`CHƯA GỘP`** kèm tên nhánh. Con trỏ không có SHA trên `main` chấm ở **hạng thấp
-> hơn**, dù mã đúng đến đâu.**
+> — hoặc chữ **`CHƯA GỘP`** kèm tên nhánh. Chứng cứ nằm **trên chuỗi** chứ không nằm trong mã thì
+> một **tx hash 64 hex** thay được cả ba, vì nó tự tra được bằng explorer.**
 
-Kiểm bằng máy, hai lệnh:
+**Thiếu một trong ba thì trục đó MẤT hạng, không phải "chấm ở hạng thấp hơn".** Bản trước hứa nhẹ
+hơn thứ máy làm. `tools/check-registration-core.mjs` đặt `ranks[<trục>] = null` cho trục đó — trục
+**không còn hạng nào**, nên nó trượt **mọi** ngưỡng có nhắc tới nó. Đo thật: một hồ sơ đang `L3` mà
+khuyết SHA ở đúng **một** ô con trỏ rơi thẳng xuống `L0`, vì `L0` là hạng duy nhất không đọc hạng
+trục nào (nó chỉ đòi `token` khác `TK-X`). Một ô khuyết đánh sập ba bậc — nói ra vì hậu quả nặng hơn
+hẳn "hạng thấp hơn". Nó vẫn là **hạ hạng chứ không phải từ chối**: máy in dòng này ở cột cảnh báo,
+không phải cột lỗi, và §5 không có căn cứ từ chối nào cho việc này.
+
+Kiểm bằng hai lệnh — **việc của người duyệt**, xem lời tự thú ở mục dưới:
 
 ```bash
 git branch --contains <sha>          # nhánh nào chứa commit đó
@@ -193,6 +254,78 @@ git cat-file -e main:<đường dẫn>     # tệp có tồn tại trên main kh
 
 Đây không phải nghi ngờ thiện chí: một chứng cứ chỉ sống trên nhánh riêng thì bên thứ ba không tái
 lập được, nên nó chưa phải chứng cứ — nó là một lời hứa có địa chỉ.
+
+### Bốn hạng niêm yết — bảng chép cho người đọc
+
+Chuẩn này dùng `L0`–`L3` ở nhiều chỗ mà chưa nói ở đâu chúng là gì, nên người đọc chuẩn không tra
+được hạng của mình đòi gì. Bảng dưới chép điều kiện từ `Registrations/codes.json` mục
+`listing_tiers`. **Nguồn duy nhất máy đọc vẫn là `codes.json`** — bảng này là bản chép cho người
+đọc; hai bên lệch nhau thì `codes.json` đúng.
+
+| Hạng | Nhãn | Điều kiện |
+|---|---|---|
+| `L0` | đã tiếp nhận — **chưa** đủ điều kiện niêm yết | trục `token` đã khai và không phải `TK-X`. Mọi hồ sơ khai đúng sự thật đều đạt, kể cả khi mọi trục đều ở mã 0 — nhưng **bỏ trống** trục `token` thì không đạt, vì không khai gì không phải là "không phải `TK-X`". |
+| `L1` | đã niêm yết | `token` ≥ 1 · `identity` ≥ 1 · `custody` ≥ 2 · `infra` ≥ 1 |
+| `L2` | niêm yết đủ điều kiện | `token` ≥ 1 · `identity` ≥ 2 · `custody` ≥ 2 · `infra` ≥ 2 |
+| `L3` | đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ | như `L2`, thêm `identity` ≥ 3 và `evidence_min` ≥ 1 — tức **mọi** lời khẳng định đều từ `EV-1` trở lên, **và** hồ sơ phải có ít nhất một lời khẳng định. Không khai dòng nào thì không đạt, dù đọc theo chữ thì "không dòng nào còn ở `EV-0`" là đúng. |
+
+Hai chỗ dễ đọc nhầm con số:
+
+- **Ngưỡng là *hạng* của mã, không phải chữ số cuối trong tên mã.** `custody ≥ 2` nghĩa là `CU-1`
+  **hoặc** `CU-N` — cả hai đều hạng 2, vì không thu tiền không phải là thiếu sót; `CU-0` không đạt.
+  Nên từ `L1` trở lên đòi hoặc có kho on-chain, hoặc khai rõ là không thu asset.
+- **Một trục không có hạng thì trượt mọi ngưỡng nhắc tới trục đó** — đó là cách một ô con trỏ khuyết
+  kéo cả hồ sơ về `L0`, xem mục trên.
+
+### Con trỏ vào **kho riêng tư** — thoả hình thức mà không thoả lý do
+
+Luật ba-thứ ở trên giả định người thứ ba **chạy được `main`**. Với một kho private thì không: con
+trỏ có đủ `file:line` + nhánh + SHA, máy chấm không phân biệt được, mà người ngoài vẫn không mở
+được. Nó thoả **hình thức** của luật và trượt đúng **lý do** viết ra luật.
+
+Điều phải mua ở đây là **kiểm được độc lập**, không phải **mã nguồn mở**. Hai thứ đó hay bị nhập
+làm một, và nhập vào là sai: mở mã là quyết định của chủ từng nhà, còn kiểm được là điều kiện của
+chứng cứ. Nên chuẩn này **không** đòi ai mở kho. Nó phân biệt hai loại con trỏ:
+
+| Loại | Ai kiểm lại được | Trần hạng |
+|---|---|---|
+| **Con trỏ công khai** | bất kỳ ai trong hệ | không bị trần bởi mục này |
+| **Con trỏ riêng tư** | chỉ người được cấp quyền đọc | **trần `L1`** |
+
+Trần `L1` không phải hình phạt, nó là phát biểu về khán giả. `L0` là *đã tiếp nhận, chưa niêm yết*;
+**niêm yết bắt đầu từ `L1`**. Ở `L0`–`L1`, người phải kiểm là **bên duyệt** — bên đó có thể được cấp
+quyền đọc. `L2`–`L3` cấp uy tín và **quyền biểu quyết ở tầng hệ**, khán giả là **mọi thành viên của
+hệ, kể cả đối thủ**; ở đó
+"một bên duyệt đã xem" không thay được "ai cũng xem lại được".
+
+Kho riêng tư vẫn lên `L2`–`L3` được, bằng **hai** đường không đòi mở mã:
+
+1. **Chứng cứ tái lập được thay cho quyền đọc mã** — lệnh chạy + hash đầu ra công bố, người khác
+   chạy lại lệnh đó và so hash. Cái được kiểm là **hành vi**, không phải mã nguồn. **Điều kiện: bên
+   duyệt phải tự chọn đầu vào để chạy lại.** Chạy đúng một lệnh trên đúng bộ đầu vào do chính bên
+   được kiểm cung cấp chỉ chứng minh lệnh đó **tất định**, không chứng minh nó **làm đúng** — một
+   cài đặt trả sẵn kết quả cho đúng bộ đầu vào ấy vẫn qua. Đầu vào do bên duyệt chọn thì không.
+2. **`EV-2`** — neo on-chain, hoặc một bên **không hưởng lợi** ký vào chính lời khẳng định đó. Bên
+   ký cần quyền đọc; người tra lại thì không.
+
+Hai điều kiện phụ, ghi ra để không phải cãi từng ca:
+
+- **Từ chối cấp quyền đọc cho bên duyệt ⇒ con trỏ tính như KHÔNG CÓ**, không phải `R3`. Không mở
+  kho là quyền của nhà đó, không phải lời khai sai — hệ quả là hạ hạng, không phải từ chối.
+- **Máy chưa phân biệt được hai loại con trỏ.** `tools/check-registration-core.mjs` hôm nay chỉ soi
+  cú pháp, nên một con trỏ riêng tư vẫn qua. Cho tới khi bộ chấm biết hỏi kho có công khai không,
+  mục này do **người duyệt** áp — và chỗ đó phải ghi rõ, đừng để ai đọc bộ chấm xanh ra thành đã kiểm.
+- **`EV-2` không được xác minh trên chuỗi.** Máy chỉ hỏi con trỏ có chứa một chuỗi **64 ký tự hex**
+  hay không (`tools/check-registration-core.mjs`, mẫu `CO_TX`). Nó **không** hỏi explorer xem giao
+  dịch đó có thật không, và **không** đọc nội dung giao dịch. Một chuỗi `openssl rand -hex 32` bịa ra
+  vẫn qua. Nên `EV-2` hôm nay là **lời khai có định dạng kiểm được**, chưa phải chứng cứ đã kiểm —
+  người duyệt vẫn phải tự tra explorer, và phải xem giao dịch đó có nói đúng điều đang viện dẫn không.
+- **Luật ba-thứ cũng chỉ được kiểm ở mức định dạng.** Hai lệnh `git branch --contains` và
+  `git cat-file -e` ở mục trên là việc của **người** duyệt: máy **không** chạy lệnh nào trong hai
+  lệnh đó. Nó chỉ khớp biểu thức chính quy xem câu con trỏ có mang đủ ba mảnh không — `file:line`,
+  chữ "nhánh"/"branch" kèm một tên, và một chuỗi 7–40 ký tự hex. Một SHA bịa đúng hình dạng vẫn qua.
+  Máy trả lời được câu "con trỏ này có đủ hình không", không trả lời được câu "commit này có thật và
+  có trên `main` không".
 
 ### Hạng chứng thực — và một câu phải đọc kỹ
 
@@ -256,8 +389,8 @@ Nguồn máy đọc: `Registrations/codes.json` mục `tu_choi`.
 
 | Mã | Căn cứ |
 |---|---|
-| **R1** | `platform_id` trùng hoặc gây nhầm lẫn với một entry đã niêm yết |
-| **R2** | **hồ sơ không khai đầu mối chịu trách nhiệm** — ô "Đầu mối liên hệ" ở mục (a) (`pointers.dau_moi_lien_he`) trống, hoặc mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Căn cứ **về nội dung hồ sơ**, kiểm bằng đọc văn bản; **không** phải căn cứ "gửi thư mà không thấy trả lời". |
+| **R1** | `platform_id` **trùng khít** giữa hai lời **khai** trong `Registrations/`. Máy quét **toàn** thư mục, không chỉ các entry đã niêm yết, vì R1 là tính chất của **tập** hồ sơ chứ không của một hồ sơ. Chỉ mức này là căn cứ từ chối, và máy chặn được.<br>Hai mức nhẹ hơn **không** tự từ chối, máy chỉ **nêu** cho người duyệt quyết: (a) trùng khít với một tên **nháp** — tên lấy từ tên tệp, hồ sơ chưa có khối json nên chưa phải một lời khai; (b) chỉ **gây nhầm lẫn** sau chuẩn hoá đồng hình. Lý do không cho máy kết luận mức (b): "gây nhầm lẫn" là phán đoán về nhận thức người đọc, máy không kết luận thay được. Người duyệt quyết thì phải ghi lý do vào nhật ký rà soát của hồ sơ. |
+| **R2** | **hồ sơ không khai đầu mối chịu trách nhiệm** — ô "Đầu mối liên hệ" ở mục (a) (`pointers.dau_moi_lien_he`) trống **và** mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Còn **một** trong hai thì vẫn có người chịu trách nhiệm ⇒ **chưa phải R2**. Căn cứ **về nội dung hồ sơ**, kiểm bằng đọc văn bản; **không** phải căn cứ "gửi thư mà không thấy trả lời". |
 | **R3** | **khai không đúng sự thật** — khác hẳn với khai chưa xong |
 
 Không có căn cứ nào ngoài ba mục này. Cụ thể, **không** phải căn cứ từ chối:
@@ -276,8 +409,19 @@ lọc thư rác, người nghỉ, kênh đổi). Nhìn từ phía người gửi
 cái cửa mà chính §5 tự cấm ở đầu mục: *"Nó không phải quyền từ chối tuỳ ý."* Gộp chúng là biến một
 sự cố kỹ thuật của **người gửi** thành một bản án đối với **người nộp**.
 
-Bộ chấm đã đúng sẵn: `tools/check-registration.mjs` chỉ kiểm **ô trống**, tức chỉ ca (i). Văn bản
-nay thu về ngang bộ chấm — phần rộng thêm là phần không kiểm được.
+Bộ chấm đã đúng sẵn về phạm vi: `tools/check-registration-core.mjs` chỉ kiểm **ô trống**, tức chỉ
+ca (i). Văn bản nay thu về ngang bộ chấm — phần rộng thêm là phần không kiểm được.
+
+**Máy chỉ đọc được một trong hai vế, phải nói ra.** Vế 1 — ô `pointers.dau_moi_lien_he` trống — là
+một ô trong khối json, máy đọc được. Vế 2 — mục (e) có nêu người tiếp nhận không — là văn xuôi, máy
+**không** đọc. Nên dòng máy in ra chỉ chứng minh vế 1; **kết luận R2 là của người duyệt**, sau khi
+đọc mục (e). Đọc dòng đó thành một bản án là bỏ mất đúng vế mà máy không biết.
+
+**Và vì thế R2 không làm cổng CI đỏ.** Ô đầu mối trống được xếp nhãn riêng `CHỜ NGƯỜI DUYỆT`, mã
+thoát vẫn `0` — `tools/check-registration.mjs` chỉ đỏ khi hồ sơ `SAI HÌNH DẠNG` hoặc khi R1 trùng
+khít. Ai đọc CI xanh ra thành "hồ sơ này đã qua R2" là đọc sai; số hồ sơ đang chờ in ở dòng tổng
+kết, phải đọc dòng đó. (Ngược lại, ô **có** điền mà sai khuôn — không chứa `@`, cũng không mở đầu
+bằng `https://` — thì đỏ; nhưng đó là lỗi hình dạng, không phải một kết luận R2.)
 
 **Bước 1 — kiểm hồ sơ. Quyết định R2 nằm trọn ở bước này.**
 
