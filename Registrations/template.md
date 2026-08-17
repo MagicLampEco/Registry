@@ -40,7 +40,7 @@
     "governance_ref": "",
     "governance_ref_tinh_chat": "",
     "accepted_assets": [],
-    "cut_bps": 0,
+    "cut_bps": "<số nguyên bps trong [0, 10000] — ghi 0 nếu không thu>",
 
     "thu_o_dau": "",
     "danh_sach_phu_thuoc": [],
@@ -101,21 +101,25 @@ Mỗi dòng: vì sao chọn mã đó, con trỏ kiểm được, và nếu chưa
 
 ## (c) Tham số kỹ thuật
 
-> Chỉ điền khi `custody = CU-1`. Với `CU-N` (không thu asset ở tầng này) thì bỏ trống mọi ô
-> trừ `governance_ref`, và ghi rõ tiền — nếu có — chảy vào đâu.
+> **`CU-1` điền cả bảng. `CU-N` cũng phải điền ba ô**, đừng đọc thành "CU-N thì bỏ trống hết":
+> `governance_ref`, `governance_ref_tinh_chat` và `thu_o_dau` là `needs` của chính `CU-N`
+> (`codes.json`), bỏ trống thì bộ chấm báo thiếu và trục kho **không có hạng**. Không thu asset ở
+> tầng này thì vẫn phải nói tiền — nếu có — chảy vào đâu, và ai gác cửa chi.
 > Ý nghĩa từng trường: [`../Specs/CONTRACT.md`](../Specs/CONTRACT.md) §2.
 
-| Trường | Giá trị | Ghi chú |
-|---|---|---|
-| `instance_id` | | = tên NFT xác thực của kho |
-| `custody_hash` | | script hash kho của dịch vụ |
-| `seed_policy` | | policy NFT xác thực kho |
-| `governance_ref` | | cổng quản trị gác chi của **riêng** dịch vụ này — bắt buộc kể cả với `CU-N` |
-| `accepted_assets` | | rỗng nếu `CU-N` |
-| `cut_bps` | | ∈ [0, 10000]; bằng 0 nếu `CU-N` |
-| Bucket kế toán | | id + nhãn từng khoang |
-| `genesis_ref` | | UTxO tiêu khi dựng kho (một lần) |
-| `created_epoch` | | do giao dịch đăng ký ép, không tự khai được |
+| Trường | Giá trị | Bắt buộc với | Ghi chú |
+|---|---|---|---|
+| `instance_id` | | `CU-1` | = tên NFT xác thực của kho |
+| `custody_hash` | | `CU-1` | script hash kho của dịch vụ |
+| `seed_policy` | | `CU-1` | policy NFT xác thực kho |
+| `governance_ref` | | `CU-1` · `CU-N` | cổng quản trị gác chi của **riêng** dịch vụ này |
+| `governance_ref_tinh_chat` | | `CU-1` · `CU-N` | bốn tính chất G1–G4, xem `codes.json` mục `governance_ref_yeu_cau` |
+| `accepted_assets` | | `CU-1` | rỗng nếu `CU-N` |
+| `cut_bps` | | `CU-1` | ∈ [0, 10000]; bằng 0 nếu `CU-N` |
+| `thu_o_dau` | | `CU-N` | không thu ở tầng này thì tiền chảy vào đâu |
+| Bucket kế toán | | — | id + nhãn từng khoang; không mã nào đòi, khai để người đọc hiểu dòng tiền |
+| `genesis_ref` | | — | UTxO tiêu khi dựng kho (một lần); không mã nào đòi |
+| `created_epoch` | | — | do giao dịch đăng ký ép, không tự khai được |
 
 ## (d) Lời khẳng định và hạng chứng thực
 
