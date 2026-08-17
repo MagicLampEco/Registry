@@ -1,6 +1,6 @@
 # Từ điển tài nguyên — mẫu số chung để so giá giữa các dịch vụ
 
-> Trạng thái: **v0.1, bản chốt lần đầu**. Ngày: 2026-08-16.
+> Trạng thái: **v0.2**. Ngày: 2026-08-17.
 > Phạm vi: Registry giữ **đơn vị đo**, KHÔNG giữ **đơn giá**.
 > Đọc kèm: [CONTRACT §PK1](./CONTRACT.md) · [Feat-Spec §0.3](./Feat-Spec.md) · [Math-Spec §13](./Math-Spec.md)
 
@@ -53,8 +53,15 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 ## 2. Từ điển canonical
 
 Mã `1` và `2` **đã lưu hành** — chúng có mặt trong script triển khai thật
-(`MAGIC/scripts/deploy/09_deploy_consume.ts:161-162`), nên nghĩa của chúng bị RD-1 khoá. Mã từ `3`
+(`MAGIC/scripts/deploy/09_deploy_consume.ts:168-169`, kiểm chéo
+`MAGIC/ConsumeMAGIC/tests/codec.test.ts:27-28`), nên nghĩa của chúng bị RD-1 khoá. Mã từ `3`
 trở lên do tệp này cấp lần đầu.
+
+> ⚠ **Chỉ CON SỐ lưu hành, TÊN thì không.** Cột "Trạng thái = Lưu hành" nói về `op_type` là số `1`
+> và `2` đang chạy trên mạng. Hai cái tên `MEDIA_IMAGE` và `ANCHOR_CID` **không tồn tại ở đâu trong
+> repo MAGIC** — chúng do tệp này đặt lần đầu, cho hai con số vốn chỉ có chú thích tiếng Việt đứng
+> cạnh. Ghi ra vì người đọc grep tên trong MAGIC sẽ không thấy gì và dễ kết luận từ điển bịa số.
+> Ràng buộc RD-1 khoá **nghĩa** của mã, không khoá tên gọi của nó.
 
 | `op_type` | Tên | Lớp | Đơn vị (`op_count` đếm cái gì) | Quy ước đo — phải đo đúng thế này | Trạng thái |
 |---|---|---|---|---|---|
@@ -80,7 +87,7 @@ Lớp (`class`) không phải để trang trí: nó là khoá của hệ số c�
 
 `LampNet` đang định giá compute theo `task-unit`: `BASE_PRICE_COMPUTE = 10` µLAMP mỗi task-unit
 (`LampNetCloud/lampnet-hivemind/lampnet-reward/src/types.rs:354`), và task-unit lấy từ
-`ComputeEvidence.task_units` do quorum Splash ký (`.../src/metering.rs:174-178`). Nhưng **không có
+`ComputeEvidence.task_units` do quorum Splash ký (`.../src/metering.rs:168-178` — cổng quorum ở `:171-172`, ngưỡng `THETA_MIN_COMPUTE_TASKS` ở `:174`). Nhưng **không có
 định nghĩa vật lý nào cho 1 task-unit** trong repo đó — nó là con số quorum đồng ý với nhau.
 
 `OriLife` cũng có "compute", nhưng ở đó nó là **tỉ lệ chia bps** của tổng phí
@@ -108,8 +115,8 @@ chữ mà ra hai con số khác nghĩa.
 |---|---|---|---|
 | **LampNet** | storage theo byte + PoR bond | `lampnet-reward/src/metering.rs:120-159` | Khớp mã **3** sau khi chốt GiB (§3.3) |
 | | compute theo `task_units` + quorum Splash | `.../metering.rs:163-178` | **Không có mã** — §2.1 |
-| | bandwidth | — | **Chưa đo được**: chỉ có đặc tả `Beam-Math.md:100-151`, không có module. Chính tài liệu kinh tế tự nhận "dung lượng neo được; lưu lượng thì không" (`Dhost/Specs/05-Economics.md:121-125`) |
-| | sensing (Probe) | — | **Chưa đo được**: có khai báo `Specs/ResourceBudget.md:46-48`, không có mã reward |
+| | bandwidth | — | **Chưa đo được**: chỉ có đặc tả `LampNetCloud/Specs/Beam/Beam-Math.md:100-151`, không có module. Chính tài liệu kinh tế tự nhận "dung lượng neo được; lưu lượng thì không" (`Dhost/Specs/05-Economics.md:121-125`) |
+| | sensing (Probe) | — | **Chưa đo được**: có khai báo `LampNetCloud/Specs/ResourceBudget.md:46-48`, không có mã reward |
 | **OriLife** | phí theo tác vụ (9 loại, base USD) | `orilife-fee/src/tasks.ts:29-75` | Là **service**, không phải resource — phải phân rã, §4 |
 | | storage/compute/bandwidth | `orilife-fee/src/params.ts:35-40` | **Không phải metering**: là tỉ lệ chia bps cố định của tổng phí, không đo tiêu thụ từng người |
 | | anchor theo tier | `orilife-fee/src/tasks.ts` (`defaultAnchorTier`) | Khớp mã **2** |
@@ -142,7 +149,7 @@ cộng nội bộ; nhưng khi khai ra hệ, phải khai bốn số.
 ### 3.3 Xung đột 2 — GiB hay GB: lệch 7,4%
 
 `LampNet` đặt `BYTES_PER_GIB = 1_073_741_824` (= 2^30, đúng GiB) tại `types.rs:349`, và
-`BASE_PRICE_STORAGE` chú thích "µLAMP / GiB-epoch" (`types.rs:352`). Chú thích ngay trên nó cũng viết
+`BASE_PRICE_STORAGE` chú thích "µLAMP / GiB-epoch" (`types.rs:351`). Chú thích ngay trên nó cũng viết
 đúng: *"`MAX_METERED_BYTES_NEWBIE` = 10 × 2^30 (10 GiB)"* (`types.rs:348`). Nhưng chính dòng khai hằng
 số ghi `MAX_METERED_BYTES_NEWBIE: u64 = 10_737_418_240; // 10 GB` (`types.rs:362`) — con số **đúng**
 (10 × 2^30) nhưng chú thích cuối dòng viết **"GB"**, ngược với chú thích cách đó 14 dòng.
@@ -167,7 +174,7 @@ Ba nghĩa đang cùng sống:
 Hai nghĩa đầu **cùng độ dài nhưng khác biên ô** — loại lệch tệ nhất, vì phép thử "5 ngày đúng
 chưa?" trả lời đúng trong khi biên ô vẫn lệch. Registry đã đổi tên hằng nội bộ thành
 `ms_per_time_bucket` đúng vì lý do đó, và giữ tên trường datum `created_epoch` vì đổi tên trường =
-đổi lược đồ (`scripts/config.ts:58-62`).
+đổi lược đồ (`scripts/config.ts:58-63`).
 
 **Hai lần trả giá thật, không phải rủi ro giả định:**
 
@@ -209,11 +216,17 @@ Một service phân rã thành **vector** các resource:
 }
 ```
 
-**Registry validate ba điều, và chỉ ba điều:**
+**Registry SẼ validate ba điều, và chỉ ba điều:**
 
 1. Mọi `op_type` trong vector có trong từ điển §2 (RD-1).
 2. Vector sắp **tăng ngặt** theo `op_type`, không trùng (RD-7), và độ dài ≤ 16 (RD-6).
 3. `op_count ≥ 1`, nguyên.
+
+> ⚠ **Thì tương lai, cố ý.** Ba phép trên là *đặc tả*, chưa phải *hành vi đang chạy*. Tính tới
+> 2026-08-17, hồ sơ đăng ký **không có ô nào để khai vector này**: `grep -c 'op_type\|op_count' `
+> `../Registrations/template.md ../Registrations/codes.json` trả về `0`. Không có ô thì không có
+> gì để validate, và RD-9 — "khai đúng nhưng khai THIẾU vẫn là R3" — hiện là một luật chưa có bề
+> mặt thi hành. Xem §6 mục 4. Đừng đọc đoạn này thành "cổng đăng ký đang chặn vector sai".
 
 **Registry KHÔNG validate** — và phải nói to điều này để không ai hiểu nhầm cổng đăng ký thành cơ
 quan bảo chứng:
@@ -245,10 +258,10 @@ mã lại.
 **RD-9 hôm nay là gì, và không là gì.** Registry vẫn **không** đo được tiêu thụ thật, nên RD-9
 không phải một phép kiểm — nó là một **lời khai**. Giá trị của nó nằm ở chỗ đổi hạng của việc giấu:
 trước RD-9, khai thiếu là im lặng hợp lệ; sau RD-9, khai thiếu là **khai sai sự thật**, tức rơi thẳng
-vào **R3** — một trong ba căn cứ từ chối của tập đóng (`REGISTRATION-STANDARD.md` §5). Không dựng
+vào **R3** — một trong ba căn cứ từ chối của tập đóng (`../REGISTRATION-STANDARD.md` §5). Không dựng
 căn cứ thứ tư, chỉ nối một hành vi vào căn cứ đã có.
 
-Nối được thành phép kiểm thật thì phải qua biên nhận `T-RECEIPT` (`Specs/Math-Spec.md` §13) — mà
+Nối được thành phép kiểm thật thì phải qua biên nhận `T-RECEIPT` (`Math-Spec.md` §13) — mà
 **L8 hiện còn mở, chưa thi công gì** (`Math-Spec.md:677-680`). Ghi ra để không ai đọc RD-9 rồi tưởng
 đã có lưới đỡ.
 
@@ -280,9 +293,13 @@ Viết ra để không ai trích dẫn nó quá tay:
    3600 giây) hoặc trần kỹ thuật (16 dòng), không phải tiền.
 3. **Không ràng buộc được repo khác.** Ba đề nghị ở §3.2–3.4 (LampNet sửa chú thích GB, TigerAgent
    tách bốn số khi khai ra hệ) là **đề nghị**. Registry chỉ ràng buộc được thứ đi qua cổng đăng ký.
-4. **Chưa có bộ kiểm.** `tools/check-registration.mjs` hiện chưa validate vector §4. Việc còn nợ.
+4. **Chưa có bộ kiểm, và chưa cả có Ô ĐỂ KHAI.** `tools/check-registration.mjs` chưa validate
+   vector §4 — nhưng thiếu sót đứng trước nó nặng hơn: `Registrations/template.md` và
+   `Registrations/codes.json` không có trường nào cho `op_type` / `op_count`, nên một đội muốn khai
+   đúng RD-9 cũng không biết viết vào đâu. Trình tự vá là **ô trước, phép kiểm sau**. Việc còn nợ,
+   đã ghi ở `../DevStatus.md` mục "Việc còn treo".
 5. **Không biết ai bấm nút cấp mã.** RD-1 và RD-5 nói mã nào **được** cấp, không nói **ai** cấp và
-   theo quy trình nào. `REGISTRATION-STANDARD.md` §5 chỉ gác việc duyệt **platform**, không gác việc
+   theo quy trình nào. `../REGISTRATION-STANDARD.md` §5 chỉ gác việc duyệt **platform**, không gác việc
    cấp **`op_type`**. Chừng nào chỗ trống đó còn, vế "từ chối mã trùng nghĩa" của RD-1 là một luật
    không có người thi hành. Việc còn nợ, và nó thuộc chuẩn đăng ký chứ không thuộc tệp này.
 
