@@ -708,12 +708,34 @@ Máy-sinh buộc phải thêm một trường tên hiển thị, và trường �
 | khả biến CÓ đồng thuận | `governed_fields_changed` | đổi tên đòi đồng thuận của **chính platform đó** ⇒ kẻ chiếm tên không bao giờ bị đổi tên |
 | khả biến KHÔNG cần đồng thuận | không thêm vào cả hai | `registry_authority` — **một khoá đơn** (L2) — ghi lại tên của **mọi** hồ sơ trong sổ |
 
-**Đường thứ tư, nhà này đề xuất, chưa thi công:** tách *quyền gỡ nhãn* khỏi *quyền đặt nhãn*.
-Authority đơn phương **xoá** được `display_name` (đặt về rỗng) nhưng **không** viết được giá trị
-mới; đặt một tên mới đòi đồng thuận quản trị của chính platform. Khi đó kẻ chiếm tên mất biển hiệu
-mà authority bị chiếm khoá không chiếm được tên của ai — quyền phá nhãn và quyền đặt nhãn là hai
-quyền khác nhau, và chỉ quyền thứ nhất mới cần đơn phương. Chưa ai kiểm đường này; nêu ra để nó
-không bị bỏ sót khi cân ba nhóm trên.
+**Đường thứ tư, nhà này từng đề — BỊ BÁC 2026-08-27.** Giữ nguyên phát biểu vì lý do nó hỏng đáng
+đọc hơn bản thân nó: *tách quyền **gỡ** nhãn khỏi quyền **đặt** nhãn — authority đơn phương xoá được
+`display_name` nhưng không viết được giá trị mới; đặt tên mới đòi đồng thuận quản trị của chính
+platform.* ProofChat phá bằng năm đường (thư 2026-08-27), bốn trong đó đứng độc lập:
+
+1. **Không chấm dứt được chiếm tên, chỉ làm chậm.** Kẻ chiếm tên **là** một platform trong sổ, nên
+   ngay sau khi bị gỡ nó đặt lại đúng cái tên ấy qua đúng đường hợp lệ. Vòng `gỡ → đặt lại → gỡ`
+   không có điểm dừng, và bất đối xứng theo hướng xấu: authority phải canh mãi, kẻ kia chỉ cần
+   thắng một lần lúc không ai canh. Muốn có điểm dừng thì cần trạng thái *"tên này bị cấm đặt lại"*
+   — tức **thêm một trường nữa**.
+2. **Vế "đòi đồng thuận" là tautology với đúng kẻ nó nhắm.** `governance_ref` chỉ đòi **chạy được**
+   (G1), không đòi *ai* nó phục vụ. Kẻ tấn công tự viết script quản trị tự duyệt mọi thứ nó đề
+   xuất. Cùng hình dạng với van #2: một phép kiểm hỏi một bên tự trả lời về chính nó. ⇒ vế **gỡ**
+   có giá trị thật; vế **đặt** không mua được gì trước kẻ tấn công, chỉ tăng ma sát cho người ngay.
+3. **D4 nuốt D3.** D4 chứng minh sau deploy đầu không thêm trường được, mà D3 cần **nhiều hơn một**
+   trường: `display_name`; một cờ phân biệt *chưa bao giờ đặt* / *authority vừa gỡ* / *platform tự
+   gỡ* (D3 gộp cả ba vào "rỗng" — ba nguyên nhân, một hiển thị); và trạng thái *cấm đặt lại* ở
+   đường 1.
+4. **Xoá hàng loạt chưa được cân.** `registry_authority` hôm nay là một khoá đơn (L2). Với D3, khoá
+   rò thì kẻ cầm nó không chiếm được tên của ai — nhưng **gỡ được tên của tất cả** trong một lượt.
+   Tấn công O(1), khôi phục O(n) vòng quản trị, mà phần lớn platform chưa có quản trị chạy được.
+   Trong lúc đó mọi mục trong sổ hiển thị không tên — đúng trạng thái mà R1 sinh ra để chặn.
+5. Front-run: D3 chặn kẻ **đổi** tên, không chặn kẻ **đăng ký trước**. Lần ghi đầu buộc phải là
+   ngoại lệ (lúc `RegisterEntry` chưa có đồng thuận nào để đòi), nên kẻ front-run đặt luôn
+   `display_name` trong cùng giao dịch đăng ký, hợp lệ hoàn toàn.
+
+**Rút ra, và nó rộng hơn D3:** một cổng hỏi *"platform này có đồng ý không"* thì vô hiệu trước đúng
+kẻ nó nhắm, vì kẻ đó điều khiển cả hai đầu câu hỏi. Chỉ cổng hỏi **một bên khác** mới là cổng.
 
 #### D4 — hai câu hỏi này HẾT HẠN CÙNG LÚC, và vì một lý do mạnh hơn đã tưởng
 
@@ -725,6 +747,52 @@ lược đồ duy nhất — **không thêm trường được**. Xem `DevStatus
 ⇒ `display_name` phải có mặt **trước lần deploy đầu tiên** hoặc không bao giờ. Nên câu hỏi
 `platform_id` không đóng lúc "hồ sơ đầu tiên lên chuỗi" vì pid đã đặt — nó đóng vì **cái trường đi
 kèm nó không thêm được nữa**. Hôm nay chi phí bằng 0; sau đó không có giá nào mua lại được.
+
+⚠ **Hạn chót này CÓ ĐIỀU KIỆN, và điều kiện đó chưa được chứng minh khi mục này viết ra.** Nó chỉ
+áp nếu `display_name` buộc phải nằm **trên chuỗi**. Đọc **D5** trước khi trích D4 làm lý do quyết
+gấp — D5 trả lời rằng không có lý do nào buộc như vậy, và nếu tên hiển thị sống ngoài chuỗi thì
+mục này **không áp** và hạn chót tan.
+
+#### D5 — câu chưa ai hỏi, và nó làm hạn chót D4 biến mất
+
+D4 kết *"quyết trước deploy hoặc mất phương án"*. Kết luận đó đúng **với điều kiện `display_name`
+phải nằm trên chuỗi** — và điều kiện ấy chưa ai chứng minh. ProofChat đặt câu hỏi; nhà này trả lời.
+
+**Trả lời: KHÔNG có lý do buộc `display_name` lên chuỗi.** Ba dữ kiện.
+
+*Thứ nhất — không mã nào đọc nó.* Định tuyến phí đi qua `platform_id` và đối soát `custody_hash`
+(`offchain/src/registryQuery.ts:238-252`); `grep -rn 'display_name\|displayName' offchain/src/` trả
+**rỗng**. Tên hiển thị chưa tồn tại trong bất kỳ đường quyết định nào của máy — nó là thứ cho **mắt
+người**.
+
+*Thứ hai — lên chuỗi KHÔNG làm nó đáng tin hơn.* Nguồn thẩm quyền của tên là chữ ký authority, dù
+tên nằm trong datum hay trong một bảng ký ngoài chuỗi. Trên chuỗi chỉ thêm đúng hai tính chất:
+chống chối bỏ theo thời gian, và đọc được không cần máy chủ. Cả hai đều mua được **không tốn trường
+nào** — xem dưới.
+
+*Thứ ba — áp chính phép thử của §13.1.1 vào nó.* Có bên thứ ba hành xử khác đi nếu tên sai không?
+**Có** (người gửi tiền). ⇒ tên hiển thị **thuộc miền nghĩa vụ**. Nhưng thuộc miền nghĩa vụ đòi
+**truy được trách nhiệm**, không đòi **bất biến** — và một chữ ký truy được trách nhiệm dù nằm ở
+đâu. Đây là chỗ hai khái niệm hay bị gộp: *kiểm được* ≠ *không sửa được*.
+
+**Đường nhà này đề, chưa kiểm:** bảng `platform_id → display_name` sống ngoài chuỗi do authority ký,
+và **neo bằng metadata giao dịch** (`tx metadata`, không phải datum) — một băm của bảng, ký định kỳ.
+Metadata không nằm trong `PlatformEntry` nên **D4 không áp**: không thêm trường nào, hạn chót tan.
+Chống chối bỏ vẫn có (ai cũng kiểm được bảng tại thời điểm khối đó), gỡ nhãn là sửa một dòng —
+không giao dịch, không phí, hiệu lực ngay — và khoá rò thì **thay khoá rồi ký lại được**, thứ mà
+một trường trên chuỗi không làm được.
+
+Giá phải trả, nói trước: tên hiển thị mất tính chống chối bỏ **liên tục** (chỉ neo tại các mốc ký),
+và ai muốn xác minh tên phải lấy được bảng — tức có thêm một nguồn phải giữ sống. Đây là đánh đổi
+thật, không phải bữa trưa miễn phí.
+
+⇒ **Hình đúng của câu hỏi trình lên chủ nhân đã đổi.** Không còn là *"pid do người đặt hay máy
+sinh, quyết gấp trước deploy"*. Nó là hai câu, câu sau chỉ hỏi khi câu trước trả lời một cách:
+
+1. `display_name` lên chuỗi hay ngoài chuỗi? — **ngoài chuỗi thì không có hạn chót nào**.
+2. Chỉ khi chọn *trên chuỗi*: chốt **toàn bộ hình dạng** hôm nay (tên + cờ ba-nguyên-nhân + trạng
+   thái cấm-đặt-lại), không chỉ chốt "có thêm `display_name` hay không" — chốt thiếu một cờ hôm nay
+   là mất nó vĩnh viễn theo D4.
 
 ### L2 — `registry_authority` một khoá đơn
 
