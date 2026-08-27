@@ -281,6 +281,35 @@ Ba thứ đó phục vụ đúng việc mà tx hash làm cho bằng chứng kh�
 quả mà không phải tin lời ai. Khác biệt là kết quả dựng lại được nằm ở **máy của họ**, không nằm
 trên chuỗi — nên nó vẫn kiểm được, chỉ là kiểm bằng cách khác.
 
+#### Dạng thứ ba: con trỏ tới sự **VẮNG MẶT** — và nó đã tồn tại trước khi chuẩn đặt tên
+
+Đem ba ô ở trên soi lại `Registrations/lampnet.md` — hồ sơ duy nhất đã tiếp nhận — thì không thấy
+bằng chứng phủ định nào, đúng như dự đoán. Nhưng thấy một thứ khác: **cả tám** lời khẳng định `EV-0`
+của hồ sơ ấy dùng chung một khuôn con trỏ mà chuẩn này chưa có tên cho nó. Ba ví dụ nguyên văn:
+
+```
+"không có PoR trong mã: git grep -ic retrievability @5c0da03 → 0"
+"TaskReceipt ký bằng hạt giống demo CỨNG trong mã, giống nhau trên mọi node — lampnet-node.rs:7673-7674"
+"node tự benchmark rồi tự đưa số vào khối chứng thực của CHÍNH NÓ — attestation.rs:70"
+```
+
+Chúng không trỏ tới một việc đã xảy ra (bằng chứng khẳng định), cũng không trỏ tới một cổng chặn
+được điều gì (bằng chứng phủ định). Chúng trỏ tới **chỗ không có gì cả** — và đó chính xác là thứ
+`EV-0` cần nói: *"con số này tôi khai được, nhưng đây là chỗ nó không được chứng minh."*
+
+Ba dạng, phân biệt bằng câu hỏi chúng trả lời:
+
+| Dạng | Trả lời câu | Hình con trỏ |
+|---|---|---|
+| khẳng định | *việc này đã xảy ra?* | `file:line` + nhánh + SHA, hoặc tx hash |
+| phủ định | *đường này có bị chặn không?* | lệnh chạy lại được + thông điệp từ chối + bài kiểm trên đường thật |
+| **vắng mặt** | *chỗ nào KHÔNG có gì giữ?* | **lệnh tìm + kết quả rỗng**, hoặc `file:line` trỏ đúng dòng làm nó vô hiệu |
+
+Dạng thứ ba **không hạ hạng thêm** — `EV-0` đã là sàn, và một con trỏ vắng mặt tốt làm hồ sơ *đáng
+tin hơn* hồ sơ để trống ô đó, dù hạng như nhau. Ghi ra vì hai lý do: nó đã được một đội tự nghĩ ra
+và dùng nhất quán tám lần trước khi chuẩn nói gì; và vì không có tên thì đội sau sẽ tưởng `EV-0`
+nghĩa là *"khỏi cần con trỏ"* — trong khi ca này cho thấy `EV-0` có con trỏ tốt là chuyện làm được.
+
 ⚠ **Bộ chấm hôm nay chưa đọc ô này** — chưa có trường json cho nó, nên nó là ô cho **người duyệt**,
 đúng như luật ba-thứ đang là. Ghi ra ở đây trước khi có ô, vì thứ tự đúng là *định nghĩa trước, ô
 sau, phép kiểm sau nữa* — ngược lại thì ô sinh ra rồi mỗi đội hiểu một kiểu.
