@@ -245,6 +245,31 @@ trục nào (nó chỉ đòi `token` khác `TK-X`). Một ô khuyết đánh s�
 hẳn "hạng thấp hơn". Nó vẫn là **hạ hạng chứ không phải từ chối**: máy in dòng này ở cột cảnh báo,
 không phải cột lỗi, và §5 không có căn cứ từ chối nào cho việc này.
 
+#### Bằng chứng PHỦ ĐỊNH — một đường KHÔNG đi được thì không có tx hash để trỏ
+
+Luật ba-thứ và ngoại lệ tx hash ở trên cùng giả định một điều chưa nói ra: rằng bằng chứng là dấu
+vết của một việc **đã xảy ra**. Loại bằng chứng đáng giá nhất trong một hệ giữ tiền lại là loại
+ngược lại — *chứng minh rằng một đường KHÔNG đi được*: hoàn tiền khi hạn còn, rút quỹ mà không có
+đồng thuận, đúc trùng một beacon. Một giao dịch không hợp lệ **không lên chuỗi**, nên nó **không
+sinh tx hash nào** và không hiện trên explorer. Ca nêu ra bởi AladinWork (thư 2026-08-19 §3), từ ba
+hợp đồng chạy thật trên Preprod.
+
+Hệ quả nếu để nguyên: một hồ sơ chỉ liệt kê được những đường **đi được**. Chuẩn vô tình thưởng cho
+lời khoe và bỏ rơi lời bảo đảm — trong khi *"cổng này chặn được X"* mới là câu người gửi tiền cần.
+
+> **Bằng chứng phủ định dùng khuôn RIÊNG, ba thứ khác:** (1) **lệnh chạy lại được** — đủ để người
+> thứ ba tự dựng lại giao dịch đó; (2) **thông điệp từ chối nguyên văn** mà validator hoặc node trả
+> về; (3) **con trỏ ba-thứ tới chính bài kiểm** khoá hành vi ấy (`file:line` + nhánh + SHA). Ô này
+> **không** đòi tx hash, và thiếu tx hash ở đây **không** hạ hạng.
+
+Ba thứ đó phục vụ đúng việc mà tx hash làm cho bằng chứng khẳng định: cho người thứ ba dựng lại kết
+quả mà không phải tin lời ai. Khác biệt là kết quả dựng lại được nằm ở **máy của họ**, không nằm
+trên chuỗi — nên nó vẫn kiểm được, chỉ là kiểm bằng cách khác.
+
+⚠ **Bộ chấm hôm nay chưa đọc ô này** — chưa có trường json cho nó, nên nó là ô cho **người duyệt**,
+đúng như luật ba-thứ đang là. Ghi ra ở đây trước khi có ô, vì thứ tự đúng là *định nghĩa trước, ô
+sau, phép kiểm sau nữa* — ngược lại thì ô sinh ra rồi mỗi đội hiểu một kiểu.
+
 Kiểm bằng hai lệnh — **việc của người duyệt**, xem lời tự thú ở mục dưới:
 
 ```bash
