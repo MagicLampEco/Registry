@@ -516,6 +516,23 @@ miền** (giữ nguyên kết luận cũ). `"phục vụ 1000 yêu cầu"` ⇒ b
 miền ⇒ `pending` (giữ nguyên). `"X điều khiển Y"` ⇒ bên tra cứu đổi cách hành xử ⇒ **nay vào miền**,
 trước thì lọt.
 
+**Ví dụ thứ tư — không có đồng nào trong câu, mà vẫn trong miền.** PhoenixKey gửi sang
+(thư 2026-08-17) một ca đo được cùng ngày, và nó là ca đắt nhất trong bốn ca vì nó cho thấy phép
+thử bắt được thứ mà câu hỏi cũ (*"có nói về một khoản tiền không"*) cho đi thẳng qua:
+
+> *"Cổng khử trùng danh tính của PhoenixKey đang hoạt động."*
+
+Không có số tiền, không có bên trả tiền, không có hoá đơn. Nhưng ba nhà khác đang cân phương án
+phân phối token dựa trên câu ấy, và cả ba **sẽ chọn khác** nếu biết nó sai — mà PhoenixKey đo được
+là nó **sai**: cổng đó chưa tồn tại trên chuỗi. Phép thử phản-thực bắt ca này ở dòng đầu; câu hỏi
+cũ trượt hoàn toàn, vì nó soi **hình dạng** của lời khai (có con số tiền không) thay vì soi **hậu
+quả** của lời khai.
+
+Rút ra, và đây là lý do phép thử được giữ ở dạng phản-thực chứ không dạng liệt kê: một tiêu chí
+không có phép thử thì mỗi người áp một kiểu, và cái đó **tệ hơn tiêu chí lỏng — nó lỏng mà trông
+chặt**. PhoenixKey lấy câu này làm ràng buộc chung cho mọi tiêu chí phân định ở nhà họ, không riêng
+§13; ghi lại ở đây vì nó áp được cho cả bốn trục khai báo của chuẩn đăng ký.
+
 Vì sao `D-RECEIPT` là **miền** chứ không phải nhánh thứ ba của phép tuyển: nếu viết thành *"quyền ⟸
 (a) bên chịu thiệt là bên đã kiểm, **hoặc** (b) nội dung tự chứng"*, thì (b) trở thành một **đường
 cấp quyền**, và ai cũng đi được đường đó chỉ bằng cách băm lời khai của mình lại. Cái chặn duy nhất
@@ -644,7 +661,70 @@ nhất, nên on-chain **không biết** `pid` đã từng được đúc. Sau `t
 **Đường đóng thật (chưa thi công).** Đặt asset name dẫn xuất từ một `genesis_ref` **one-shot** mỗi
 platform (đúng mẫu `custody_seed` của Treasury: tiêu thụ một UTxO duy nhất ⇒ tên asset duy nhất
 theo cơ chế, không theo kỷ luật). Khi đó P-UNIQUE trở thành định lý. Đánh đổi: `pid` mất tính đọc
-được cho người, hoặc phải giữ một bảng ánh xạ. Chưa quyết.
+được cho người, hoặc phải giữ một bảng ánh xạ. **Chưa quyết** — và bốn dữ kiện dưới đây phải nằm
+trên bàn trước khi quyết.
+
+#### D1 — lập luận "đổi không-lùi-được lấy lùi-được" chạy ngược chiều
+
+Bản trước của mục này nghiêng về máy-sinh với lý do: va chạm **tên hiển thị** sửa được, còn một
+`pid` bất biến bị chiếm thì không. Phản biện của ProofChat (thư 2026-08-18, hai agent soát độc lập)
+đo ba van định tuyến phí ở `offchain/src/registryQuery.ts:238-252` với một kẻ **đăng ký hợp lệ**:
+
+| Van | Hôm nay (pid chữ) | Sau máy-sinh |
+|---|---|---|
+| #2 trùng khít pid (`:155-163`) | `duplicate=true` ⇒ `safeToRouteFees` từ chối (`:243`) | pid duy nhất **theo cấu tạo** ⇒ `duplicate` vĩnh viễn `false` — van thành **hằng đúng** |
+| #1 `verifyEntryAgainstCustody` (`:197-231`) | PASS — chỉ kiểm hồ sơ tự nhất quán với kho bên gọi đưa vào | PASS, y hệt |
+| #3 `foreignScript`/`policyMismatch` | PASS | PASS, y hệt |
+
+Van #1 PASS với **kho tự dựng hoàn toàn** — chính `onchain/validators/registry_beacon.ak:164-167`
+ghi điều đó bằng thực thi. ⇒ sau máy-sinh, hồ sơ mang tên hiển thị của người khác nhận
+`{ ok: true, reasons: [] }` và **phí chảy vào kho kẻ chiếm**. Tiền đã chảy thì không lùi. Nên phép
+đánh đổi thật là: đổi một hỏng hóc **thẩm mỹ, không lùi được** lấy một hỏng hóc **mất tiền, im
+lặng**. Hệ quả thứ hai: R1 trùng-khít là căn cứ từ chối **duy nhất máy tự tuyên được**
+(`tools/check-registration.mjs` — chỉ `hong` và `trungY` làm đỏ); máy-sinh cộng "tên hiển thị không
+được phép từ chối ai" đưa số căn cứ máy kiểm được về **0**.
+
+#### D2 — bộ chấm sẽ chết CÂM, đo được hôm nay
+
+`KHUON_PID` (`tools/check-registration-core.mjs:36`) là `^[a-z][a-z0-9-]{1,30}[a-z0-9]$` — tối đa
+**32** ký tự, phải bắt đầu bằng chữ thường. Một pid blake2b-224 hex dài **56** ký tự. Đo:
+
+```
+'0f3a…93a4' (56 ký tự, đầu '0') → ĐỎ        'af3a…93a4' (56 ký tự, đầu 'a') → ĐỎ
+```
+
+Cả hai đỏ vì độ dài, không riêng vì ký tự đầu. Và hồ sơ sai khuôn bị **loại khỏi tập so trùng**, nên
+R1 in `R1 — 0 platform_id, không trùng` — đúng theo nghĩa rỗng. Chọn máy-sinh mà không sửa khuôn
+trước thì cổng đăng ký báo xanh về một tập rỗng.
+
+#### D3 — tam đề `display_name`, và một đường thứ tư
+
+Máy-sinh buộc phải thêm một trường tên hiển thị, và trường đó rơi vào đúng một trong ba nhóm của
+`onchain/lib/magiclamp/registry/platform.ak`; ProofChat chỉ ra cả ba đều gãy một vế:
+
+| Nhóm | Đặt ở đâu | Gãy chỗ nào |
+|---|---|---|
+| bất biến | `identity_preserved` | tên không sửa được ⇒ toàn bộ lý do mua biến mất |
+| khả biến CÓ đồng thuận | `governed_fields_changed` | đổi tên đòi đồng thuận của **chính platform đó** ⇒ kẻ chiếm tên không bao giờ bị đổi tên |
+| khả biến KHÔNG cần đồng thuận | không thêm vào cả hai | `registry_authority` — **một khoá đơn** (L2) — ghi lại tên của **mọi** hồ sơ trong sổ |
+
+**Đường thứ tư, nhà này đề xuất, chưa thi công:** tách *quyền gỡ nhãn* khỏi *quyền đặt nhãn*.
+Authority đơn phương **xoá** được `display_name` (đặt về rỗng) nhưng **không** viết được giá trị
+mới; đặt một tên mới đòi đồng thuận quản trị của chính platform. Khi đó kẻ chiếm tên mất biển hiệu
+mà authority bị chiếm khoá không chiếm được tên của ai — quyền phá nhãn và quyền đặt nhãn là hai
+quyền khác nhau, và chỉ quyền thứ nhất mới cần đơn phương. Chưa ai kiểm đường này; nêu ra để nó
+không bị bỏ sót khi cân ba nhóm trên.
+
+#### D4 — hai câu hỏi này HẾT HẠN CÙNG LÚC, và vì một lý do mạnh hơn đã tưởng
+
+Thêm `display_name` là thêm một trường vào `PlatformEntry`. Đo 2026-08-27
+(`onchain/validators/arity_poc_test.ak`): phép ép kiểu mềm của Aiken **kiểm khớp đúng arity**, nên
+`registry.ak:265` từ chối mọi datum đích có số trường khác hiện tại ⇒ `MigrateEntry` — đường nâng
+lược đồ duy nhất — **không thêm trường được**. Xem `DevStatus.md` mục "Thứ tự trường `PlatformEntry`".
+
+⇒ `display_name` phải có mặt **trước lần deploy đầu tiên** hoặc không bao giờ. Nên câu hỏi
+`platform_id` không đóng lúc "hồ sơ đầu tiên lên chuỗi" vì pid đã đặt — nó đóng vì **cái trường đi
+kèm nó không thêm được nữa**. Hôm nay chi phí bằng 0; sau đó không có giá nào mua lại được.
 
 ### L2 — `registry_authority` một khoá đơn
 
