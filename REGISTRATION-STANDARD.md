@@ -259,8 +259,23 @@ lời khoe và bỏ rơi lời bảo đảm — trong khi *"cổng này chặn �
 
 > **Bằng chứng phủ định dùng khuôn RIÊNG, ba thứ khác:** (1) **lệnh chạy lại được** — đủ để người
 > thứ ba tự dựng lại giao dịch đó; (2) **thông điệp từ chối nguyên văn** mà validator hoặc node trả
-> về; (3) **con trỏ ba-thứ tới chính bài kiểm** khoá hành vi ấy (`file:line` + nhánh + SHA). Ô này
-> **không** đòi tx hash, và thiếu tx hash ở đây **không** hạ hạng.
+> về; (3) **con trỏ ba-thứ tới chính bài kiểm** khoá hành vi ấy (`file:line` + nhánh + SHA), **và
+> bài kiểm ấy phải đi qua đúng người gọi mà thực địa dùng** — hoặc kèm một bài riêng chứng minh
+> người gọi thật có gọi tới nó. Ô này **không** đòi tx hash, và thiếu tx hash ở đây **không** hạ
+> hạng.
+
+Vế cuối của ô (3) thêm vào 2026-08-27 theo đề nghị của AladinWork, sau khi chính khuôn này bắt được
+hai lỗ ở nhà họ trong một lượt soi. Không có vế đó thì *"có bài kiểm"* và *"có cổng"* là hai chuyện
+khác nhau mà ô này không phân biệt được: tách một cổng thành hàm thuần rồi quên nối lại là cách phổ
+biến nhất để bài kiểm xanh trong khi đường chạy thật không đi qua cổng.
+
+**Vì sao ô (3) là ô đắt nhất trong ba ô, và đừng cắt nó cho gọn.** Hai ô đầu ghi lại một lần chạy
+**đã xong** — ca nào cũng qua. Ô (3) hỏi một câu về **tương lai**: *cái đường bị chặn ấy có gì giữ
+cho nó tiếp tục bị chặn không?* Ca đầu tiên đem soi bằng ô này (AladinWork, ba hợp đồng Preprod) lộ
+ra rằng cổng chặn "rút tiền trước hạn" **không có bài kiểm nào** — và việc ngồi viết bài kiểm đó
+mới tìm ra lỗ thứ hai: một trường hạn vắng mặt bị đọc thành *"hạn = mốc 0"* nên luôn quá hạn, tức
+đúng đường mà cổng dựng ra để chặn lại mở bằng một ô trống. Cả hai lỗ nằm nguyên tại chỗ nếu chuẩn
+chỉ đòi hai ô đầu, và hồ sơ vẫn trông đầy đủ.
 
 Ba thứ đó phục vụ đúng việc mà tx hash làm cho bằng chứng khẳng định: cho người thứ ba dựng lại kết
 quả mà không phải tin lời ai. Khác biệt là kết quả dựng lại được nằm ở **máy của họ**, không nằm
