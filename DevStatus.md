@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-08-17**.
+Cập nhật cuối: **2026-08-27**.
 
 ---
 
@@ -30,7 +30,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | `Specs/{CONTRACT,Tech-Spec,Feat-Spec,Exec-Spec,README}.md` + `onboarding.md` | `đã merge (commit c63372e)` | cùng PR | `git status --short -- Specs/ onboarding.md` (rỗng = không còn sửa treo) | — | 2026-08-17 |
 | `Registrations/codes.json` | `đã merge (commit c63372e)`, có sửa tiếp trên nhánh đang chạy | PR #8; sửa tiếp ở `34db63b` (R1 hai mức) và đợt rà 2026-08-17 | `node tools/check-registration.mjs` ; `bash tools/test-check.sh` | hồ sơ đăng ký | 2026-08-17 |
 | Quyết định `platform_id` do NGƯỜI đặt hay MÁY sinh | `đã merge (commit 51c5401)` — câu hỏi đã được nhặt lại vào `Math-Spec.md` L1, **chủ nhân chưa chốt** | PR #10, base `main` | `grep -n 'platform_id' Specs/Math-Spec.md \| head` | cửa sổ đóng lúc hồ sơ đầu tiên lên chuỗi | 2026-08-17 |
-| Nhánh `feat/chot-bien-nhan-codeowners` | `xong local` — 8 commit, chưa push | `main` ở `51c5401`; nhánh chứa biên nhận PK11, CODEOWNERS, từ điển tài nguyên, E2E bốn chặng, đợt rà nhất quán 2026-08-17 | `git log --oneline main..HEAD` ; `git merge-tree $(git merge-base HEAD main) HEAD main \| grep -c '<<<<<<<'` (0 = không xung đột) | mọi thứ ở trên | 2026-08-17 |
+| Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `đang làm` — PoC arity + năm việc từ hộp thư | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, bốn dữ kiện D1–D4 cho câu `platform_id`, mục bằng chứng phủ định, ví dụ thứ tư của §13.1.1 | `git log --oneline origin/main..HEAD` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` (D4: hai câu hỏi hết hạn cùng lúc) | 2026-08-27 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
 
@@ -89,9 +89,33 @@ Nguồn: `onchain/lib/magiclamp/registry/platform.ak`. Kiểm bằng
 `spec_version, platform_id, instance_id, custody_hash, seed_policy, beacon_policy, governance_ref,
 accepted_assets, cut_bps, created_epoch, status`
 
-Plutus Data mã hoá **theo vị trí**, không theo tên. Trường mới **chỉ được nối vào cuối**, và chỉ kèm
-tăng `spec_version` cộng một đường di trú. Chèn giữa = mọi bên đang giải mã hỏng im lặng.
+Plutus Data mã hoá **theo vị trí**, không theo tên. Chèn giữa = mọi bên đang giải mã hỏng im lặng.
 Kiểm: `grep -n 'pub type PlatformEntry' -A14 onchain/lib/magiclamp/registry/platform.ak`.
+
+🔴 **Nối vào cuối cũng KHÔNG mở được — đo 2026-08-27, và đây là cửa sổ đóng một lần.** Bản trước của
+mục này viết "trường mới **chỉ được nối vào cuối**, kèm tăng `spec_version` cộng một đường di trú".
+Vế sau không chạy được. `registry.ak:265` giải mã datum **đích** của di trú bằng
+`expect entry_out: PlatformEntry = od` — validator phiên bản hiện tại phán xử hình dạng datum của
+phiên bản sau. Đo bằng bài thực thi (`onchain/validators/arity_poc_test.ak`, `aiken v1.1.21`):
+
+| Datum đích | Ép về `PlatformEntry` |
+|---|---|
+| khớp đúng 11 trường (chứng dương) | **qua** |
+| 11 trường + 1 trường thừa **ở cuối** | **bị từ chối** |
+| thiếu 1 trường ở cuối | **bị từ chối** |
+
+Hai chiều cùng bị chặn ⇒ phép ép kiểu mềm của Aiken kiểm **khớp đúng arity**, không phải "đủ tối
+thiểu theo vị trí". Mà `MigrateEntry` là đường nâng lược đồ **duy nhất**. Nên: **cửa sổ thêm trường
+vào `PlatformEntry` đóng ở lần deploy đầu tiên, không đóng dần.**
+
+Hôm nay chi phí đổi vẫn bằng 0 — chưa có gì trên mạng nào (`find . -iname '*LIVE_DEPLOY*'` rỗng).
+Sau hồ sơ đầu tiên, thêm một trường đòi thay validator cho **mọi** platform trong sổ, mà
+`registry.ak:249-252` đòi đồng thuận quản trị của **từng** platform — platform nào có cổng quản trị
+chết thì entry của nó kẹt vĩnh viễn ở lược đồ cũ, không ai gỡ được. Nguồn câu hỏi: thư ProofChat
+2026-08-18 §6; ProofChat nêu và nói rõ họ **chưa** kiểm, nhà này kiểm.
+
+Ba bài trong `arity_poc_test.ak` là **bài gác**: chúng đỏ nếu một bản Aiken sau nới phép kiểm. Đỏ ở
+đó nghĩa là đọc lại kết luận này, **không** phải sửa bài cho xanh.
 
 ### Tên asset
 
