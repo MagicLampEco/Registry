@@ -418,6 +418,31 @@ Nguồn máy đọc: `Registrations/codes.json` mục `tu_choi`.
 | **R2** | **hồ sơ không khai đầu mối chịu trách nhiệm** — ô "Đầu mối liên hệ" ở mục (a) (`pointers.dau_moi_lien_he`) trống **và** mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Còn **một** trong hai thì vẫn có người chịu trách nhiệm ⇒ **chưa phải R2**. Căn cứ **về nội dung hồ sơ**, kiểm bằng đọc văn bản; **không** phải căn cứ "gửi thư mà không thấy trả lời". |
 | **R3** | **khai không đúng sự thật** — khác hẳn với khai chưa xong |
 
+#### Phép thử để biết một lời khai có **đủ mức** thành `R3`
+
+`R3` là căn cứ nặng nhất và cũng mơ hồ nhất trong ba mã: "không đúng sự thật" nghe rõ tới khi phải
+áp cho một câu cụ thể. Bản trước không có phép thử nào, nên nó lỏng mà trông chặt — mỗi người duyệt
+áp một kiểu, và cái đó tệ hơn một tiêu chí tự nhận là lỏng.
+
+Phép thử, mượn nguyên văn từ `Specs/Math-Spec.md` §13.1.1 (do PhoenixKey đề, nhà này lấy làm ràng
+buộc chung cho **cả bốn trục khai báo**, không riêng §13):
+
+> Một lời khai sai chạm `R3` ⟺ tồn tại một bên thứ ba **hành xử khác đi** nếu biết nó sai.
+
+Vì sao phép thử này chứ không phải "có nói về một khoản tiền không": câu hỏi cũ soi **hình dạng**
+của lời khai, phép thử soi **hậu quả**. Ca cho thấy khác biệt, đo được và không có đồng nào trong
+đó: *"cổng khử trùng danh tính đang hoạt động"* — không số tiền, không hoá đơn, nhưng ba nhà khác
+đang cân phương án phân phối token dựa trên nó và cả ba sẽ chọn khác nếu biết nó sai. Câu hỏi cũ
+cho ca này đi thẳng qua.
+
+Hai hệ quả thực dụng của phép thử, cả hai đều **thu hẹp** `R3` chứ không mở rộng:
+
+- Lời khai không ai hành xử theo — một khoá tra cứu, một mã nội bộ, một cái tên — sai vẫn **không**
+  phải `R3`. Người duyệt sửa hoặc bỏ qua, không từ chối hồ sơ.
+- Ngược lại, người duyệt viện `R3` phải chỉ ra được **bên thứ ba đó là ai** và **họ đổi hành xử ra
+  sao**. Không chỉ ra được thì đó chưa phải quyết định `R3` — cộng thêm hai điều kiện ở §5 (nêu
+  dòng khai nào sai, nêu bằng chứng nào cho thấy nó sai).
+
 Không có căn cứ nào ngoài ba mục này. Cụ thể, **không** phải căn cứ từ chối:
 
 - khai "chưa đạt" ở bất kỳ trục nào trong 2.1 / 2.3 / 2.4, kèm mốc dự kiến hoặc kèm câu "chặn bởi
