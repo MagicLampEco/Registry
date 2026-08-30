@@ -23,6 +23,17 @@ export const CODES = JSON.parse(readFileSync(join(ROOT, 'Registrations/codes.jso
 
 export const AXES = ['identity', 'token', 'custody', 'infra']
 
+// Trục TUỲ CHỌN — khai được thì tốt, không khai vẫn hợp lệ và vẫn niêm yết được.
+//
+// Vì sao phải tách khỏi `AXES` chứ không thêm vào đó: vòng chấm trục coi "chưa khai mã" là LỖI.
+// Đưa `ownership` vào `AXES` sẽ biến nó thành điều kiện thứ tư để được vào sổ — mà whitepaper §10
+// đóng tập điều kiện ở BA ("ba điều kiện duy nhất: tiêu MAGIC · dùng CARP · đăng ký"). Thêm điều
+// kiện thứ tư là phá một cam kết đã phát hành, không phải siết một tiêu chuẩn.
+//
+// Trục tuỳ chọn không khai thì lấy mã `mac_dinh` của nó trong `codes.json` — hồ sơ cũ viết trước
+// khi trục ra đời vẫn chấm được nguyên vẹn, không hồ sơ nào tụt hạng vì một trục mới xuất hiện.
+export const AXES_TUY_CHON = ['ownership']
+
 // ── Cổng ký tự cho platform_id — GÁC TRƯỚC, không lọc rồi chạy tiếp ──────────────────────────
 //
 // Bản trước "làm sạch" chuỗi bằng `.replace(/[^a-z0-9]/g, '')` trước khi so trùng. Cách đó sai
@@ -133,7 +144,45 @@ const KHUON_NEED = {
     if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
     return null
   },
+  // Con trỏ tới CHỨNG NHẬN của một bên KHÔNG hưởng lợi, ký vào chính lời khai chủ sở hữu.
+  //
+  // Máy không đọc được nội dung chứng nhận, và không giả vờ đọc được. Nó chỉ kiểm đúng một thứ:
+  // con trỏ có TRA LẠI ĐƯỢC hay không — phải chạm tới một thứ ở ngoài hồ sơ (một địa chỉ liên hệ,
+  // một trang, hay một giao dịch). Ai ký, ký cái gì, có thật không hưởng lợi không — người đối
+  // chiếu đọc và quyết. Ghi rõ ranh này để không ai đọc `OW-2` thành "máy đã xác minh chủ sở hữu".
+  chung_nhan_chu_so_huu: (v) => {
+    const t = String(v).trim()
+    if (t.length < 40) {
+      return 'phải dài ít nhất 40 ký tự — cần nêu ai ký và tra lại ở đâu, không phải một chữ "có"'
+    }
+    if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
+    if (!/@|https:\/\/|\btx\b/i.test(t)) {
+      return 'phải chứa một đầu mối tra lại được — "@", "https://", hoặc "tx <hash>"'
+    }
+    return null
+  },
 }
+
+// Khoá gom cụm chủ sở hữu — ĐỂ Ở LÕI và export, để bài kiểm dùng CHÍNH nó chứ không chép lại
+// một bản thứ hai: hai bản chép nhau thì bài kiểm vẫn xanh khi bản thật đã lệch.
+//
+// Khoá gom cụm chủ sở hữu. KHÁC hẳn `CHUAN_HOA` ở trên, và khác có chủ ý.
+//
+// `CHUAN_HOA` gấp đồng hình (0↔o, 1↔l↔i, 3↔e…) vì việc của nó là tìm hai TÊN ĐỊNH DANH dễ nhầm
+// nhau, và miền của nó đã đóng về `[a-z0-9-]` bởi cổng khuôn `platform_id`. Ô chủ sở hữu không có
+// cổng nào như thế: nó là tên người và tên tổ chức, chữ Việt có dấu, mọi ký tự Unicode. Gấp đồng
+// hình lên miền đó sẽ gộp HAI CHỦ KHÁC NHAU THẬT làm một — "Bao" và "Bảo" là hai người, "Linh" và
+// "L1nh" có thể là hai công ty — rồi in ra một cụm không tồn tại. Sai theo hướng đó tệ hơn sót,
+// vì cụm in ra là thứ người đối chiếu đem đi phán xử một hồ sơ thật.
+//
+// Nên khoá này chỉ làm ba việc đều ĐẢO NGƯỢC ĐƯỢC về mặt ý nghĩa:
+//   · NFKC — gấp các cách MÃ HOÁ khác nhau của CÙNG một chữ (chữ dựng sẵn vs chữ + dấu tổ hợp,
+//     ký tự toàn rộng). Không NFKC thì hai lời khai trông y hệt nhau trên màn hình vẫn tách cụm.
+//   · gom mọi cụm khoảng trắng về một dấu cách, và cắt hai đầu.
+//   · `toLowerCase` — hoa/thường không phải hai chủ.
+// Ngoài ba việc đó, chuỗi giữ nguyên. Hai chủ viết tên khác nhau thì cụm KHÔNG hiện — và bộ chấm
+// đã in sẵn câu "phép gom không phủ hết", nên chỗ hụt này được nói ra chứ không giấu.
+export const KHOA_CHU = (s) => String(s).normalize('NFKC').replace(/\s+/gu, ' ').trim().toLowerCase()
 
 const CON_TRO_CHUNG_CU = new Set(['con_tro', 'con_tro_cong_phat_hanh'])
 
@@ -165,6 +214,35 @@ function rankOf(axis, code) {
     return null
   }
   return null
+}
+
+/**
+ * Trục TUỲ CHỌN không có dòng trong `declares` thì chấm theo DỮ KIỆN THẬT CÓ trong `pointers`:
+ * lấy mã hạng cao nhất mà mọi ô `needs` của nó đều đã điền; không mã nào đủ thì về `mac_dinh`.
+ *
+ * Vì sao suy chứ không bắt khai hai lần: nếu đòi vừa có `declares.ownership` vừa có
+ * `pointers.chu_so_huu`, thì hồ sơ điền đủ dữ kiện mà quên một dòng `declares` sẽ bị chấm hạng 0 —
+ * mất hạng vì lỗi hình thức chứ không phải vì thiếu thứ hạng đó đòi. Ô đã điền là bằng chứng
+ * mạnh hơn một dòng nhắc lại chính nó.
+ *
+ * Ở đây CHỈ xét ô đã điền hay chưa. Ô điền mà sai khuôn vẫn rơi vào vòng kiểm khuôn phía dưới và
+ * vẫn báo lỗi ở đó — hàm này không thay phép kiểm nào, nó chỉ chọn mã để đem đi kiểm.
+ */
+function macDinhTuDuKien(axis, data) {
+  const spec = CODES.axes[axis]
+  if (!spec) return undefined
+  const coO = (ten) => {
+    const v = data.pointers?.[ten]
+    return !(v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0))
+  }
+  let chon = spec.mac_dinh
+  let hangChon = -1
+  for (const [ma, mo] of Object.entries(spec.codes ?? {})) {
+    const hang = typeof mo.rank === 'number' ? mo.rank : -1
+    if (hang <= hangChon) continue
+    if ((mo.needs ?? []).every(coO)) { chon = ma; hangChon = hang }
+  }
+  return chon
 }
 
 export function checkOne(path) {
@@ -200,8 +278,9 @@ export function checkOne(path) {
 
   // 2. mọi trục phải khai, và mã phải thuộc tập đóng
   const ranks = {}
-  for (const axis of AXES) {
-    const code = data.declares?.[axis]
+  for (const axis of [...AXES, ...AXES_TUY_CHON]) {
+    const tuyChon = AXES_TUY_CHON.includes(axis)
+    const code = data.declares?.[axis] ?? (tuyChon ? macDinhTuDuKien(axis, data) : undefined)
     if (!code) { loi.push(`trục "${axis}" chưa khai mã`); continue }
     const spec = CODES.axes[axis].codes[code]
     if (!spec) {
@@ -258,6 +337,20 @@ export function checkOne(path) {
     // Dữ kiện bắt buộc chưa đủ hoặc chưa đọc được thì hạng của trục KHÔNG tính ra được. Đây là
     // đúng câu bộ chấm vẫn tự nói ở cuối tệp — "ô trống hạ HẠNG NIÊM YẾT" — mà trước đây không làm.
     if (khuyet) ranks[axis] = null
+
+    // Khai một mã THẤP hơn dữ kiện đang có: hợp lệ (không ai bị ép xin hạng), nhưng phải nói ra.
+    // Im lặng ở đây là cách một hồ sơ mất hạng vì gõ nhầm mà không ai biết.
+    if (tuyChon && data.declares?.[axis]) {
+      const duocPhep = macDinhTuDuKien(axis, data)
+      const hangDuocPhep = duocPhep ? rankOf(axis, duocPhep) : null
+      if (hangDuocPhep !== null && ranks[axis] !== null && hangDuocPhep > ranks[axis]) {
+        canh.push(
+          `trục "${axis}": hồ sơ khai "${code}" (hạng ${ranks[axis]}) trong khi dữ kiện đã điền ` +
+          `đủ cho "${duocPhep}" (hạng ${hangDuocPhep}) — giữ nguyên lời khai, nhưng nếu đây là ` +
+          `gõ nhầm thì hồ sơ đang tự bỏ một hạng`
+        )
+      }
+    }
 
     if (spec.tu_choi) {
       loi.push(`trục "${axis}" mã "${code}": đây là căn cứ TỪ CHỐI (${spec.label})`)

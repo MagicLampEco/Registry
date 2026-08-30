@@ -63,6 +63,9 @@ const fullDeclaration = (pid: string) => ({
       "G3 không nhánh permissionless; G4 nhánh đồng thuận không mint",
     accepted_assets: ["LAMP"],
     cut_bps: 250,
+    // L3 đòi `ownership_min: 1`, nên hồ sơ "khai đủ mọi trục ở mã cao nhất" phải có ô này. Trục
+    // `ownership` không nằm trong `declares`: nó là trục TUỲ CHỌN, bộ chấm suy hạng từ ô đã điền.
+    chu_so_huu: "Công ty Ví Dụ",
   },
   evidence: [
     { claim: "doanh thu", tier: "EV-2", pointer: "tx " + "52fc9630da741eb8".repeat(4) },
@@ -116,6 +119,61 @@ function ledgerUtxo(entry: Parameters<typeof platformEntryToCbor>[0], txHash = "
     outputIndex: 0,
   };
 }
+
+describe("E2E · trục tuỳ chọn `ownership` KHÔNG phải điều kiện vào", () => {
+  // Bài này đo đúng cái giá của quyết định: khai chủ sở hữu đổi được HẠNG NIÊM YẾT, và không đổi
+  // gì khác. Nếu ai đó lỡ tay biến nó thành điều kiện vào — cho `ownership` vào `AXES`, hay cho
+  // `ownership_min` xuống L0/L1/L2 — thì ca thứ nhất dưới đây đỏ.
+  it("không khai chủ vẫn HỢP LỆ, không lỗi nào, chỉ dừng ở L2", () => {
+    const kh = fullDeclaration("khong-chu") as any;
+    delete kh.pointers.chu_so_huu;
+    const r = checkOne(submit("khong-chu", kh));
+    expect(r.loi ?? []).toEqual([]);
+    expect(r.hop_le).toBe(true);
+    expect(r.tier?.id).toBe("L2");
+    expect(r.ranks?.ownership).toBe(0);
+  });
+
+  it("khai chủ ⇒ hạng 1 ⇒ mở L3; thêm chứng nhận của bên không hưởng lợi ⇒ hạng 2", () => {
+    const r1 = checkOne(submit("co-chu", fullDeclaration("co-chu")));
+    expect(r1.ranks?.ownership).toBe(1);
+    expect(r1.tier?.id).toBe("L3");
+
+    const kh2 = fullDeclaration("co-chung-nhan") as any;
+    kh2.pointers.chung_nhan_chu_so_huu =
+      "Kiểm toán Ví Dụ ký xác nhận lời khai chủ sở hữu này — tra lại ở kiem-toan@vi-du.example";
+    const r2 = checkOne(submit("co-chung-nhan", kh2));
+    expect(r2.ranks?.ownership).toBe(2);
+    expect(r2.loi ?? []).toEqual([]);
+  });
+
+  it("khai mã OW-1 mà bỏ trống ô thì ĐỎ — lời khai rỗng không được tính là một lời khai", () => {
+    const kh = fullDeclaration("khai-rong") as any;
+    delete kh.pointers.chu_so_huu;
+    kh.declares.ownership = "OW-1";
+    const r = checkOne(submit("khai-rong", kh));
+    expect((r.loi ?? []).join(" ")).toContain("chu_so_huu");
+    expect(r.tier?.id).toBe("L2");
+  });
+
+  it("chứng nhận có đầu mối nhưng quá ngắn vẫn ĐỎ — hai phép kiểm, không phải một", () => {
+    // Ca này khoá riêng SÀN ĐỘ DÀI. Ca dưới khoá riêng phép "tra lại được". Gộp làm một bài thì
+    // hạ sàn độ dài xuống 1 vẫn xanh — đã đo bằng đột biến, và đó là lý do có hai bài.
+    const kh = fullDeclaration("chung-nhan-ngan") as any;
+    kh.pointers.chung_nhan_chu_so_huu = "a@b.example";
+    const r = checkOne(submit("chung-nhan-ngan", kh));
+    expect(r.sai_khuon).toBe(true);
+    expect((r.loi ?? []).join(" ")).toContain("40 ký tự");
+  });
+
+  it("chứng nhận phải TRA LẠI ĐƯỢC — một chữ \"có\" không phải chứng nhận", () => {
+    const kh = fullDeclaration("chung-nhan-rong") as any;
+    kh.pointers.chung_nhan_chu_so_huu = "có, chủ sở hữu đúng như hồ sơ đã khai ở trên, xin xác nhận";
+    const r = checkOne(submit("chung-nhan-rong", kh));
+    expect(r.sai_khuon).toBe(true);
+    expect((r.loi ?? []).join(" ")).toContain("chung_nhan_chu_so_huu");
+  });
+});
 
 describe("E2E · đường xuôi — hồ sơ nộp vào đầu này, tìm lại được ở đầu kia", () => {
   it("1 nộp → 2 chấm ra L3 → 3 dựng tx → 6 quét sổ tìm lại đúng platform đó", () => {

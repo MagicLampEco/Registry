@@ -48,7 +48,8 @@ TMP_TRUNG="Registrations/_tmp-test-trung.md"
 TMP_NHAM="Registrations/_tmp-test-nham.md"
 TMP_CH4T="Registrations/_tmp-test-ch4t.md"
 TMP_KIRIN="Registrations/_tmp-test-kirin.md"
-don_tam() { rm -f "$TMP_TRUNG" "$TMP_NHAM" "$TMP_CH4T" "$TMP_KIRIN"; }
+TMP_TUCHOI="Registrations/_tu-choi/tmp-test-daturchoi.md"
+don_tam() { rm -f "$TMP_TRUNG" "$TMP_NHAM" "$TMP_CH4T" "$TMP_KIRIN" "$TMP_TUCHOI"; }
 trap don_tam EXIT
 
 kiem_r1() {   # kiem_r1 <chuỗi phải có> <mã thoát mong đợi> <mô tả>
@@ -161,6 +162,25 @@ kiem "$TMP_KIRIN" "U+0430" \
 kiem_r1 "bỏ Registrations/_tmp-test-kirin.md khỏi tập so trùng" 1 \
         "hồ sơ sai khuôn bị loại khỏi tập so trùng và làm bộ chấm ĐỎ"
 rm -f "$TMP_KIRIN"
+
+# Tệp trong `Registrations/_tu-choi/` phải RA khỏi tập so trùng R1 mà vẫn được NÊU. Hai vế, và
+# vế nào hỏng cũng hỏng theo một kiểu riêng: còn trong tập so trùng thì tên bị giữ vô thời hạn
+# bởi một lệnh cấm không ai ký; không nêu ra thì người duyệt cấp lại một tên từng bị từ chối mà
+# không biết. Luật: REGISTRATION-STANDARD.md §5 "Hồ sơ bị từ chối thì tệp đi đâu".
+printf 'Từ chối R3 — 2026-01-01. Hồ sơ khai sai chủ sở hữu.\n' > "$TMP_TUCHOI"
+kiem_r1 "tmp-test-daturchoi  (R3)" 0 \
+        "tên trong _tu-choi/ được NÊU kèm mã từ chối bóc từ nội dung tệp"
+kiem_r1 "không trùng, không cặp nào gây nhầm lẫn" 0 \
+        "tên trong _tu-choi/ KHÔNG vào tập so trùng R1 — tên đã được thả"
+
+# Và khi có người nộp lại đúng cái tên ấy thì phải hiện cảnh báo, chứ không thả im lặng.
+sed 's/"platform_id": "thu-l3"/"platform_id": "tmp-test-daturchoi"/' tools/fixtures/day-du-L3.md > "$TMP_TRUNG"
+# Mã thoát 0, không phải 1: dùng lại một tên đã thả KHÔNG phải lỗi. §5 không có điều khoản cấm
+# vĩnh viễn, nên làm đỏ ở đây là dựng lại đúng cái lệnh cấm mà việc thả tên vừa gỡ đi. Máy NÊU,
+# người duyệt KẾT — cùng đúng một luật với R2 vế 1.
+kiem_r1 "một hồ sơ đang dùng lại tên này" 0 \
+        "nộp lại một tên từng bị từ chối ⇒ bộ chấm NÊU, không làm đỏ"
+rm -f "$TMP_TRUNG" "$TMP_TUCHOI"
 
 # Sau khi dọn phải trở về đúng trạng thái nền — nếu không, một lần chạy kiểm làm bẩn kho.
 kiem_r1 "không trùng, không cặp nào gây nhầm lẫn" 0 \

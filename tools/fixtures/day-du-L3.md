@@ -18,7 +18,8 @@ lời khẳng định EV-2 neo bằng tx hash 64 hex. Bản trước của fixtu
     "seed_policy": "50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72",
     "governance_ref": "72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94",
     "governance_ref_tinh_chat": "G1 script chạy được (withdrawal-0); G2 khác hash validator registry; G3 không nhánh permissionless; G4 nhánh đồng thuận không mint",
-    "accepted_assets": ["LAMP"], "cut_bps": 250
+    "accepted_assets": ["LAMP"], "cut_bps": 250,
+    "chu_so_huu": "Công ty Ví Dụ"
   },
   "evidence": [
     { "claim": "doanh thu", "tier": "EV-2", "pointer": "tx 52fc9630da741eb852fc9630da741eb852fc9630da741eb852fc9630da741eb8" }

@@ -28,7 +28,7 @@ token, và một cách kế toán giá trị. Không có sổ đăng ký thì ba
 Đăng ký giải quyết cả ba: một dịch vụ đã đăng ký thì **tìm được, kiểm chứng được, và ghép
 được** với mọi dịch vụ khác trong hệ.
 
-## 2. Điều kiện — một cổng cứng, ba lời khai có phân hạng
+## 2. Điều kiện — một cổng cứng, ba lời khai có phân hạng, một ô tuỳ chọn
 
 Đây là chỗ bản trước nói mạnh hơn nguồn của nó, và đã sửa. Whitepaper hệ sinh thái viết
 (`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md:201`, §8 bước 2):
@@ -49,6 +49,7 @@ Cách dung hoà, và nó là nguyên tắc của toàn bộ tài liệu này:
 | **2.1** | Danh tính người dùng | **lời khai có phân hạng** |
 | **2.3** | Kho giá trị on-chain | **lời khai có phân hạng** |
 | **2.4** | Phụ thuộc hạ tầng đóng ngoài hệ | **lời khai có phân hạng** |
+| **2.5** | Chủ sở hữu đứng sau hồ sơ | **tuỳ chọn** — không khai vẫn hợp lệ; chỉ đổi hạng `L3` |
 
 **Lời khai có phân hạng** nghĩa là: khai đúng thì hồ sơ được **tiếp nhận**, dù khai "chưa đạt".
 Mã đã khai quyết định **hạng niêm yết**, và bên định tuyến phí đọc hạng đó rồi tự quyết mức tin.
@@ -120,7 +121,7 @@ nổi `L0`. Không phải vì cạnh tranh: vì nó phá đúng hệ token dùng
 Ba trục còn lại **không** chặn tiếp nhận, nhưng chúng có **ngưỡng**: `L1` — nhãn "đã niêm yết" — đòi
 `identity` ≥ 1, `custody` ≥ 2, `infra` ≥ 1 (bảng hạng ở §3). Nên câu "chỉ trục `token` chặn niêm yết"
 là câu sai; câu đúng là chỉ trục `token` chặn **tiếp nhận**, còn niêm yết thì cả bốn trục đều có
-tiếng nói. Nguồn máy đọc: `Registrations/codes.json` mục `axes.token._gate_doc` và `listing_tiers`.
+tiếng nói — và ở riêng `L3` thì trục tuỳ chọn `ownership` (§2.5) cũng có. Nguồn máy đọc: `Registrations/codes.json` mục `axes.token._gate_doc` và `listing_tiers`.
 
 **Bốn mã của trục này.** Nguồn máy đọc: `Registrations/codes.json` → `axes.token.codes`.
 
@@ -205,6 +206,36 @@ biến nó thành cổng đóng. Nó là lời khai bốn bậc `IN-0`…`IN-3`.
 Dùng kênh ngoài để **tiếp cận** người dùng thì bình thường. Đặt **danh tính, thanh toán hay dữ liệu
 gốc** ở đó thì hạ hạng. Và một dạng phụ thuộc dễ bỏ sót: kho ứng dụng có thể nắm **quyền phủ quyết**
 đúng chức năng cốt lõi — không phải chỉ chậm phát hành mà là gỡ hẳn.
+
+### 2.5 Chủ sở hữu đứng sau hồ sơ · trục `ownership` — **tuỳ chọn, KHÔNG phải điều kiện**
+
+Đọc kỹ dòng này trước đã: **không khai ô này thì hồ sơ vẫn hợp lệ, vẫn được tiếp nhận, vẫn niêm yết
+được.** Whitepaper §10 đóng tập điều kiện vào ở **ba** — tiêu MAGIC · dùng CARP · đăng ký — nên
+chuẩn này không có quyền thêm điều kiện thứ tư. Trục `ownership` đổi được đúng một thứ: **hạng niêm
+yết**, và chỉ ở `L3`.
+
+Vì sao có trục này: mọi trần dạng *"mỗi bên tối đa X%"* trong hệ áp trên `platform_id`, tức đếm
+**hồ sơ** chứ không đếm **người**. Sổ này là chỗ duy nhất biết có bao nhiêu định danh tồn tại. Nếu
+nó im lặng thì không nơi nào trong hệ thấy được một chủ đang đứng sau mấy hồ sơ — và cái trần trông
+như đang bảo vệ, mà không (§7).
+
+| Mã | Nghĩa | Đòi |
+|---|---|---|
+| `OW-0` | chưa khai chủ sở hữu | — |
+| `OW-1` | đã khai chủ sở hữu — **lời khai của chính bên nộp** | `pointers.chu_so_huu` |
+| `OW-2` | như `OW-1`, và có một bên **không hưởng lợi** ký vào chính lời khai đó | thêm `pointers.chung_nhan_chu_so_huu` |
+
+Ba điều phải nói rõ để không ai đọc rộng hơn:
+
+- **Trục này không nằm trong `declares`.** Bộ chấm suy hạng từ ô đã điền: điền `chu_so_huu` là
+  `OW-1`, điền thêm chứng nhận là `OW-2`. Khai tay trong `declares` vẫn được, và khai một mã
+  **thấp hơn** dữ kiện đang có cũng được — bộ chấm giữ nguyên lời khai và **nêu ra** rằng hồ sơ
+  đang tự bỏ một hạng, để một lần gõ nhầm không lặng lẽ thành mất hạng.
+- **`OW-2` KHÔNG phải "máy đã xác minh chủ sở hữu".** Máy chỉ kiểm con trỏ chứng nhận có **tra lại
+  được** hay không — có chạm tới một thứ ngoài hồ sơ (địa chỉ liên hệ, một trang, hay một giao
+  dịch). Ai ký, ký cái gì, có thật không hưởng lợi không — **người đối chiếu đọc và quyết**.
+- **Khai sai sự thật ở ô này là `R3`**, như mọi lời khai khác. Và như mọi `R3`, từ chối phải nêu
+  dòng khai nào sai kèm bằng chứng (§5).
 
 ---
 
@@ -375,6 +406,11 @@ lập được, nên nó chưa phải chứng cứ — nó là một lời hứa
 
 ### Bốn hạng niêm yết — bảng chép cho người đọc
 
+⚠ `L3` là hạng **duy nhất** đòi trục tuỳ chọn `ownership`, và chỉ vì `L3` là hạng cấp **uy tín và
+quyền biểu quyết** — hai thứ mà một chủ chẻ hồ sơ nhân lên được. `L0`–`L2` không đòi, nên niêm yết
+bình thường không cần khai chủ. Đo ngày đặt luật này: **không hồ sơ nào trong `Registrations/` bị
+tụt hạng** vì nó (`node tools/check-registration.mjs` — cả bốn hồ sơ đang ở `L0`).
+
 Chuẩn này dùng `L0`–`L3` ở nhiều chỗ mà chưa nói ở đâu chúng là gì, nên người đọc chuẩn không tra
 được hạng của mình đòi gì. Bảng dưới chép điều kiện từ `Registrations/codes.json` mục
 `listing_tiers`. **Nguồn duy nhất máy đọc vẫn là `codes.json`** — bảng này là bản chép cho người
@@ -385,7 +421,7 @@ Chuẩn này dùng `L0`–`L3` ở nhiều chỗ mà chưa nói ở đâu chúng
 | `L0` | đã tiếp nhận — **chưa** đủ điều kiện niêm yết | trục `token` đã khai và không phải `TK-X`. Mọi hồ sơ khai đúng sự thật đều đạt, kể cả khi mọi trục đều ở mã 0 — nhưng **bỏ trống** trục `token` thì không đạt, vì không khai gì không phải là "không phải `TK-X`". |
 | `L1` | đã niêm yết | `token` ≥ 1 · `identity` ≥ 1 · `custody` ≥ 2 · `infra` ≥ 1 |
 | `L2` | niêm yết đủ điều kiện | `token` ≥ 1 · `identity` ≥ 2 · `custody` ≥ 2 · `infra` ≥ 2 |
-| `L3` | đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ | như `L2`, thêm `identity` ≥ 3 và `evidence_min` ≥ 1 — tức **mọi** lời khẳng định đều từ `EV-1` trở lên, **và** hồ sơ phải có ít nhất một lời khẳng định. Không khai dòng nào thì không đạt, dù đọc theo chữ thì "không dòng nào còn ở `EV-0`" là đúng. |
+| `L3` | đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ | như `L2`, thêm `identity` ≥ 3, `ownership` ≥ 1 (§2.5) và `evidence_min` ≥ 1 — tức **mọi** lời khẳng định đều từ `EV-1` trở lên, **và** hồ sơ phải có ít nhất một lời khẳng định. Không khai dòng nào thì không đạt, dù đọc theo chữ thì "không dòng nào còn ở `EV-0`" là đúng. |
 
 Hai chỗ dễ đọc nhầm con số:
 
@@ -518,7 +554,7 @@ Nguồn máy đọc: `Registrations/codes.json` mục `tu_choi`.
 áp một kiểu, và cái đó tệ hơn một tiêu chí tự nhận là lỏng.
 
 Phép thử, mượn nguyên văn từ `Specs/Math-Spec.md` §13.1.1 (do PhoenixKey đề, nhà này lấy làm ràng
-buộc chung cho **cả bốn trục khai báo**, không riêng §13):
+buộc chung cho **mọi trục khai báo** — bốn trục bắt buộc và cả ô tuỳ chọn ở §2.5, không riêng §13):
 
 > Một lời khai sai chạm `R3` ⟺ tồn tại một bên thứ ba **hành xử khác đi** nếu biết nó sai.
 
@@ -622,6 +658,22 @@ nào để đem ra soi. Nên:
 - Từ chối theo **R3** phải nêu **dòng khai nào** sai và **bằng chứng nào** cho thấy nó sai. Từ chối
   không nêu được hai thứ đó thì không phải một quyết định R3.
 
+### Hồ sơ bị từ chối thì **tệp** đi đâu
+
+Chuẩn bản trước không nói, và chỗ không nói ấy có hậu quả đo được: bộ chấm quét **mọi** `.md` trong
+`Registrations/` và lấy **tên tệp** làm tên dự kiến cho hồ sơ chưa nộp, nên một tệp bị từ chối mà
+nằm lại sẽ **giữ tên đó khỏi tay người khác qua R1** — một lệnh cấm vô thời hạn không ai ký.
+
+Luật: **tệp hồ sơ bị từ chối chuyển sang `Registrations/_tu-choi/<platform_id>.md`**, kèm ở đầu tệp
+mã từ chối (R1/R2/R3), ngày, và câu giải thích đã trả cho bên nộp.
+
+- Thư mục con **nằm ngoài** tập so trùng — bộ chấm chỉ quét tệp `.md` ngay dưới `Registrations/`.
+  Tên vì thế **được thả**, và ai nộp sau lấy được nó.
+- Nhưng thả tên **không** phải xoá lịch sử: bộ chấm liệt kê những tên đang nằm trong `_tu-choi/` ở
+  cuối mỗi lượt chạy, để người duyệt thấy tên mình sắp cấp từng bị từ chối vì gì.
+- Bên bị từ chối **nộp lại được** — R1/R2/R3 không có điều khoản cấm vĩnh viễn. Nộp lại là đặt một
+  tệp mới ở `Registrations/`, không phải sửa tệp trong `_tu-choi/`.
+
 ## 6. Sau khi được niêm yết
 
 - **Sáu trường định danh là bất biến**: `platform_id`, `instance_id`, `custody_hash`, `seed_policy`,
@@ -675,6 +727,24 @@ thấy được, không phải một cửa im lặng — nhưng nó chưa bị c
 
 Ghi ra để bên đăng ký biết mình đang tin vào cái gì.
 
+### Sổ này **không phải** tầng chống Sybil — nói trước, vì nhiều chỗ đang tin ngược lại
+
+Registry đếm **định danh**, và chỉ biết những định danh **tự khai**. Nó không biết có bao nhiêu
+**người** đứng sau chúng, và không có cách nào biết:
+
+- Với một quy tắc ẩn danh, *"một tác nhân chẻ làm hai"* và *"hai tác nhân độc lập"* là **cùng một
+  đầu vào**. Không phép kiểm nào phân biệt được hai thứ đó, nên *"phạt quy mô"* và *"chẻ hồ sơ
+  không có lợi"* là hai mệnh đề **phủ định của nhau** — cơ chế chia nào cũng chỉ giữ được một.
+- Trục `ownership` (§2.5) là **lời khai**, không phải phép đo. Nó làm cụm hồ sơ cùng chủ **hiện
+  ra** khi người ta chịu khai; nó không phát hiện được người không khai, và §5 nói rõ "cùng chủ"
+  không nằm trong tập từ chối.
+- Phép gom cụm chỉ thấy hồ sơ **nằm trong kho này**. Bộ chấm in thẳng câu đó ra mỗi lần chạy, để
+  không ai đọc *"không cụm nào"* thành *"không ai đứng sau nhiều hồ sơ"*.
+
+⇒ Bên nào cần chống Sybil thật thì lấy từ **tầng personhood** (dòng "một-người-một-DID" dưới đây),
+không lấy từ sổ này. Thiết kế nào đặt trọng lượng an toàn lên "số `platform_id` phân biệt" là đang
+đặt lên một con số mà sổ này chưa bao giờ hứa.
+
 | Điểm | Hiện trạng | Ảnh hưởng tới bên đăng ký |
 |---|---|---|
 | Quyền đăng ký | Đang là **một khoá đơn**, chưa phải multisig hay DAO | Một khoá rò là chiếm được tên. Phải chuyển thành nhiều chữ ký trước khi lên mainnet. Đây cũng là đường đóng nốt giới hạn "Pause lặp" ở §6. |
@@ -683,7 +753,7 @@ Ghi ra để bên đăng ký biết mình đang tin vào cái gì.
 | Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết — xem hạng `EV-0` ở §3. |
 | Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức chuỗi DID**. **Mức người và cả mức thiết bị đều chưa ép** — dẫn chứng ở §2.1. Chủ dự án đã chốt "một người = một DID" là **yêu cầu cứng** (2026-08-06). PhoenixKey chốt (2026-08-14, thay bản 2026-08-07): personhood **KHÔNG phải một thang tích luỹ** — nó là một **tập mệnh đề độc lập, không xếp thứ tự**. Một DID có `person-in-jurisdiction` mà **không** có `hardware-rooted-key` là **hợp lệ**; ép qua bậc khoá-phần-cứng trước sẽ làm personhood **phụ thuộc thiết bị**, đúng thứ bất biến "một người một DID" cấm. Giao diện: `personhood(did) → { attestations: Set<Attestation>, as_of: timestamp }`, với `Attestation ∈ { did-chain, hardware-rooted-key, person-in-jurisdiction(<mã pháp quyền>) }`. **Không** nhận và **không** trả nullifier (tra tự do theo nullifier là một máy vét cạn 20 bit). Bên cần "≥ mức X" thì **kiểm tập có chứa mệnh đề mình cần**, không so số — trả một số là **sai kiểu**, nó ép một thứ tự không tồn tại và bên nhận sẽ tự bịa thứ tự khi so sánh. `hardware-rooted-key` (tên cũ `device`, đã bỏ) nói đúng một điều: *"khoá gốc của DID sinh trong vùng bảo mật của máy và mở được bằng cổng sinh trắc của máy. KHÔNG ép 'một người một máy', KHÔNG ép 'một máy một DID': cùng một máy sinh được nhiều DID, mỗi DID một khoá gốc riêng."* Mệnh đề `did-chain`: **mã đã xong trên `main`, chưa deploy**; phát hành được ngay sau đợt redeploy PA-1, mốc chưa có ngày. Mệnh đề `person-in-jurisdiction` cần ba việc **chưa có người nhận**.<br><br>⛔ **`person-global` KHÔNG có trong chuẩn này, và đừng thêm vào.** Nó **bất khả** như mọi định nghĩa đang lưu hành: người hai quốc tịch cho ra hai nullifier ⇒ hai DID; chặn được chỉ bằng sinh trắc 1:N toàn cầu, mà hội đồng Phoenix đã chứng minh là bất khả. Trong repo còn một **thư cũ** có dòng bảng `person-global` (`_Agents/inbox/_done/Phoenix-tra-giao-dien-personhood-va-moc-bac-dau-2026-08-07.md:37`) — dòng đó **đã bị thay**, đừng chép lại. Cần một mệnh đề "trên" thì dùng `person-in-jurisdictions(S)`: *"là người thật ở **mỗi** pháp quyền trong tập S, S được công bố; không phát biểu gì về pháp quyền ngoài S."* | Đừng dựng cơ chế chống Sybil dựa trên "hai DID phân biệt" — một máy ký chéo cho chính nó bằng script được. Rào kinh tế đỡ được **một phần**, không phải tất cả — đọc kỹ ranh giới này. Ràng buộc: phần thưởng phát ra mỗi epoch phải bị chặn trên bởi một phần **nhỏ hơn 1** của lượng MAGIC thực bị tiêu cùng epoch, phần dư về Treasury. Nó làm kẻ **tự tạo cầu giả** để farm luôn lỗ, kể cả khi tạo được vô hạn DID. Nhưng nó **im lặng** trước đường thứ hai: **không đốt gì cả, chỉ khai CUNG để lấy phần của lượng người khác đã đốt** — đường đó có lợi nhuận dương với mọi tỉ phần và mọi hệ số, và chỉ chặn được bằng biên nhận do bên **không hưởng lợi** ký, thách thức có phát hiện thật, và cổng DID cho node. Chứng minh và phản ví dụ: [`bench/DOI-CHIEU.md`](bench/DOI-CHIEU.md) §1. |
 | **Xếp hạng khám phá** | Whitepaper §8 bước 3 hứa *"thứ hạng tính theo **số người thật độc lập đã dùng**"*. Mệnh đề đó **chưa hiện thực được** vì nó cần đúng tầng personhood ở dòng trên. | Đây là chỗ **tiền không thay được danh tính**: rào kinh tế làm kẻ farm lỗ tiền, nhưng không làm thứ hạng đúng. Một bên chịu lỗ vẫn mua được thứ hạng. Mọi thứ hạng công bố trước khi có personhood đều theo một trục khác với trục đã hứa. |
-| **Trần phần trăm đếm HỒ SƠ, không đếm NGƯỜI** | Mọi trần dạng *"mỗi bên tối đa X%"* trong hệ áp trên `platform_id`. Sổ này là nơi duy nhất biết có bao nhiêu định danh tồn tại, và tập từ chối ở §5 là tập **ĐÓNG ba mã** — không mã nào là "cùng chủ đã có hồ sơ". §5 còn nói rõ cạnh tranh với thành phần sẵn có **không** phải lý do từ chối, và hồ sơ khai đúng thì quyền đăng ký **buộc phải ký**. ⇒ Người duyệt hôm nay **không có quyền** dừng hồ sơ thứ năm của cùng một đội, chứ không phải không có ý chí. Ô `pointers.chu_so_huu` (tuỳ chọn) và phép gom cụm trong bộ chấm làm cụm ấy **hiện ra**, nhưng hiện ra không phải chặn lại. | Trần thực của một chủ có `k` hồ sơ là `min(100%, k · X%)` — với X = 30 thì **bốn hồ sơ là trần biến mất**. Nặng hơn: nếu cơ chế chia dùng trọng số lõm `V^r` (`r < 1`) — hình dạng dựng lên để chống độc chiếm — thì cùng một lượng hoạt động chẻ làm `k` phần cho `V^r · k^(1−r)`; với `r = 0,7` chẻ 4 được **1,52×**, chẻ 10 được **2,00×**, không bơm thêm gì. Lợi biên của hồ sơ thứ `k+1` **luôn dương** ⇒ không có điểm dừng nội tại. **Chờ chủ nhân quyết**: mở tập từ chối thêm một mã cho "cùng chủ, chưa khai quan hệ" là đổi một cam kết công khai ("đăng ký không phải xin phép"), nên nó không phải quyết định của người viết chuẩn. Chừng nào chưa mở, tài liệu nào nói trần 30% đang bảo vệ cái gì đó là **nói mạnh hơn thực tế**. |
+| **Trần phần trăm đếm HỒ SƠ, không đếm NGƯỜI** | Mọi trần dạng *"mỗi bên tối đa X%"* trong hệ áp trên `platform_id`. Sổ này là nơi duy nhất biết có bao nhiêu định danh tồn tại, và tập từ chối ở §5 là tập **ĐÓNG ba mã** — không mã nào là "cùng chủ đã có hồ sơ". §5 còn nói rõ cạnh tranh với thành phần sẵn có **không** phải lý do từ chối, và hồ sơ khai đúng thì quyền đăng ký **buộc phải ký**. ⇒ Người duyệt hôm nay **không có quyền** dừng hồ sơ thứ năm của cùng một đội, chứ không phải không có ý chí. Trục tuỳ chọn `ownership` (§2.5) và phép gom cụm trong bộ chấm làm cụm ấy **hiện ra**, nhưng hiện ra không phải chặn lại. **Đã chốt cách xử**: không mở tập từ chối, không bắt buộc khai — khai được **trả bằng hạng `L3`**, tức đúng hạng cấp uy tín và quyền biểu quyết mà việc chẻ hồ sơ nhân lên được. Ai không muốn khai thì niêm yết tới `L2` như cũ. | Trần thực của một chủ có `k` hồ sơ là `min(100%, k · X%)` — với X = 30 thì **bốn hồ sơ là trần biến mất**. Nặng hơn: nếu cơ chế chia dùng trọng số lõm `V^r` (`r < 1`) — hình dạng dựng lên để chống độc chiếm — thì cùng một lượng hoạt động chẻ làm `k` phần cho `V^r · k^(1−r)`; với `r = 0,7` chẻ 4 được **1,52×**, chẻ 10 được **2,00×**, không bơm thêm gì. **Độ lớn — bản trước thiếu, và thiếu chỗ này là đọc sai kết luận:** lợi biên của hồ sơ thứ `k+1` luôn **dương** nhưng **giảm như `k^(−0,7)`** — bước từ 1 lên 2 được `+23,1%` trọng số, bước từ 10 lên 11 chỉ còn `+5,8%`, tức **một phần tư** bước đầu. Nên điểm dừng nội tại **có** tồn tại: nó ở chỗ lợi biên rơi xuống dưới chi phí mở thêm một hồ sơ. Điều đáng lo không phải "không có điểm dừng" mà là **điểm dừng nằm quá xa**: chi phí thật của một hồ sơ nữa (một tệp `.md`, một beacon, min-ADA) nhỏ hơn lợi biên ấy nhiều bậc. Chặn thật đang đến từ **sàn bụi** của bên chia thưởng, và sàn đó cấp giấy phép chẻ **theo cỡ**: với sàn `0,5%` một chủ nắm `0,5%` chẻ được `9` mảnh (`2,40%` → `4,54%`), chủ nắm `10%` chẻ được `90` mảnh (`17,7%` → `45,3%`), chủ nắm `30%` chẻ được `141` mảnh (`35,6%` → `70,9%`) — càng lớn càng chẻ được nhiều, đúng ngược chiều thứ một cái trần định làm. Và vì trần `30%` đếm theo `app_id`, `k` mảnh mỗi mảnh dưới `30%` thì trần **không chạm vào đâu cả**. Tài liệu nào nói trần 30% đang bảo vệ cái gì đó là **nói mạnh hơn thực tế**. (Số dựng lại được: `r = 0,7`, một chủ chiếm phần `s` chẻ đều `k` mảnh, phần còn lại của hệ gộp làm một.) |
 | R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho. |
 | Van đối soát off-chain | Ba hàm mà `Specs/Feat-Spec.md` giao trọng lượng an toàn cho — đối soát hồ sơ với kho thật, quét sổ theo policy, tìm định danh trùng — xem [`./DevStatus.md`](DevStatus.md) (ở **gốc repo**, không phải trong `Specs/`) để biết trạng thái đo được tại thời điểm đọc. | Đừng coi ba lỗ ở trên là "đã có van chặn" cho tới khi `DevStatus.md` nói ngược lại kèm lệnh kiểm. |
 

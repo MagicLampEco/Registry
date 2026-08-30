@@ -53,6 +53,20 @@
         "IN-2": { "rank": 2, "label": "có phụ thuộc đóng nhưng thay thế được, và đã có đường thay thế cụ thể", "needs": ["danh_sach_phu_thuoc", "duong_thay_the"] },
         "IN-3": { "rank": 3, "label": "không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi", "needs": [] }
       }
+    },
+
+    "ownership": {
+      "condition": "2.5",
+      "label": "Chủ sở hữu đứng sau hồ sơ",
+      "gate": "tuy_chon",
+      "tuy_chon": true,
+      "mac_dinh": "OW-0",
+      "_gate_doc": "TUỲ CHỌN — không khai vẫn hợp lệ, vẫn tiếp nhận, vẫn niêm yết tới L2. Trục này KHÔNG có trong whitepaper và KHÔNG được là điều kiện vào: whitepaper §10 đóng tập điều kiện ở BA (tiêu MAGIC · dùng CARP · đăng ký), nên thêm điều kiện thứ tư là phá một cam kết đã phát hành, không phải siết một tiêu chuẩn. Nó đổi đúng một thứ: hạng niêm yết, và chỉ ở L3. Nó cũng KHÔNG nằm trong declares — bộ chấm suy hạng từ ô đã điền trong pointers, để hồ sơ điền đủ dữ kiện mà quên một dòng declares không bị mất hạng vì lỗi hình thức. Vì sao có trục: mọi trần dạng 'mỗi bên tối đa X%' trong hệ đếm HỒ SƠ chứ không đếm NGƯỜI, và sổ này là nơi duy nhất biết có bao nhiêu định danh tồn tại. Vì sao phải kèm hạng chứ không để làm ô khai suông: ô khai tuỳ chọn không trả gì đã được đo — 0/4 hồ sơ điền. Khai mà không được gì thì không ai khai.",
+      "codes": {
+        "OW-0": { "rank": 0, "label": "chưa khai chủ sở hữu", "needs": [] },
+        "OW-1": { "rank": 1, "label": "đã khai chủ sở hữu — lời khai của chính bên nộp", "needs": ["chu_so_huu"] },
+        "OW-2": { "rank": 2, "label": "như OW-1, và có một bên KHÔNG hưởng lợi ký vào chính lời khai đó", "needs": ["chu_so_huu", "chung_nhan_chu_so_huu"] }
+      }
     }
   },
 
@@ -92,8 +106,8 @@
     "L3": {
       "rank": 3,
       "label": "đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ",
-      "require": { "token_min": 1, "identity_min": 3, "custody_min": 2, "infra_min": 2, "evidence_min": 1 },
-      "_doc": "evidence_min = 1 nghĩa là mọi lời khẳng định đều từ EV-1 trở lên VÀ hồ sơ phải có ít nhất một lời khẳng định — hồ sơ không khai khẳng định nào thì không đạt, dù đọc theo chữ thì 'không lời nào còn ở EV-0' là đúng. Số liệu tự khai bán được, nhưng không cấp uy tín — bất biến RE-5 (nguồn ngoài repo: bench/README.md:4-5)."
+      "require": { "token_min": 1, "identity_min": 3, "custody_min": 2, "infra_min": 2, "evidence_min": 1, "ownership_min": 1 },
+      "_doc": "evidence_min = 1 nghĩa là mọi lời khẳng định đều từ EV-1 trở lên VÀ hồ sơ phải có ít nhất một lời khẳng định — hồ sơ không khai khẳng định nào thì không đạt, dù đọc theo chữ thì 'không lời nào còn ở EV-0' là đúng. Số liệu tự khai bán được, nhưng không cấp uy tín — bất biến RE-5 (nguồn ngoài repo: bench/README.md:4-5). · ownership_min = 1 chỉ đặt ở L3, KHÔNG ở L0/L1/L2, và có lý do: L3 là hạng duy nhất chạm uy tín và quyền biểu quyết ở tầng hệ — tức nơi duy nhất mà 'một chủ đứng sau nhiều hồ sơ' đổi kết quả của người khác. Niêm yết thường không cần biết ai đứng sau, và đòi ở đó là biến một lời khai thành một cửa. Đo ngày đặt luật: không hồ sơ nào trong Registrations/ tụt hạng vì nó — cả bốn đang ở L0."
     }
   },
 
