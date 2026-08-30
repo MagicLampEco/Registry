@@ -43,6 +43,12 @@ export interface KetQuaCham {
   r2_ve1?: boolean
   /** Khối khai THÔ. Chặng sau lấy lời khai từ CHÍNH lượt chấm, không tự bóc lại. */
   khai?: Record<string, any>
+  /**
+   * Lời khai chủ sở hữu, đã cắt khoảng trắng; `null` = hồ sơ không khai (vẫn hợp lệ — ô này là
+   * lời khai, không phải cổng). VẮNG hẳn khi lượt chấm dừng sớm ở nhánh chưa nộp / sai hình dạng,
+   * nên `undefined` và `null` KHÁC nghĩa: một bên là "chưa chấm tới", một bên là "chấm rồi, không khai".
+   */
+  chu_so_huu?: string | null
 }
 
 /** Chấm MỘT hồ sơ. Không in gì, không gọi `process.exit`. R1 không thuộc hàm này. */

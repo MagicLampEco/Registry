@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-08-17**.
+Cập nhật cuối: **2026-08-30**.
 
 ---
 
@@ -30,7 +30,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | `Specs/{CONTRACT,Tech-Spec,Feat-Spec,Exec-Spec,README}.md` + `onboarding.md` | `đã merge (commit c63372e)` | cùng PR | `git status --short -- Specs/ onboarding.md` (rỗng = không còn sửa treo) | — | 2026-08-17 |
 | `Registrations/codes.json` | `đã merge (commit c63372e)`, có sửa tiếp trên nhánh đang chạy | PR #8; sửa tiếp ở `34db63b` (R1 hai mức) và đợt rà 2026-08-17 | `node tools/check-registration.mjs` ; `bash tools/test-check.sh` | hồ sơ đăng ký | 2026-08-17 |
 | Quyết định `platform_id` do NGƯỜI đặt hay MÁY sinh | `đã merge (commit 51c5401)` — câu hỏi đã được nhặt lại vào `Math-Spec.md` L1, **chủ nhân chưa chốt** | PR #10, base `main` | `grep -n 'platform_id' Specs/Math-Spec.md \| head` | cửa sổ đóng lúc hồ sơ đầu tiên lên chuỗi | 2026-08-17 |
-| Nhánh `feat/chot-bien-nhan-codeowners` | `xong local` — 8 commit, chưa push | `main` ở `51c5401`; nhánh chứa biên nhận PK11, CODEOWNERS, từ điển tài nguyên, E2E bốn chặng, đợt rà nhất quán 2026-08-17 | `git log --oneline main..HEAD` ; `git merge-tree $(git merge-base HEAD main) HEAD main \| grep -c '<<<<<<<'` (0 = không xung đột) | mọi thứ ở trên | 2026-08-17 |
+| Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `có PR (#12)` — 9 commit, chờ chủ nhân gộp | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, năm dữ kiện D1–D5 cho câu `platform_id`, mục bằng chứng phủ định, phép thử cho `R3`, ví dụ thứ tư và thứ năm của §13.1.1, mục giới hạn `L9`, ba điều kiện của đường ngoài-chuỗi, và loạt sửa tên tổ chức | `GH_TOKEN=$TOKEN gh pr view 12 -R MagicLampEco/Registry --json state,mergeable` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` — nhưng hạn chót **có điều kiện**: D4 chỉ áp nếu `display_name` buộc lên chuỗi, và D5 trả lời là **không buộc** | 2026-08-30 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
 
@@ -52,7 +52,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | **Ba gương off-chain còn TUỲ CHỌN trong khi ràng buộc on-chain là VÔ ĐIỀU KIỆN** — `RegisterParams.registryHash?` và `UpdateOptions.ownRegistryHash?` (`offchain/src/registrationBuilder.ts`), cộng `registryHash?` của `onboard` (`offchain/src/onboard.ts`, chuyển tiếp **có điều kiện** xuống bước đăng ký). Bỏ trống thì R-GOVSELF / S-GOVSELF-vào / U-GOVSELF-ra **không chạy** ở tầng off-chain. Hai đường gọi thật (`scripts/03_register_platform.ts` và `onboard`) đều truyền, nên **hôm nay không hỏng** — nhưng một bên tích hợp thứ ba vẫn dựng được tx mà chain từ chối. | Bỏ dấu `?` là đúng, nhưng nó buộc sửa ~10 chỗ gọi trong test cùng lúc; để riêng một đợt thay vì làm cuối phiên | `command grep -rn 'registryHash?: string\|ownRegistryHash?: string' offchain/src/` (phải trả **3** dòng — chỉ soi `registrationBuilder.ts` là bỏ sót chỗ thứ ba và báo "đã vá" khi mới vá 2/3; sửa xong thì trả 0) |
 | Bốn ràng buộc on-chain chưa có gương off-chain nào: `R-VALUE`, `U-SINGLE`, `U-MINT-0`, `M-MINT-0` | ba cái sau là ràng buộc tầng-tx trên nhánh Update/Migrate mà repo chưa có script dựng; `R-VALUE` thì `entryValue` trả đúng nhưng không hàm nào chặn bên gọi nhét token lạ | `command grep -rn 'R-VALUE\|U-SINGLE\|U-MINT-0\|M-MINT-0' offchain/ scripts/ tests/` (rỗng = chưa có gương nào) |
 | Khối "⛔ CẢNH BÁO PHIÊN BẢN" của `Specs/Tech-Spec.md` **cũ hơn mã**: nó liệt ràng buộc v2 nhưng thiếu sáu mã mà đợt vá on-chain thêm vào (`R-GOVLIVE`, `R-GOVSELF`, `U-GOV2`, `U-GOVSELF-OUT`, `U-REVIVE`, `U-SHAPE`) | khối cảnh báo được viết trước đợt vá và không cập nhật theo; nguy hơn thân §1–§5 lỗi thời vì nó **tự xưng là bản đã cập nhật** nên người đọc tin nó | `for m in R-GOVLIVE R-GOVSELF U-GOV2 U-GOVSELF-OUT U-REVIVE U-SHAPE; do printf "%s " $m; command grep -c "$m" Specs/Tech-Spec.md; done` (mọi số phải > 0) |
-| **Branch protection BẤT KHẢ trên gói hiện tại** ⇒ quyền gộp vào repo vẫn chưa bị ràng bởi thứ gì cưỡng chế được. `CODEOWNERS` **đã có** (`.github/CODEOWNERS`) nhưng GitHub chỉ cưỡng chế nó khi kho public, hoặc khi gói lên Pro/Team/Enterprise — kho này private trên gói **free**. Chuyển sang tổ chức `MagicLampEcosystem` **không** gỡ được: cửa khoá là phép nhân *gói free × kho private*, chuyển chủ sở hữu chỉ đổi vế thứ ba. | Chờ chủ nhân quyết một trong hai: nâng gói, hoặc để kho public. Phải siết TRƯỚC hồ sơ đầu tiên lên chuỗi, không phải sau. Trong lúc chờ, cổng gác thật đang chạy là `.github/workflows/kiem-ho-so.yml` (chấm hồ sơ + bắt `platform_id` trùng + kiểm kiểu), nó chạy được trên gói free | `GH_TOKEN=$TOKEN gh api repos/MagicLampEcosystem/Registry/rulesets` (403 "Upgrade to GitHub Pro…" = còn khoá) |
+| **Branch protection BẤT KHẢ trên gói hiện tại** ⇒ quyền gộp vào repo vẫn chưa bị ràng bởi thứ gì cưỡng chế được. `CODEOWNERS` **đã có** (`.github/CODEOWNERS`) nhưng GitHub chỉ cưỡng chế nó khi kho public, hoặc khi gói lên Pro/Team/Enterprise — kho này private trên gói **free**. Chuyển sang tổ chức `MagicLampEco` **không** gỡ được: cửa khoá là phép nhân *gói free × kho private*, chuyển chủ sở hữu chỉ đổi vế thứ ba. | Chờ chủ nhân quyết một trong hai: nâng gói, hoặc để kho public. Phải siết TRƯỚC hồ sơ đầu tiên lên chuỗi, không phải sau. Trong lúc chờ, cổng gác thật đang chạy là `.github/workflows/kiem-ho-so.yml` (chấm hồ sơ + bắt `platform_id` trùng + kiểm kiểu), nó chạy được trên gói free | `GH_TOKEN=$TOKEN gh api repos/MagicLampEco/Registry/rulesets` (403 "Upgrade to GitHub Pro…" = còn khoá) |
 | **`EV-2` không được xác minh trên chuỗi.** Bộ chấm chỉ khớp một chuỗi 64 hex trong câu con trỏ; nó không hỏi explorer. Một `openssl rand -hex 32` bịa ra vẫn qua. Đã tự thú tại chỗ trong `REGISTRATION-STANDARD.md` §3 | Cần một bước tra explorer trong bộ chấm, hoặc chấp nhận đây là việc của người duyệt vĩnh viễn — chưa quyết | `grep -n 'CO_TX' tools/check-registration-core.mjs` (chỉ dùng cho evidence, không gọi mạng) |
 | **Luật ba-thứ chỉ được kiểm ở mức ĐỊNH DẠNG.** Chuẩn §3 nêu `git branch --contains` và `git cat-file -e` như cách kiểm, nhưng máy không chạy lệnh nào trong hai lệnh đó — chỉ khớp regex. SHA bịa đúng hình dạng vẫn qua | Chạy hai lệnh đó cần biết con trỏ thuộc repo nào và có bản sao cục bộ không; chưa có đường | `grep -n 'conTroDuBaThu' -A 8 tools/check-registration-core.mjs` |
 | **R2 vế 2 máy không đọc được** — "mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì" là văn xuôi. Máy nêu vế 1, người duyệt kết. Nên R2 **không** làm CI đỏ | Muốn máy kết thì phải có ô json cho vế 2; `pointers.nguoi_tiep_nhan_khi_ngung` có trong mẫu nhưng không mã nào đòi và không dòng mã nào đọc | `grep -n 'nguoi_tiep_nhan_khi_ngung' tools/*.mjs` (rỗng = chưa ai đọc) |
@@ -89,9 +89,33 @@ Nguồn: `onchain/lib/magiclamp/registry/platform.ak`. Kiểm bằng
 `spec_version, platform_id, instance_id, custody_hash, seed_policy, beacon_policy, governance_ref,
 accepted_assets, cut_bps, created_epoch, status`
 
-Plutus Data mã hoá **theo vị trí**, không theo tên. Trường mới **chỉ được nối vào cuối**, và chỉ kèm
-tăng `spec_version` cộng một đường di trú. Chèn giữa = mọi bên đang giải mã hỏng im lặng.
+Plutus Data mã hoá **theo vị trí**, không theo tên. Chèn giữa = mọi bên đang giải mã hỏng im lặng.
 Kiểm: `grep -n 'pub type PlatformEntry' -A14 onchain/lib/magiclamp/registry/platform.ak`.
+
+🔴 **Nối vào cuối cũng KHÔNG mở được — đo 2026-08-27, và đây là cửa sổ đóng một lần.** Bản trước của
+mục này viết "trường mới **chỉ được nối vào cuối**, kèm tăng `spec_version` cộng một đường di trú".
+Vế sau không chạy được. `registry.ak:265` giải mã datum **đích** của di trú bằng
+`expect entry_out: PlatformEntry = od` — validator phiên bản hiện tại phán xử hình dạng datum của
+phiên bản sau. Đo bằng bài thực thi (`onchain/validators/arity_poc_test.ak`, `aiken v1.1.21`):
+
+| Datum đích | Ép về `PlatformEntry` |
+|---|---|
+| khớp đúng 11 trường (chứng dương) | **qua** |
+| 11 trường + 1 trường thừa **ở cuối** | **bị từ chối** |
+| thiếu 1 trường ở cuối | **bị từ chối** |
+
+Hai chiều cùng bị chặn ⇒ phép ép kiểu mềm của Aiken kiểm **khớp đúng arity**, không phải "đủ tối
+thiểu theo vị trí". Mà `MigrateEntry` là đường nâng lược đồ **duy nhất**. Nên: **cửa sổ thêm trường
+vào `PlatformEntry` đóng ở lần deploy đầu tiên, không đóng dần.**
+
+Hôm nay chi phí đổi vẫn bằng 0 — chưa có gì trên mạng nào (`find . -iname '*LIVE_DEPLOY*'` rỗng).
+Sau hồ sơ đầu tiên, thêm một trường đòi thay validator cho **mọi** platform trong sổ, mà
+`registry.ak:249-252` đòi đồng thuận quản trị của **từng** platform — platform nào có cổng quản trị
+chết thì entry của nó kẹt vĩnh viễn ở lược đồ cũ, không ai gỡ được. Nguồn câu hỏi: thư ProofChat
+2026-08-18 §6; ProofChat nêu và nói rõ họ **chưa** kiểm, nhà này kiểm.
+
+Ba bài trong `arity_poc_test.ak` là **bài gác**: chúng đỏ nếu một bản Aiken sau nới phép kiểm. Đỏ ở
+đó nghĩa là đọc lại kết luận này, **không** phải sửa bài cho xanh.
 
 ### Tên asset
 

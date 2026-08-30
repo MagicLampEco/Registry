@@ -6,18 +6,23 @@
 # **không** chặn được gộp — GitHub chỉ cưỡng chế nó khi kho public, hoặc khi gói lên Pro / Team /
 # Enterprise.
 #
-# Kho đã chuyển từ tài khoản người dùng `MagicLampNetwork` sang tổ chức `MagicLampEcosystem`.
-# (Tài khoản người dùng đó nay đổi tên thành `MagicResearch`; chuỗi `MagicLampNetwork` đã trống —
-#  `gh api users/MagicLampNetwork` → 404. Đừng gõ nó vào tệp này như một chủ sở hữu.)
+# Kho đã chuyển từ tài khoản người dùng `MagicLampNetwork` sang tổ chức, và **tổ chức đó đã đổi
+# tên MỘT LẦN NỮA**. Chuỗi đúng hôm nay là `MagicLampEco`. Hai tên đã chết, đo 2026-08-30:
+#     gh api users/MagicLampNetwork  → 404   (tài khoản đó nay tên `MagicResearch`)
+#     gh api orgs/MagicLampEcosystem → 404
+# Đừng gõ tên nào trong hai tên đó vào tệp này, và đừng tin một đường dẫn chỉ vì nó mở được:
+# GitHub vẫn CHUYỂN HƯỚNG đường cũ, nên `git fetch`/`git push`/`gh api` bằng tên chết đều XANH.
+# Chuyển hướng tắt ngay khi ai đó lập một kho mới trùng đúng đường cũ — lúc đó một lần đẩy bằng
+# URL cũ đi vào kho của người lạ, và không dòng nào báo trước.
 #
 # `@AladinContract` phải là thành viên org có quyền ghi thì GitHub mới coi là chủ sở hữu hợp lệ —
 # một owner không đủ quyền bị **bỏ qua trong im lặng**, không báo lỗi. Đo 2026-08-17:
-#     GET /repos/MagicLampEcosystem/Registry/collaborators/AladinContract/permission → "write"  ✓
+#     GET /repos/MagicLampEco/Registry/collaborators/AladinContract/permission → "write"  ✓
 # Đo lại sau khi chuyển, 2026-08-17 — **chuyển tổ chức KHÔNG gỡ được ràng buộc này**:
 #
-#     GET /repos/MagicLampEcosystem/Registry/rulesets
+#     GET /repos/MagicLampEco/Registry/rulesets
 #     → 403 "Upgrade to GitHub Pro or make this repository public to enable this feature."
-#     GET /orgs/MagicLampEcosystem  → plan "free", private true
+#     GET /orgs/MagicLampEco  → plan "free", private true
 #
 # Ghi rõ vì bản trước của chú thích này gợi ý sai nguyên nhân. Cửa khoá **không** phải "vì chủ là
 # tài khoản người dùng, không có team". Cửa khoá là **gói free + kho private**, và đó là một phép

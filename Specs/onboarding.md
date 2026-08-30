@@ -21,9 +21,9 @@ Registry là **khuôn mẫu dùng chung**. Nó KHÔNG quyết economics của b�
 
 > ⚠️ **Mã off-chain đang được chuyển về repo này — đừng đoán, hãy kiểm.** Mọi đường dẫn `offchain/`,
 > `examples/`, `scripts/` dưới đây có bản gốc ở repo
-> [`MagicLampEcosystem/LAMP`](https://github.com/MagicLampEcosystem/LAMP), nhánh `main`, thư mục
+> [`MagicLampEco/LAMP`](https://github.com/MagicLampEco/LAMP), nhánh `main`, thư mục
 > `PlatformKit/` (tên cũ của lớp đăng ký này). Ví dụ: `offchain/src/types.ts` đọc tại
-> `https://github.com/MagicLampEcosystem/LAMP/blob/main/PlatformKit/offchain/src/types.ts`.
+> `https://github.com/MagicLampEco/LAMP/blob/main/PlatformKit/offchain/src/types.ts`.
 > Phần on-chain (`onchain/`) thì đã ở repo này. Trạng thái thật của việc chuyển off-chain (đã vào git
 > chưa, ở nhánh nào) đọc ở [`../DevStatus.md`](../DevStatus.md) — kiểm bằng
 > `git log --oneline -3 -- offchain/`.

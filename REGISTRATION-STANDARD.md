@@ -155,6 +155,31 @@ phải là thiếu sót. `CU-N` vẫn **bắt buộc khai `governance_ref`**, v�
 xem §6, chuyển sang `Retired` đòi đồng thuận của chính platform, nên hồ sơ không có `governance_ref`
 là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô đó bảo vệ bên đăng ký.
 
+#### Muốn NHẬN THƯỞNG từ hệ thì phải ở hạng CÓ KHO
+
+Điều khoản này thay cho một trường `payee_did` đã được cân rồi bác (`Specs/Math-Spec.md` §D8).
+
+**Dịch vụ muốn nhận phần thưởng nào do hệ chi trả phải khai `CU-1`** — tức có Treasury custody
+instance on-chain. Hạng `CU-0` (kế toán trong cơ sở dữ liệu riêng) và `CU-N` (không thu asset) vẫn
+niêm yết được bình thường, vẫn dùng hệ token bình thường; chúng chỉ không có đích nhận thưởng mà hệ
+trả tới được.
+
+Vì sao là một dòng luật chứ không phải một trường trong hồ sơ:
+
+- Đích trả tiền **đã nằm trên chuỗi rồi** — `custody_hash` + `instance_id` + `seed_policy` — và chi
+  tiêu chỗ đó đã bị `governance_ref` của chính dịch vụ gác. Thêm một trường DID không khép được
+  vòng: DID không phải payment credential, vẫn phải phân giải sang địa chỉ ở ngoài chuỗi, tức thêm
+  một chặng phải tin mà chưa ai nhận giữ.
+- Cửa sổ thêm trường vào hồ sơ **đóng ở lần deploy đầu và đóng theo cả hai chiều** — thừa một trường
+  cũng vĩnh viễn y như thiếu. Một dòng luật thì sửa được sau deploy, hồi tố cho mọi hồ sơ, và tốn 0
+  giao dịch.
+- Người nhận thưởng khi ấy được gác bằng cổng quản trị của chính họ, chặt hơn một chuỗi ký tự nằm
+  trong datum mà một chữ ký quyền đăng ký sửa được.
+
+⚠ Giới hạn phải nói ra: điều khoản này là **luật văn bản**, người duyệt áp — không có ràng buộc mã
+nào ép. Máy đọc được hạng `custody` trong hồ sơ, nhưng máy không biết một khoản chi ở nơi khác có
+phải "phần thưởng của hệ" hay không.
+
 #### Bốn tính chất bắt buộc của `governance_ref` — đọc trước khi chọn script
 
 Đây là ô dễ khai sai nhất, và khai sai thì hậu quả **không đảo ngược được**. Nguồn máy đọc:
@@ -244,6 +269,99 @@ khuyết SHA ở đúng **một** ô con trỏ rơi thẳng xuống `L0`, vì `L
 trục nào (nó chỉ đòi `token` khác `TK-X`). Một ô khuyết đánh sập ba bậc — nói ra vì hậu quả nặng hơn
 hẳn "hạng thấp hơn". Nó vẫn là **hạ hạng chứ không phải từ chối**: máy in dòng này ở cột cảnh báo,
 không phải cột lỗi, và §5 không có căn cứ từ chối nào cho việc này.
+
+#### Bằng chứng PHỦ ĐỊNH — một đường KHÔNG đi được thì không có tx hash để trỏ
+
+Luật ba-thứ và ngoại lệ tx hash ở trên cùng giả định một điều chưa nói ra: rằng bằng chứng là dấu
+vết của một việc **đã xảy ra**. Loại bằng chứng đáng giá nhất trong một hệ giữ tiền lại là loại
+ngược lại — *chứng minh rằng một đường KHÔNG đi được*: hoàn tiền khi hạn còn, rút quỹ mà không có
+đồng thuận, đúc trùng một beacon. Một giao dịch không hợp lệ **không lên chuỗi**, nên nó **không
+sinh tx hash nào** và không hiện trên explorer. Ca nêu ra bởi AladinWork (thư 2026-08-19 §3), từ ba
+hợp đồng chạy thật trên Preprod.
+
+Hệ quả nếu để nguyên: một hồ sơ chỉ liệt kê được những đường **đi được**. Chuẩn vô tình thưởng cho
+lời khoe và bỏ rơi lời bảo đảm — trong khi *"cổng này chặn được X"* mới là câu người gửi tiền cần.
+
+> **Bằng chứng phủ định dùng khuôn RIÊNG, ba thứ khác:** (1) **lệnh chạy lại được** — đủ để người
+> thứ ba tự dựng lại giao dịch đó; (2) **thông điệp từ chối nguyên văn** mà validator hoặc node trả
+> về; (3) **con trỏ ba-thứ tới chính bài kiểm** khoá hành vi ấy (`file:line` + nhánh + SHA), **và
+> bài kiểm ấy phải đi qua đúng người gọi mà thực địa dùng** — hoặc kèm một bài riêng chứng minh
+> người gọi thật có gọi tới nó. Ô này **không** đòi tx hash, và thiếu tx hash ở đây **không** hạ
+> hạng.
+
+Vế cuối của ô (3) thêm vào 2026-08-27 theo đề nghị của AladinWork, sau khi chính khuôn này bắt được
+hai lỗ ở nhà họ trong một lượt soi. Không có vế đó thì *"có bài kiểm"* và *"có cổng"* là hai chuyện
+khác nhau mà ô này không phân biệt được: tách một cổng thành hàm thuần rồi quên nối lại là cách phổ
+biến nhất để bài kiểm xanh trong khi đường chạy thật không đi qua cổng.
+
+**Vì sao ô (3) là ô đắt nhất trong ba ô, và đừng cắt nó cho gọn.** Hai ô đầu ghi lại một lần chạy
+**đã xong** — ca nào cũng qua. Ô (3) hỏi một câu về **tương lai**: *cái đường bị chặn ấy có gì giữ
+cho nó tiếp tục bị chặn không?* Ca đầu tiên đem soi bằng ô này (AladinWork, ba hợp đồng Preprod) lộ
+ra rằng cổng chặn "rút tiền trước hạn" **không có bài kiểm nào** — và việc ngồi viết bài kiểm đó
+mới tìm ra lỗ thứ hai: một trường hạn vắng mặt bị đọc thành *"hạn = mốc 0"* nên luôn quá hạn, tức
+đúng đường mà cổng dựng ra để chặn lại mở bằng một ô trống. Cả hai lỗ nằm nguyên tại chỗ nếu chuẩn
+chỉ đòi hai ô đầu, và hồ sơ vẫn trông đầy đủ.
+
+Ba thứ đó phục vụ đúng việc mà tx hash làm cho bằng chứng khẳng định: cho người thứ ba dựng lại kết
+quả mà không phải tin lời ai. Khác biệt là kết quả dựng lại được nằm ở **máy của họ**, không nằm
+trên chuỗi — nên nó vẫn kiểm được, chỉ là kiểm bằng cách khác.
+
+#### Cách ĐO cái biên đó: phép đột biến — gỡ cổng ra rồi đếm ca đỏ
+
+Ô (3) đòi một bài kiểm khoá hành vi. Nhưng *"bài kiểm ấy xanh"* là lời khai về **trạng thái**, không
+phải về **mức phủ** — và người đọc tự điền mức phủ rộng nhất. Đây đúng là lớp lỗi §13.1.1 của
+`Specs/Math-Spec.md` gọi tên ở ví dụ thứ năm: đúng về cơ chế, sai về độ phủ.
+
+Có một phép đo trực tiếp cho nó, PhoenixKey đề và đã chạy thật (thư 2026-08-30): **gỡ đúng cái cổng
+vừa thêm ra khỏi mã, chạy lại bộ kiểm, đếm bao nhiêu ca ĐỎ, rồi khôi phục.** Số ca đỏ là số đo về mức
+phủ. Cổng gỡ đi mà **không ca nào đỏ** nghĩa là bộ kiểm không canh gì ở chỗ đó — dù nó vẫn xanh toàn bộ.
+
+Đọc kết quả theo đúng chiều, vì chiều này ngược trực giác: **dòng đỏ ÍT mới là dòng đáng lo.** Một
+cổng gỡ ra chỉ làm `1/15` ca đỏ nghĩa là đúng một bài kiểm canh nó — ca đó hỏng hoặc bị sửa thì cổng
+thành vô hình mà không ai biết. Dòng `6/10` thì cổng có nhiều lớp canh.
+
+Và một cạm khi đọc con số: một ca **còn xanh** sau khi gỡ cổng không phải lúc nào cũng là thiếu sót —
+nó có thể đang canh **chiều ngược** (đường phải tiếp tục ĐƯỢC phép đi). Nên số đột biến phải kèm một
+dòng nói ca còn xanh canh cái gì, nếu không `3/4` bị đọc thành "thiếu một ca".
+
+**Áp vào chuẩn này:** hồ sơ khai `EV-1`/`EV-2` bằng cách trỏ tới một bài kiểm thì **được** khuyến khích
+kèm số đột biến của bài kiểm đó. Không kèm thì lời khai vẫn hợp lệ, nhưng nó chỉ khai **trạng thái**,
+và người duyệt không được đọc nó thành khai **mức phủ**. Đây là khuyến khích, KHÔNG phải điều kiện —
+biến nó thành điều kiện là dựng một hàng rào mà phần lớn đội chưa có công cụ vượt qua, và hàng rào đó
+sẽ bị lách bằng những con số không ai kiểm.
+
+#### Dạng thứ ba: con trỏ tới sự **VẮNG MẶT** — và nó đã tồn tại trước khi chuẩn đặt tên
+
+Đem ba ô ở trên soi lại `Registrations/lampnet.md` — hồ sơ duy nhất đã tiếp nhận — thì không thấy
+bằng chứng phủ định nào, đúng như dự đoán. Nhưng thấy một thứ khác: **cả tám** lời khẳng định `EV-0`
+của hồ sơ ấy dùng chung một khuôn con trỏ mà chuẩn này chưa có tên cho nó. Ba ví dụ nguyên văn:
+
+```
+"không có PoR trong mã: git grep -ic retrievability @5c0da03 → 0"
+"TaskReceipt ký bằng hạt giống demo CỨNG trong mã, giống nhau trên mọi node — lampnet-node.rs:7673-7674"
+"node tự benchmark rồi tự đưa số vào khối chứng thực của CHÍNH NÓ — attestation.rs:70"
+```
+
+Chúng không trỏ tới một việc đã xảy ra (bằng chứng khẳng định), cũng không trỏ tới một cổng chặn
+được điều gì (bằng chứng phủ định). Chúng trỏ tới **chỗ không có gì cả** — và đó chính xác là thứ
+`EV-0` cần nói: *"con số này tôi khai được, nhưng đây là chỗ nó không được chứng minh."*
+
+Ba dạng, phân biệt bằng câu hỏi chúng trả lời:
+
+| Dạng | Trả lời câu | Hình con trỏ |
+|---|---|---|
+| khẳng định | *việc này đã xảy ra?* | `file:line` + nhánh + SHA, hoặc tx hash |
+| phủ định | *đường này có bị chặn không?* | lệnh chạy lại được + thông điệp từ chối + bài kiểm trên đường thật |
+| **vắng mặt** | *chỗ nào KHÔNG có gì giữ?* | **lệnh tìm + kết quả rỗng**, hoặc `file:line` trỏ đúng dòng làm nó vô hiệu |
+
+Dạng thứ ba **không hạ hạng thêm** — `EV-0` đã là sàn, và một con trỏ vắng mặt tốt làm hồ sơ *đáng
+tin hơn* hồ sơ để trống ô đó, dù hạng như nhau. Ghi ra vì hai lý do: nó đã được một đội tự nghĩ ra
+và dùng nhất quán tám lần trước khi chuẩn nói gì; và vì không có tên thì đội sau sẽ tưởng `EV-0`
+nghĩa là *"khỏi cần con trỏ"* — trong khi ca này cho thấy `EV-0` có con trỏ tốt là chuyện làm được.
+
+⚠ **Bộ chấm hôm nay chưa đọc ô này** — chưa có trường json cho nó, nên nó là ô cho **người duyệt**,
+đúng như luật ba-thứ đang là. Ghi ra ở đây trước khi có ô, vì thứ tự đúng là *định nghĩa trước, ô
+sau, phép kiểm sau nữa* — ngược lại thì ô sinh ra rồi mỗi đội hiểu một kiểu.
 
 Kiểm bằng hai lệnh — **việc của người duyệt**, xem lời tự thú ở mục dưới:
 
@@ -393,6 +511,31 @@ Nguồn máy đọc: `Registrations/codes.json` mục `tu_choi`.
 | **R2** | **hồ sơ không khai đầu mối chịu trách nhiệm** — ô "Đầu mối liên hệ" ở mục (a) (`pointers.dau_moi_lien_he`) trống **và** mục (e) không nêu ai tiếp nhận nếu đội ngừng duy trì. Còn **một** trong hai thì vẫn có người chịu trách nhiệm ⇒ **chưa phải R2**. Căn cứ **về nội dung hồ sơ**, kiểm bằng đọc văn bản; **không** phải căn cứ "gửi thư mà không thấy trả lời". |
 | **R3** | **khai không đúng sự thật** — khác hẳn với khai chưa xong |
 
+#### Phép thử để biết một lời khai có **đủ mức** thành `R3`
+
+`R3` là căn cứ nặng nhất và cũng mơ hồ nhất trong ba mã: "không đúng sự thật" nghe rõ tới khi phải
+áp cho một câu cụ thể. Bản trước không có phép thử nào, nên nó lỏng mà trông chặt — mỗi người duyệt
+áp một kiểu, và cái đó tệ hơn một tiêu chí tự nhận là lỏng.
+
+Phép thử, mượn nguyên văn từ `Specs/Math-Spec.md` §13.1.1 (do PhoenixKey đề, nhà này lấy làm ràng
+buộc chung cho **cả bốn trục khai báo**, không riêng §13):
+
+> Một lời khai sai chạm `R3` ⟺ tồn tại một bên thứ ba **hành xử khác đi** nếu biết nó sai.
+
+Vì sao phép thử này chứ không phải "có nói về một khoản tiền không": câu hỏi cũ soi **hình dạng**
+của lời khai, phép thử soi **hậu quả**. Ca cho thấy khác biệt, đo được và không có đồng nào trong
+đó: *"cổng khử trùng danh tính đang hoạt động"* — không số tiền, không hoá đơn, nhưng ba nhà khác
+đang cân phương án phân phối token dựa trên nó và cả ba sẽ chọn khác nếu biết nó sai. Câu hỏi cũ
+cho ca này đi thẳng qua.
+
+Hai hệ quả thực dụng của phép thử, cả hai đều **thu hẹp** `R3` chứ không mở rộng:
+
+- Lời khai không ai hành xử theo — một khoá tra cứu, một mã nội bộ, một cái tên — sai vẫn **không**
+  phải `R3`. Người duyệt sửa hoặc bỏ qua, không từ chối hồ sơ.
+- Ngược lại, người duyệt viện `R3` phải chỉ ra được **bên thứ ba đó là ai** và **họ đổi hành xử ra
+  sao**. Không chỉ ra được thì đó chưa phải quyết định `R3` — cộng thêm hai điều kiện ở §5 (nêu
+  dòng khai nào sai, nêu bằng chứng nào cho thấy nó sai).
+
 Không có căn cứ nào ngoài ba mục này. Cụ thể, **không** phải căn cứ từ chối:
 
 - khai "chưa đạt" ở bất kỳ trục nào trong 2.1 / 2.3 / 2.4, kèm mốc dự kiến hoặc kèm câu "chặn bởi
@@ -540,6 +683,7 @@ Ghi ra để bên đăng ký biết mình đang tin vào cái gì.
 | Neo biên nhận thu phí | Chưa neo on-chain | Không được dùng số liệu thu phí tự khai để cấp uy tín hay quyền biểu quyết — xem hạng `EV-0` ở §3. |
 | Tính duy nhất một-người-một-DID | `did:phoenix` mới ép ở **mức chuỗi DID**. **Mức người và cả mức thiết bị đều chưa ép** — dẫn chứng ở §2.1. Chủ dự án đã chốt "một người = một DID" là **yêu cầu cứng** (2026-08-06). PhoenixKey chốt (2026-08-14, thay bản 2026-08-07): personhood **KHÔNG phải một thang tích luỹ** — nó là một **tập mệnh đề độc lập, không xếp thứ tự**. Một DID có `person-in-jurisdiction` mà **không** có `hardware-rooted-key` là **hợp lệ**; ép qua bậc khoá-phần-cứng trước sẽ làm personhood **phụ thuộc thiết bị**, đúng thứ bất biến "một người một DID" cấm. Giao diện: `personhood(did) → { attestations: Set<Attestation>, as_of: timestamp }`, với `Attestation ∈ { did-chain, hardware-rooted-key, person-in-jurisdiction(<mã pháp quyền>) }`. **Không** nhận và **không** trả nullifier (tra tự do theo nullifier là một máy vét cạn 20 bit). Bên cần "≥ mức X" thì **kiểm tập có chứa mệnh đề mình cần**, không so số — trả một số là **sai kiểu**, nó ép một thứ tự không tồn tại và bên nhận sẽ tự bịa thứ tự khi so sánh. `hardware-rooted-key` (tên cũ `device`, đã bỏ) nói đúng một điều: *"khoá gốc của DID sinh trong vùng bảo mật của máy và mở được bằng cổng sinh trắc của máy. KHÔNG ép 'một người một máy', KHÔNG ép 'một máy một DID': cùng một máy sinh được nhiều DID, mỗi DID một khoá gốc riêng."* Mệnh đề `did-chain`: **mã đã xong trên `main`, chưa deploy**; phát hành được ngay sau đợt redeploy PA-1, mốc chưa có ngày. Mệnh đề `person-in-jurisdiction` cần ba việc **chưa có người nhận**.<br><br>⛔ **`person-global` KHÔNG có trong chuẩn này, và đừng thêm vào.** Nó **bất khả** như mọi định nghĩa đang lưu hành: người hai quốc tịch cho ra hai nullifier ⇒ hai DID; chặn được chỉ bằng sinh trắc 1:N toàn cầu, mà hội đồng Phoenix đã chứng minh là bất khả. Trong repo còn một **thư cũ** có dòng bảng `person-global` (`_Agents/inbox/_done/Phoenix-tra-giao-dien-personhood-va-moc-bac-dau-2026-08-07.md:37`) — dòng đó **đã bị thay**, đừng chép lại. Cần một mệnh đề "trên" thì dùng `person-in-jurisdictions(S)`: *"là người thật ở **mỗi** pháp quyền trong tập S, S được công bố; không phát biểu gì về pháp quyền ngoài S."* | Đừng dựng cơ chế chống Sybil dựa trên "hai DID phân biệt" — một máy ký chéo cho chính nó bằng script được. Rào kinh tế đỡ được **một phần**, không phải tất cả — đọc kỹ ranh giới này. Ràng buộc: phần thưởng phát ra mỗi epoch phải bị chặn trên bởi một phần **nhỏ hơn 1** của lượng MAGIC thực bị tiêu cùng epoch, phần dư về Treasury. Nó làm kẻ **tự tạo cầu giả** để farm luôn lỗ, kể cả khi tạo được vô hạn DID. Nhưng nó **im lặng** trước đường thứ hai: **không đốt gì cả, chỉ khai CUNG để lấy phần của lượng người khác đã đốt** — đường đó có lợi nhuận dương với mọi tỉ phần và mọi hệ số, và chỉ chặn được bằng biên nhận do bên **không hưởng lợi** ký, thách thức có phát hiện thật, và cổng DID cho node. Chứng minh và phản ví dụ: [`bench/DOI-CHIEU.md`](bench/DOI-CHIEU.md) §1. |
 | **Xếp hạng khám phá** | Whitepaper §8 bước 3 hứa *"thứ hạng tính theo **số người thật độc lập đã dùng**"*. Mệnh đề đó **chưa hiện thực được** vì nó cần đúng tầng personhood ở dòng trên. | Đây là chỗ **tiền không thay được danh tính**: rào kinh tế làm kẻ farm lỗ tiền, nhưng không làm thứ hạng đúng. Một bên chịu lỗ vẫn mua được thứ hạng. Mọi thứ hạng công bố trước khi có personhood đều theo một trục khác với trục đã hứa. |
+| **Trần phần trăm đếm HỒ SƠ, không đếm NGƯỜI** | Mọi trần dạng *"mỗi bên tối đa X%"* trong hệ áp trên `platform_id`. Sổ này là nơi duy nhất biết có bao nhiêu định danh tồn tại, và tập từ chối ở §5 là tập **ĐÓNG ba mã** — không mã nào là "cùng chủ đã có hồ sơ". §5 còn nói rõ cạnh tranh với thành phần sẵn có **không** phải lý do từ chối, và hồ sơ khai đúng thì quyền đăng ký **buộc phải ký**. ⇒ Người duyệt hôm nay **không có quyền** dừng hồ sơ thứ năm của cùng một đội, chứ không phải không có ý chí. Ô `pointers.chu_so_huu` (tuỳ chọn) và phép gom cụm trong bộ chấm làm cụm ấy **hiện ra**, nhưng hiện ra không phải chặn lại. | Trần thực của một chủ có `k` hồ sơ là `min(100%, k · X%)` — với X = 30 thì **bốn hồ sơ là trần biến mất**. Nặng hơn: nếu cơ chế chia dùng trọng số lõm `V^r` (`r < 1`) — hình dạng dựng lên để chống độc chiếm — thì cùng một lượng hoạt động chẻ làm `k` phần cho `V^r · k^(1−r)`; với `r = 0,7` chẻ 4 được **1,52×**, chẻ 10 được **2,00×**, không bơm thêm gì. Lợi biên của hồ sơ thứ `k+1` **luôn dương** ⇒ không có điểm dừng nội tại. **Chờ chủ nhân quyết**: mở tập từ chối thêm một mã cho "cùng chủ, chưa khai quan hệ" là đổi một cam kết công khai ("đăng ký không phải xin phép"), nên nó không phải quyết định của người viết chuẩn. Chừng nào chưa mở, tài liệu nào nói trần 30% đang bảo vệ cái gì đó là **nói mạnh hơn thực tế**. |
 | R-BIND kiểm được gì | R-BIND chỉ kiểm entry **tự nhất quán**: `seed_policy`, `instance_id`, `custody_hash` đều lấy từ chính hồ sơ khai. Kiểm bằng thực thi 2026-08-04: một kho tự dựng hoàn toàn vẫn qua được. | Cổng thật lúc đăng ký là chữ ký authority, không phải R-BIND. Bên định tuyến phí **bắt buộc** tự đối soát kho. |
 | Van đối soát off-chain | Ba hàm mà `Specs/Feat-Spec.md` giao trọng lượng an toàn cho — đối soát hồ sơ với kho thật, quét sổ theo policy, tìm định danh trùng — xem [`./DevStatus.md`](DevStatus.md) (ở **gốc repo**, không phải trong `Specs/`) để biết trạng thái đo được tại thời điểm đọc. | Đừng coi ba lỗ ở trên là "đã có van chặn" cho tới khi `DevStatus.md` nói ngược lại kèm lệnh kiểm. |
 

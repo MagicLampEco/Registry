@@ -516,6 +516,41 @@ miền** (giữ nguyên kết luận cũ). `"phục vụ 1000 yêu cầu"` ⇒ b
 miền ⇒ `pending` (giữ nguyên). `"X điều khiển Y"` ⇒ bên tra cứu đổi cách hành xử ⇒ **nay vào miền**,
 trước thì lọt.
 
+**Ví dụ thứ tư — không có đồng nào trong câu, mà vẫn trong miền.** PhoenixKey gửi sang
+(thư 2026-08-17) một ca đo được cùng ngày, và nó là ca đắt nhất trong bốn ca vì nó cho thấy phép
+thử bắt được thứ mà câu hỏi cũ (*"có nói về một khoản tiền không"*) cho đi thẳng qua:
+
+> *"Cổng khử trùng danh tính của PhoenixKey đang hoạt động."*
+
+Không có số tiền, không có bên trả tiền, không có hoá đơn. Nhưng ba nhà khác đang cân phương án
+phân phối token dựa trên câu ấy, và cả ba **sẽ chọn khác** nếu biết nó sai — mà PhoenixKey đo được
+là nó **sai**: cổng đó chưa tồn tại trên chuỗi. Phép thử phản-thực bắt ca này ở dòng đầu; câu hỏi
+cũ trượt hoàn toàn, vì nó soi **hình dạng** của lời khai (có con số tiền không) thay vì soi **hậu
+quả** của lời khai.
+
+**Ví dụ thứ năm — lời khai ĐÚNG về cơ chế, SAI về độ phủ.** PhoenixKey gửi sang (thư 2026-08-28)
+một ca ở chính nhà họ, và nó là biến thể khó bắt nhất trong năm ca: một bài kiểm được viết để
+*"ghim chính lý do của bản vá"*, và bài kiểm ấy **xanh**. Một agent đối kháng soi lại thì thấy nó
+ghim đúng lý do mà **không ghim phạm vi áp dụng** — trong khi phạm vi mới là chỗ hỏng: hai luồng ký
+vẫn còn khuôn cũ đi qua sạch, và một luồng thứ bảy thêm vào ngày mai cũng sẽ đi qua sạch.
+
+Áp phép thử phản-thực vào chính bài kiểm ấy: *có ai hành xử khác đi nếu biết nó chỉ gác một phần
+không?* **Có** — người đọc màu xanh rồi kết luận đã vá xong. ⇒ trong miền.
+
+Chỗ ca này khác bốn ca trên: bốn ca kia sai ở **nội dung** lời khai (sự việc không xảy ra, cổng
+chưa tồn tại). Ca này **không sai câu nào** — cơ chế đúng, bản vá đúng, bài kiểm đúng. Nó sai ở
+**biên** của lời khai, và biên là thứ không được nói ra nên không ai kiểm. Một lời khai không nêu
+biên thì người đọc tự điền biên rộng nhất, và đó chính là bên thứ ba hành xử khác đi.
+
+⇒ Hệ quả cho bốn trục khai báo của chuẩn đăng ký: một lời khai `EV-1`/`EV-2` trỏ tới một bài kiểm
+phải khai **bài kiểm ấy phủ tới đâu**, không chỉ khai nó xanh. Đây đúng là chỗ ô thứ ba của bằng
+chứng phủ định đã siết (`REGISTRATION-STANDARD.md` §3) — cùng một lỗ, gặp lại ở một trục khác.
+
+Rút ra, và đây là lý do phép thử được giữ ở dạng phản-thực chứ không dạng liệt kê: một tiêu chí
+không có phép thử thì mỗi người áp một kiểu, và cái đó **tệ hơn tiêu chí lỏng — nó lỏng mà trông
+chặt**. PhoenixKey lấy câu này làm ràng buộc chung cho mọi tiêu chí phân định ở nhà họ, không riêng
+§13; ghi lại ở đây vì nó áp được cho cả bốn trục khai báo của chuẩn đăng ký.
+
 Vì sao `D-RECEIPT` là **miền** chứ không phải nhánh thứ ba của phép tuyển: nếu viết thành *"quyền ⟸
 (a) bên chịu thiệt là bên đã kiểm, **hoặc** (b) nội dung tự chứng"*, thì (b) trở thành một **đường
 cấp quyền**, và ai cũng đi được đường đó chỉ bằng cách băm lời khai của mình lại. Cái chặn duy nhất
@@ -644,7 +679,319 @@ nhất, nên on-chain **không biết** `pid` đã từng được đúc. Sau `t
 **Đường đóng thật (chưa thi công).** Đặt asset name dẫn xuất từ một `genesis_ref` **one-shot** mỗi
 platform (đúng mẫu `custody_seed` của Treasury: tiêu thụ một UTxO duy nhất ⇒ tên asset duy nhất
 theo cơ chế, không theo kỷ luật). Khi đó P-UNIQUE trở thành định lý. Đánh đổi: `pid` mất tính đọc
-được cho người, hoặc phải giữ một bảng ánh xạ. Chưa quyết.
+được cho người, hoặc phải giữ một bảng ánh xạ. **Chưa quyết** — và bốn dữ kiện dưới đây phải nằm
+trên bàn trước khi quyết.
+
+#### D1 — lập luận "đổi không-lùi-được lấy lùi-được" chạy ngược chiều
+
+Bản trước của mục này nghiêng về máy-sinh với lý do: va chạm **tên hiển thị** sửa được, còn một
+`pid` bất biến bị chiếm thì không. Phản biện của ProofChat (thư 2026-08-18, hai agent soát độc lập)
+đo ba van định tuyến phí ở `offchain/src/registryQuery.ts:238-252` với một kẻ **đăng ký hợp lệ**:
+
+| Van | Hôm nay (pid chữ) | Sau máy-sinh |
+|---|---|---|
+| #2 trùng khít pid (`:155-163`) | `duplicate=true` ⇒ `safeToRouteFees` từ chối (`:243`) | pid duy nhất **theo cấu tạo** ⇒ `duplicate` vĩnh viễn `false` — van thành **hằng đúng** |
+| #1 `verifyEntryAgainstCustody` (`:197-231`) | PASS — chỉ kiểm hồ sơ tự nhất quán với kho bên gọi đưa vào | PASS, y hệt |
+| #3 `foreignScript`/`policyMismatch` | PASS | PASS, y hệt |
+
+Van #1 PASS với **kho tự dựng hoàn toàn** — chính `onchain/validators/registry_beacon.ak:164-167`
+ghi điều đó bằng thực thi. ⇒ sau máy-sinh, hồ sơ mang tên hiển thị của người khác nhận
+`{ ok: true, reasons: [] }` và **phí chảy vào kho kẻ chiếm**. Tiền đã chảy thì không lùi. Nên phép
+đánh đổi thật là: đổi một hỏng hóc **thẩm mỹ, không lùi được** lấy một hỏng hóc **mất tiền, im
+lặng**. Hệ quả thứ hai: R1 trùng-khít là căn cứ từ chối **duy nhất máy tự tuyên được**
+(`tools/check-registration.mjs` — chỉ `hong` và `trungY` làm đỏ); máy-sinh cộng "tên hiển thị không
+được phép từ chối ai" đưa số căn cứ máy kiểm được về **0**.
+
+#### D2 — bộ chấm sẽ chết CÂM, đo được hôm nay
+
+`KHUON_PID` (`tools/check-registration-core.mjs:36`) là `^[a-z][a-z0-9-]{1,30}[a-z0-9]$` — tối đa
+**32** ký tự, phải bắt đầu bằng chữ thường. Một pid blake2b-224 hex dài **56** ký tự. Đo:
+
+```
+'0f3a…93a4' (56 ký tự, đầu '0') → ĐỎ        'af3a…93a4' (56 ký tự, đầu 'a') → ĐỎ
+```
+
+Cả hai đỏ vì độ dài, không riêng vì ký tự đầu. Và hồ sơ sai khuôn bị **loại khỏi tập so trùng**, nên
+R1 in `R1 — 0 platform_id, không trùng` — đúng theo nghĩa rỗng. Chọn máy-sinh mà không sửa khuôn
+trước thì cổng đăng ký báo xanh về một tập rỗng.
+
+#### D3 — tam đề `display_name`, và một đường thứ tư
+
+Máy-sinh buộc phải thêm một trường tên hiển thị, và trường đó rơi vào đúng một trong ba nhóm của
+`onchain/lib/magiclamp/registry/platform.ak`; ProofChat chỉ ra cả ba đều gãy một vế:
+
+| Nhóm | Đặt ở đâu | Gãy chỗ nào |
+|---|---|---|
+| bất biến | `identity_preserved` | tên không sửa được ⇒ toàn bộ lý do mua biến mất |
+| khả biến CÓ đồng thuận | `governed_fields_changed` | đổi tên đòi đồng thuận của **chính platform đó** ⇒ kẻ chiếm tên không bao giờ bị đổi tên |
+| khả biến KHÔNG cần đồng thuận | không thêm vào cả hai | `registry_authority` — **một khoá đơn** (L2) — ghi lại tên của **mọi** hồ sơ trong sổ |
+
+**Đường thứ tư, nhà này từng đề — BỊ BÁC 2026-08-27.** Giữ nguyên phát biểu vì lý do nó hỏng đáng
+đọc hơn bản thân nó: *tách quyền **gỡ** nhãn khỏi quyền **đặt** nhãn — authority đơn phương xoá được
+`display_name` nhưng không viết được giá trị mới; đặt tên mới đòi đồng thuận quản trị của chính
+platform.* ProofChat phá bằng năm đường (thư 2026-08-27), bốn trong đó đứng độc lập:
+
+1. **Không chấm dứt được chiếm tên, chỉ làm chậm.** Kẻ chiếm tên **là** một platform trong sổ, nên
+   ngay sau khi bị gỡ nó đặt lại đúng cái tên ấy qua đúng đường hợp lệ. Vòng `gỡ → đặt lại → gỡ`
+   không có điểm dừng, và bất đối xứng theo hướng xấu: authority phải canh mãi, kẻ kia chỉ cần
+   thắng một lần lúc không ai canh. Muốn có điểm dừng thì cần trạng thái *"tên này bị cấm đặt lại"*
+   — tức **thêm một trường nữa**.
+2. **Vế "đòi đồng thuận" là tautology với đúng kẻ nó nhắm.** `governance_ref` chỉ đòi **chạy được**
+   (G1), không đòi *ai* nó phục vụ. Kẻ tấn công tự viết script quản trị tự duyệt mọi thứ nó đề
+   xuất. Cùng hình dạng với van #2: một phép kiểm hỏi một bên tự trả lời về chính nó. ⇒ vế **gỡ**
+   có giá trị thật; vế **đặt** không mua được gì trước kẻ tấn công, chỉ tăng ma sát cho người ngay.
+3. **D4 nuốt D3.** D4 chứng minh sau deploy đầu không thêm trường được, mà D3 cần **nhiều hơn một**
+   trường: `display_name`; một cờ phân biệt *chưa bao giờ đặt* / *authority vừa gỡ* / *platform tự
+   gỡ* (D3 gộp cả ba vào "rỗng" — ba nguyên nhân, một hiển thị); và trạng thái *cấm đặt lại* ở
+   đường 1.
+4. **Xoá hàng loạt chưa được cân.** `registry_authority` hôm nay là một khoá đơn (L2). Với D3, khoá
+   rò thì kẻ cầm nó không chiếm được tên của ai — nhưng **gỡ được tên của tất cả** trong một lượt.
+   Tấn công O(1), khôi phục O(n) vòng quản trị, mà phần lớn platform chưa có quản trị chạy được.
+   Trong lúc đó mọi mục trong sổ hiển thị không tên — đúng trạng thái mà R1 sinh ra để chặn.
+5. Front-run: D3 chặn kẻ **đổi** tên, không chặn kẻ **đăng ký trước**. Lần ghi đầu buộc phải là
+   ngoại lệ (lúc `RegisterEntry` chưa có đồng thuận nào để đòi), nên kẻ front-run đặt luôn
+   `display_name` trong cùng giao dịch đăng ký, hợp lệ hoàn toàn.
+
+**Rút ra, và nó rộng hơn D3:** một cổng hỏi *"platform này có đồng ý không"* thì vô hiệu trước đúng
+kẻ nó nhắm, vì kẻ đó điều khiển cả hai đầu câu hỏi. Chỉ cổng hỏi **một bên khác** mới là cổng.
+
+#### D4 — hai câu hỏi này HẾT HẠN CÙNG LÚC, và vì một lý do mạnh hơn đã tưởng
+
+Thêm `display_name` là thêm một trường vào `PlatformEntry`. Đo 2026-08-27
+(`onchain/validators/arity_poc_test.ak`): phép ép kiểu mềm của Aiken **kiểm khớp đúng arity**, nên
+`registry.ak:265` từ chối mọi datum đích có số trường khác hiện tại ⇒ `MigrateEntry` — đường nâng
+lược đồ duy nhất — **không thêm trường được**. Xem `DevStatus.md` mục "Thứ tự trường `PlatformEntry`".
+
+⇒ `display_name` phải có mặt **trước lần deploy đầu tiên** hoặc không bao giờ. Nên câu hỏi
+`platform_id` không đóng lúc "hồ sơ đầu tiên lên chuỗi" vì pid đã đặt — nó đóng vì **cái trường đi
+kèm nó không thêm được nữa**. Hôm nay chi phí bằng 0; sau đó không có giá nào mua lại được.
+
+⚠ **Hạn chót này CÓ ĐIỀU KIỆN, và điều kiện đó chưa được chứng minh khi mục này viết ra.** Nó chỉ
+áp nếu `display_name` buộc phải nằm **trên chuỗi**. Đọc **D5** trước khi trích D4 làm lý do quyết
+gấp — D5 trả lời rằng không có lý do nào buộc như vậy, và nếu tên hiển thị sống ngoài chuỗi thì
+mục này **không áp** và hạn chót tan.
+
+#### D5 — câu chưa ai hỏi, và nó làm hạn chót D4 biến mất
+
+D4 kết *"quyết trước deploy hoặc mất phương án"*. Kết luận đó đúng **với điều kiện `display_name`
+phải nằm trên chuỗi** — và điều kiện ấy chưa ai chứng minh. ProofChat đặt câu hỏi; nhà này trả lời.
+
+**Trả lời: KHÔNG có lý do buộc `display_name` lên chuỗi.** Ba dữ kiện.
+
+*Thứ nhất — không mã nào đọc nó.* Định tuyến phí đi qua `platform_id` và đối soát `custody_hash`
+(`offchain/src/registryQuery.ts:238-252`); `grep -rn 'display_name\|displayName' offchain/src/` trả
+**rỗng**. Tên hiển thị chưa tồn tại trong bất kỳ đường quyết định nào của máy — nó là thứ cho **mắt
+người**.
+
+*Thứ hai — lên chuỗi KHÔNG làm nó đáng tin hơn.* Nguồn thẩm quyền của tên là chữ ký authority, dù
+tên nằm trong datum hay trong một bảng ký ngoài chuỗi. Trên chuỗi chỉ thêm đúng hai tính chất:
+chống chối bỏ theo thời gian, và đọc được không cần máy chủ. Cả hai đều mua được **không tốn trường
+nào** — xem dưới.
+
+*Thứ ba — áp chính phép thử của §13.1.1 vào nó.* Có bên thứ ba hành xử khác đi nếu tên sai không?
+**Có** (người gửi tiền). ⇒ tên hiển thị **thuộc miền nghĩa vụ**. Nhưng thuộc miền nghĩa vụ đòi
+**truy được trách nhiệm**, không đòi **bất biến** — và một chữ ký truy được trách nhiệm dù nằm ở
+đâu. Đây là chỗ hai khái niệm hay bị gộp: *kiểm được* ≠ *không sửa được*.
+
+**Đường nhà này đề, chưa kiểm:** bảng `platform_id → display_name` sống ngoài chuỗi do authority ký,
+và **neo bằng metadata giao dịch** (`tx metadata`, không phải datum) — một băm của bảng, ký định kỳ.
+Metadata không nằm trong `PlatformEntry` nên **D4 không áp**: không thêm trường nào, hạn chót tan.
+Chống chối bỏ vẫn có (ai cũng kiểm được bảng tại thời điểm khối đó), gỡ nhãn là sửa một dòng —
+không giao dịch, không phí, hiệu lực ngay — và khoá rò thì **thay khoá rồi ký lại được**, thứ mà
+một trường trên chuỗi không làm được.
+
+Giá phải trả, nói trước: tên hiển thị mất tính chống chối bỏ **liên tục** (chỉ neo tại các mốc ký),
+và ai muốn xác minh tên phải lấy được bảng — tức có thêm một nguồn phải giữ sống. Đây là đánh đổi
+thật, không phải bữa trưa miễn phí.
+
+**Ba chỗ đường ngoài-chuỗi này còn hở, và cả ba đều phải nằm trong spec trước khi ai cài đặt.**
+Không chỗ nào lật kết luận trên; chúng là điều kiện để kết luận đó không hỏng lúc thi công.
+
+*Hở thứ nhất — luật thuộc về BÊN ĐỌC, không thuộc về bảng.* Lý do duy nhất chọn ngoài-chuỗi là sửa
+tên nhanh, nên sẽ có áp lực hiển thị tên mới **trước khi** nó được ký. Nếu bên tiêu thụ hiển thị
+phần bảng mà chữ ký chưa phủ, cái neo thành đồ trang trí — nó chứng thực một thứ khác với thứ người
+dùng đang nhìn. ⇒ Luật: **chỉ hiển thị phần mà chữ ký phủ; phần chưa được phủ hiển thị như CHƯA CÓ
+TÊN, không hiển thị như một cái tên.** Đây là một dòng trong hợp đồng đọc, không phải một khuyến nghị.
+
+*Hở thứ hai — một bảng tươi và một bảng chết ba tháng trả về Y HỆT NHAU.* Không có gì đỏ vì không có
+gì phân biệt được: đây là **đầu dò mù**, không phải rủi ro vận hành. ⇒ Chữ ký phải mang `valid_until`,
+và bên tiêu thụ **hỏng ĐÓNG** khi quá hạn: bảng hết hạn hiển thị "chưa xác minh", không bao giờ hiển
+thị tên. Khi đó không ai cần ép tần suất ký — cơ chế tự ép, vì không ký lại thì tên biến mất khỏi màn
+hình chứ không âm thầm cũ đi. **Cạm phải chặn ngay trong spec: `valid_until` VẮNG MẶT nghĩa là ĐÃ HẾT
+HẠN, không phải vô hạn.**
+
+*Hở thứ ba — "một băm của bảng" ở trên là băm PHẲNG, và nó hỏng ba đường.* Muốn xác minh tên của một
+platform phải có toàn bộ bảng, nên bên tiêu thụ nhẹ (ví, màn hình điện thoại) hoặc tải hết hoặc phải
+tin một máy chủ — mà "phải tin một máy chủ" đúng là thứ đường này nói nó tránh được; ai giữ bản sao cũ
+chỉ biết băm khác chứ **không biết mục nào đổi**, nên không cảnh báo có mục tiêu được; và câu **ai phục
+vụ bảng** thì đoạn trên chưa trả lời, tức là dựng một điểm chết mới đúng chỗ vừa rời khỏi chuỗi. ⇒ Neo
+bằng **gốc Merkle** trên tập `(platform_id, display_name)` **đã sắp xếp**, thay cho băm phẳng. Được ba
+thứ cùng lúc: chứng minh **theo từng mục** (một nhánh, không cần cả bảng), phân giải **mục nào đổi**, và
+bảng nhân bản ở đâu cũng được vì bản sao nào cũng dựng được nhánh chứng minh — không ai phải là máy chủ
+tin cậy. **Cạm: spec phải chốt thứ tự sắp xếp VÀ cách mã hoá lá.** Hai bản cài đặt dựng ra hai gốc khác
+nhau cho cùng một bảng sẽ trông y hệt một cuộc tấn công.
+
+Chi phí của cả ba trên chuỗi: **bằng 0** — không mục nào thêm trường vào `PlatformEntry`, nên D4 vẫn
+không áp.
+
+⇒ **Hình đúng của câu hỏi trình lên chủ nhân đã đổi.** Không còn là *"pid do người đặt hay máy
+sinh, quyết gấp trước deploy"*. Nó là hai câu, câu sau chỉ hỏi khi câu trước trả lời một cách:
+
+1. `display_name` lên chuỗi hay ngoài chuỗi? — **ngoài chuỗi thì không có hạn chót nào**.
+2. Chỉ khi chọn *trên chuỗi*: chốt **toàn bộ hình dạng** hôm nay (tên + cờ ba-nguyên-nhân + trạng
+   thái cấm-đặt-lại), không chỉ chốt "có thêm `display_name` hay không" — chốt thiếu một cờ hôm nay
+   là mất nó vĩnh viễn theo D4.
+
+#### D6 — cửa sổ thêm trường có BA ứng viên, không phải một, và chúng dùng chung MỘT hạn chót
+
+D4 nói cửa sổ thêm trường vào `PlatformEntry` đóng ở lần deploy đầu. D1–D5 bàn cửa sổ ấy như thể chỉ
+có một ứng viên (`display_name`). Đo lại thì có **ba**, và hai cái sau chưa từng được đặt cạnh D4:
+
+| ứng viên | ai cần | nếu thiếu thì hỏng ra sao |
+|---|---|---|
+| `display_name` | máy-sinh `platform_id` (D3) | **BỊ BÁC** — D5: không có lý do nào buộc nó lên chuỗi |
+| `payee_did` | trả thưởng cho một chủ thể | hồ sơ không nói được **trả cho ai**; hôm nay không trường nào giữ DID người nhận |
+| bản đồ `thread → operator` | quy gán tiêu thụ về một bên | quy gán phải sống ngoài chuỗi, và bên khai tự chọn thứ mình được đối chiếu (đúng lớp **L9**) |
+
+Ba ứng viên độc lập về mục đích nhưng **dùng chung đúng một cửa sổ**. Nên câu hỏi thật không phải
+*"có thêm trường X không"* mà là *"chốt toàn bộ hình dạng hồ sơ, một lần"*. Chốt thiếu một trường hôm
+nay là mất nó vĩnh viễn, không phải hoãn nó.
+
+**Và hai ứng viên sau còn vướng một chỗ thứ hai mà D4 không nói tới.** `governed_fields_changed`
+(`onchain/lib/magiclamp/registry/platform.ak:172-174`) chỉ khoá **ba** trường — `governance_ref`,
+`accepted_assets`, `cut_bps`. Một trường mới **mặc định KHÔNG nằm trong nhóm ấy**, nghĩa là nó đổi được
+bằng **một chữ ký `registry_authority`**, không cần đồng thuận của chính platform (nhánh U-SIG,
+`onchain/validators/registry.ak:211-217`). Cộng với L2 — authority hôm nay là **một khoá đơn** — thì
+một trường quyết định *tiền đi về đâu* mà nằm ngoài nhóm quản trị là một đường O(1): chiếm khoá là
+viết lại toàn bộ hướng chi trong một giao dịch, và LAMP không đốt nên phần đã phát không thu về được.
+
+⇒ Ràng buộc bắt buộc, nếu ứng viên nào được chốt là CÓ: **trường đó phải vào `governed_fields_changed`
+ngay trong cùng lần chốt lược đồ.** Thêm trường mà quên nhóm quản trị thì hai lỗ cộng lại chứ không
+cộng dồn tuyến tính — cửa sổ lược đồ đã đóng, mà cửa quản trị thì chưa bao giờ mở.
+
+**Ràng buộc TẠM THỜI đang có hiệu lực (fail-closed):** chưa hồ sơ nào lên chuỗi
+(`DevStatus.md` §trạng thái triển khai), nên chưa mất phương án nào và đổi script hash còn miễn phí.
+Điều kiện chấm dứt trạng thái tạm này là **lần deploy đầu tiên**, không phải một ngày trên lịch.
+
+#### D7 — chốt SuperApp gỡ MỘT ứng viên khỏi cửa sổ D6, và đúng một cái thôi
+
+Chủ nhân chốt 2026-08-30: **instance của SuperApp nằm DƯỚI định danh SuperApp**, không niêm yết
+riêng. Mỗi instance có một Phoenix DID riêng, nhưng DID là **tầng danh tính**, không phải một mục
+trong sổ này — hai sổ khác nhau. Đường tuân thủ bắc cầu: instance → luật SuperApp → Registry. Trong
+sổ: **một** thực thể, tên SuperApp.
+
+Trước chốt này, cửa sổ D6 còn treo một ứng viên thứ tư chưa đặt tên rõ: *một chỗ trong hồ sơ cho mỗi
+instance* — vì hai yêu cầu đã chốt của SuperApp kéo ngược nhau (thêm app phải miễn phí và không qua
+đội lõi ⟂ mỗi instance là pháp nhân riêng ở thế giới ngoài). Chốt trên **đóng ứng viên đó**: hồ sơ
+không cần trường nào cho instance, vì không có instance nào đứng trong sổ.
+
+**Nó gỡ đúng một ứng viên, không gỡ hai.** Bản đồ `thread → operator` của D6 phục vụ quy gán tiêu thụ
+cho **mọi** đường vào — API trực tiếp, web, app ngoài SuperApp — nên nó không sống nhờ và cũng không
+chết theo chốt này. Đọc chốt thành "hồ sơ không cần thêm gì nữa" là đọc rộng hơn thứ đã chốt.
+
+**Một hệ quả về Sybil, và nó nhỏ hơn nó trông.** Trục "một người dựng nhiều HỒ SƠ để lách trần
+30%/app" đóng **ở riêng đường instance của SuperApp**: hàng nghìn instance ra đời thì sổ vẫn thấy
+đúng một hồ sơ. Trục ấy còn nguyên với các đường vào khác, và chốt này không tuyên gì về chúng.
+
+#### D8 — hình dạng hồ sơ CHỐT: 11 trường, không thêm gì. Và cửa thứ hai mà D6 chưa kê
+
+Hội đồng đã chạy trên ba ứng viên còn lại của cửa sổ D6 — `payee_did`, bản đồ `thread → operator`,
+và không-thêm-gì. **Chốt: không thêm trường nào.** Lược đồ đứng ở 11 trường.
+
+**Vì sao, gọn trong một câu:** cả hai trường định thêm đều mua *tính bất biến*, trong khi thứ bài
+toán cần là *truy được trách nhiệm* — và một chữ ký truy được trách nhiệm dù nó nằm ở đâu. §D5 đã
+tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ này chỉ là áp câu ấy cho hai ứng viên.
+
+**Ba dữ kiện dẫn tới chốt, mỗi cái tự đứng được:**
+
+1. **Thứ `payee_did` định mua thì hồ sơ đã có, rẻ hơn.** Đích trả tiền nằm sẵn ở `custody_hash` +
+   `instance_id` + `seed_policy` (`platform.ak:74-76`), và chi tiêu chỗ đó đã bị `governance_ref`
+   của chính platform gác. `payee_did` **không khép được vòng**: DID không phải payment credential,
+   vẫn phải phân giải DID → địa chỉ ở ngoài chuỗi. Nó đổi một trường bất biến lấy thêm một chặng
+   tin cậy — đúng biến thể L9 của cửa phân giải.
+2. **Bản đồ `thread → operator` không giải được bài toán nó nhắm, và kho này đã có phản chứng.**
+   `bench/DOI-CHIEU.md:30-35`: đường "không đốt gì, chỉ khai CUNG để lấy phần của tổng do người khác
+   đốt" có lợi nhuận dương với **mọi** tham số, và chặn được bằng đúng ba thứ — biên nhận do bên
+   **không hưởng lợi** ký, thách thức có phát hiện thật, cổng danh tính cho node. Không thứ nào
+   trong ba là một trường datum. Bản đồ do chính bên hưởng lợi khai, đặt lên chuỗi, chỉ làm **lời
+   khai sai thành bất biến** — và tốn ADA vĩnh viễn: ở N=100 cặp, min-ADA ô hồ sơ ước lượng ~29 ADA
+   so với ~1,5–2 ADA hôm nay, khoá cứng vì `value_not_drained` (`util.ak:227-231`) chỉ cho lovelace
+   **tăng**. Thêm thread từng cái một là O(N²) ExUnit, và vượt trần kích thước tx thì hồ sơ **không
+   spend được nữa** — gạch chết mang theo beacon, phá thẳng PK5.
+3. **Không validator nào ở LAMP đọc entry này để quyết đích chi** (đo 2026-08-30):
+   `LAMP/Distribution/onchain/validators/claim_account.ak:117` dùng `tx.reference_inputs` để lấy
+   beacon **của Distribution**, không phải entry Registry; đích chi là `util.vk_address(t_owner)`
+   (`:401`), tức chủ tài khoản claim. Đây là giả định load-bearing của chốt này, nên nó được viết ra
+   để có người giữ: **nếu** về sau một validator chia thưởng đọc entry Registry làm đầu vào tham
+   chiếu để lấy đích chi, **và** tập người nhận gồm cả hạng KHÔNG KHO, thì chốt này hụt và không mua
+   lại được. Điều kiện chấm dứt: lần deploy đầu tiên.
+
+**Hai luật thay cho hai trường** — cả hai sửa được sau deploy, hồi tố được, giá 0 giao dịch:
+- thay `payee_did`: **muốn nhận thưởng thì phải đăng ký ở hạng CÓ KHO** (`REGISTRATION-STANDARD.md`
+  §2.3). Người nhận thưởng khi ấy được gác bằng cổng quản trị của chính họ — chặt hơn một chuỗi DID
+  nằm trong datum;
+- thay bản đồ: quy gán bằng **biên nhận do bên không hưởng lợi ký**, neo ở metadata giao dịch chứ
+  không ở datum — đúng khuôn D5 đã dùng khi bác `display_name`.
+
+**Cái mà chốt này giữ được, và chưa tài liệu nào ghi:** 11 trường hôm nay chia hết thành 1
+`spec_version` (đóng băng ở Update, `registry.ak:183`) + 6 trường định danh (`identity_preserved`,
+`platform.ak:144`) + 3 trường quản trị + `status`. **Không trường nào để một khoá đơn ghi byte do nó
+tự chọn.** Đó là tính chất mạnh nhất của lược đồ hiện tại; cả `payee_did` lẫn bản đồ đều phá nó.
+
+**Giá phải trả, nói trước:** mất tính chống-chối-bỏ *liên tục* của đích trả và của quy gán — chỉ còn
+neo tại mốc ký — và phải giữ sống một nguồn ngoài chuỗi. Đây là đánh đổi thật, không phải chi phí ẩn.
+
+##### D8-b — điều kiện của D6 kê THIẾU một chỗ
+
+D6 chốt: trường mới phải vào `governed_fields_changed` ngay trong cùng lần chốt lược đồ. Đúng, nhưng
+**chưa đủ**. `pure_revive` (`registry.ak:204-206`) liệt kê **từng trường khả biến** phải y hệt:
+
+```
+entry_in.status == Paused && entry_out.status == Active
+  && entry_out.spec_version == entry_in.spec_version
+  && entry_out.governance_ref == entry_in.governance_ref
+  && entry_out.accepted_assets == entry_in.accepted_assets
+  && entry_out.cut_bps == entry_in.cut_bps
+```
+
+Một trường mới không có trong danh sách này ⇒ đường **Paused → Active** thành cửa đổi trường mới mà
+**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy (`registry.ak:213-216`).
+Chính khối chú thích ở `:201-203` đã cảnh báo đúng hình dạng lỗi này cho `cut_bps`.
+
+⇒ Điều kiện đúng, nếu về sau có ai mở lại cửa sổ lược đồ: **trường mới phải vào CẢ
+`governed_fields_changed` LẪN `pure_revive`, trong cùng một lần chốt.** Một trong hai là chưa đóng.
+
+#### L10 — tính DUY NHẤT của `platform_id` đứng trên một chữ ký người, không trên một dòng mã
+
+R1 của chuẩn đăng ký từ chối hồ sơ trùng `platform_id`, và nó **kiểm được bằng máy** — nhưng máy đó
+là bộ quét thư mục `Registrations/` chạy ngoài chuỗi (`REGISTRATION-STANDARD.md` §R1). Trên chuỗi,
+`onchain/validators/registry_beacon.ak` ép: mint đúng một token của policy này (R-MINT-1, `:79-82`),
+tên token khớp `entry.platform_id` (R-NAME, `:98-99`), và authority ký (R-SIG, `:76`). **Không bước
+nào so tên vừa mint với các beacon đã mint trước đó** — không có phép đo nào làm được việc ấy trong
+một validator, vì nó cần biết trạng thái toàn sổ.
+
+Chỗ này validator tự khai, không phải phát hiện ngầm — `registry_beacon.ak:6`:
+
+> mỗi đăng ký → đảm bảo platform_id DUY NHẤT (**authority không ký trùng**)
+
+⇒ Bất biến "một tên, một platform" là **giả định về hành vi của người giữ khoá**, không phải một
+ràng buộc mã. Hai lần ký cho cùng một tên — do bị lừa, do bất cẩn, do quy trình duyệt ngoài chuỗi
+chạy chậm hơn tốc độ ký — sinh **hai beacon cùng tên dưới cùng policy**, và validator nhận cả hai là
+hợp lệ. Bên đọc sổ theo tên sẽ thấy hai hồ sơ chính danh, không có căn cứ trên chuỗi để phân định.
+
+**Hai hệ quả phải nói ra:**
+
+1. **Nó độc lập với hình dạng hồ sơ.** Chọn thêm trường hay không thêm trường đều không chạm tới lỗ
+   này — nó nằm ở tầng mint. Đừng tính nó vào bảng so sánh D6 như một điểm trừ của phương án nào.
+2. **Nó cộng hưởng với L2.** Khoá authority là khoá đơn, và cùng khoá đó vừa gác tính duy nhất vừa
+   là đường cứu duy nhất: `registry.ak:122-126` ghi thẳng — *"MẤT KHOÁ AUTHORITY ⇒ TOÀN SỔ ĐÔNG CỨNG.
+   U-SIG và M-SIG đều đòi ĐÚNG `registry_authority`, kể cả nhánh cứu MigrateEntry"*. Nên hỏng ở đây
+   không có đường lùi trên chuỗi: phải triển khai registry mới với policy beacon mới và onboard lại
+   từ đầu.
+
+Đường đóng đúng là đường validator đã tự chỉ: chuyển `registry_authority` sang script nhiều chữ ký
+hoặc DAO — **không** thêm luật vào validator này. Và chừng nào chưa chuyển, chuẩn đăng ký phải nói
+thẳng rằng tính duy nhất được bảo đảm bằng quy trình, không bằng mã.
 
 ### L2 — `registry_authority` một khoá đơn
 
@@ -679,6 +1026,49 @@ Chưa có bên thứ ba nào audit. Bắt buộc trước mainnet.
 PK11. Mọi lời hứa về uy tín dựa trên `app_id` hiện **không có nền**. §13 chốt **tiêu chí** phân
 định biên nhận (`T-RECEIPT`) nhưng **không** thi công gì: L8 vẫn mở nguyên.
 
+### L9 — cổng nhận ĐẦU-BÊN-KIA làm đối số: `verifyEntryAgainstCustody`
+
+`verifyEntryAgainstCustody(entry, custodyUtxo)` (`offchain/src/registryQuery.ts:197-231`) mang tên
+"đối soát với kho", nhưng nó chỉ kiểm hồ sơ **tự nhất quán** với một UTxO mà **bên gọi tự đưa vào**.
+Kẻ gọi chọn luôn thứ mình sẽ bị đối chiếu với. Bảng ở §14 L1 D1 đã ghi hệ quả đo được: van này PASS
+với một kho **tự dựng hoàn toàn** (`onchain/validators/registry_beacon.ak:164-167`).
+
+Đây không phải "cổng thiếu", cũng không phải "cổng sai" — nó là một lớp riêng, và lớp đó cần một câu
+hỏi riêng để bắt. Ba câu vẫn dùng để soi một cổng là: *(1) đầu bên kia có tồn tại không · (2) cổng
+kiểm có đúng điều nó khai không · (3) cổng có kiểm CHẶT HƠN thứ đặc tả hứa không.* Cả ba đều cho
+`verifyEntryAgainstCustody` đi qua: kho tồn tại, hàm làm đúng điều nó làm, và nó không chặt quá.
+
+**Câu thứ tư, do LAMP đề (thư 2026-08-28), là câu bắt được nó:**
+
+> **Cổng đối chiếu với CÁI GÌ, và AI chọn cái đó?**
+
+Bên gọi chọn ⇒ cổng chỉ là một phép kiểm **hình dạng** đội lốt một phép kiểm **danh tính**.
+
+Lớp này có ít nhất một biến thể khác cơ chế, cùng chỗ hổng, đo được ở kho LAMP: một validator gác
+quyền bằng cách đếm `extra_signatories`, nhưng danh sách người ký lại là apply-param **nướng vào
+chính script hash** — nên "đối soát với uỷ ban" thật ra là "đối soát với một bản sao uỷ ban đã đông
+cứng lúc deploy". Điểm chung: **cái được đối chiếu và cái đáng lẽ phải được đối chiếu là hai thứ
+khác nhau, và không dòng mã nào nói ra điều đó.** Tên hàm là chỗ duy nhất nói rằng có một kho thật,
+và tên hàm thì không thi hành được.
+
+**Biến thể thứ hai, PhoenixKey đề (thư 2026-08-30), cùng chỉ vào một chỗ:**
+
+> **Cổng của tôi an toàn với ĐIỀU KIỆN nào, và AI bảo đảm điều kiện đó?**
+
+Ca thật đi kèm: một trình phân giải danh tính công khai an toàn **với điều kiện chuỗi định danh khó
+lấy**. Điều kiện ấy chưa từng được viết ra ở đâu, nên không ai nhận trách nhiệm giữ nó — và một nhà
+khác công bố đúng chuỗi ấy trên một trang tra cứu, phá điều kiện đó, **mà không ai làm sai cả**. Mỗi
+bên soi cổng của mình đều thấy đúng vai.
+
+Hai biến thể ghép lại thành một mệnh đề dùng được: **một cổng đứng trên một giả định không được viết
+ra thì giả định đó không có người giữ.** Biến thể của LAMP hỏi về *đối tượng* đối chiếu; biến thể của
+PhoenixKey hỏi về *điều kiện* nền. Cả hai đều là thứ không lộ ra khi đọc một tệp — chỉ lộ khi có người
+đứng ở chỗ nhìn được cả hai đầu, và trong một hệ nhiều nhà thì thường không ai đứng ở đó.
+
+Chưa vá. Vá đúng nghĩa đòi nguồn của `custodyUtxo` **không do bên gọi chọn** — tra từ `custody_hash`
+trong chính entry, hoặc từ một reference input mà validator ràng. Ghi ra ở đây vì cả bộ kiểm hiện
+tại lẫn ba câu cũ đều không bắt được nó.
+
 ---
 
 ## §15. Hợp đồng liên spec
@@ -710,14 +1100,14 @@ Không chép số. Chạy lệnh:
 
 ```bash
 # sáu trường định danh + các mã ràng buộc v2 có thật trong mã
-grep -n 'identity_preserved' -A6 /Users/ductiger/Projects/Registry/onchain/lib/magiclamp/registry/platform.ak
-grep -o '[RUM]-[A-Z0-9-]*' /Users/ductiger/Projects/Registry/onchain/validators/*.ak | sort -u
+grep -n 'identity_preserved' -A6 /Users/ductiger/Projects/MagicLampEco/Registry/onchain/lib/magiclamp/registry/platform.ak
+grep -o '[RUM]-[A-Z0-9-]*' /Users/ductiger/Projects/MagicLampEco/Registry/onchain/validators/*.ak | sort -u
 
 # kiểm thử + build
-cd /Users/ductiger/Projects/Registry/onchain && aiken check && aiken build
+cd /Users/ductiger/Projects/MagicLampEco/Registry/onchain && aiken check && aiken build
 
 # script hash trước/sau khi sửa validator
-cd /Users/ductiger/Projects/Registry/onchain && aiken build && \
+cd /Users/ductiger/Projects/MagicLampEco/Registry/onchain && aiken build && \
   jq -r '.validators[] | "\(.title) \(.hash)"' plutus.json
 ```
 
