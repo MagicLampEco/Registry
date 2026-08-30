@@ -1,8 +1,11 @@
 # Cổng gác hồ sơ đăng ký.
 #
-# Vì sao có tệp này thay vì branch protection: kho PRIVATE trên gói Free nên ruleset/branch
-# protection trả 403 (xem `.github/CODEOWNERS`). Workflow thì chạy được, và nó gác đúng thứ cần
-# gác — lời khai trong hồ sơ, và tính duy nhất `platform_id`.
+# Vì sao có tệp này: nó gác thứ branch protection KHÔNG gác được — nội dung lời khai trong hồ
+# sơ, và tính duy nhất `platform_id`. Ruleset chỉ chặn được ai đẩy vào đâu.
+#
+# ⚠ Câu cũ ở đây ghi "kho PRIVATE trên gói Free nên ruleset trả 403". Kho nay là PUBLIC
+# (đo 2026-08-30: `gh api repos/MagicLampEco/Registry --jq .visibility` → `public`), nên lý do ấy
+# đã hết đúng. Giữ workflow không phải vì thiếu lựa chọn khác, mà vì nó gác việc khác.
 #
 # Nó KHÔNG thay được người: căn cứ từ chối R3 ("khai không đúng sự thật") không kiểm bằng máy được,
 # và "gây nhầm lẫn" ở R1 chỉ được nêu ra chứ không tự từ chối.
@@ -22,11 +25,19 @@ jobs:
   kiem:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Vì sao ghim số major và vì sao là 7: `@v4` chạy trên runtime Node 20, mà runner đã bỏ
+      # Node 20 — action tự bị đẩy sang Node 24 kèm cảnh báo, tức là đang chạy trên thứ nó không
+      # được kiểm. `checkout@v7` chặn checkout PR từ fork cho `pull_request_target` và
+      # `workflow_run`; workflow này chỉ dùng `pull_request` nên không đụng.
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      # `setup-node@v5` trở đi tự bật cache khi `package.json` có trường `packageManager`.
+      # Tệp đó KHÔNG có trường ấy (đo 2026-08-30), nên không có cache nào tự bật sau lưng.
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          # Bằng đúng phiên bản mọi phép đo cục bộ chạy trên đó. Ghim '20' là để CI đo một thứ
+          # khác với thứ người viết code đo — và Node 20 đã hết hạn hỗ trợ từ 2026-04.
+          node-version: '24'
 
       - name: Cài phụ thuộc
         run: npm ci
