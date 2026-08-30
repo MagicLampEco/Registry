@@ -125,6 +125,14 @@ const KHUON_NEED = {
   cut_bps: (v) =>
     Number.isInteger(v) && v >= 0 && v <= 10000 ? null : 'phải là số nguyên trong [0, 10000]',
   accepted_assets: (v) => (Array.isArray(v) && v.length > 0 ? null : 'phải là mảng không rỗng'),
+  // Ô KHAI, không phải cổng. Nó không quyết định hạng và không từ chối ai — nó chỉ làm hiện ra
+  // một cụm hồ sơ cùng chủ, thứ mà mọi trần "mỗi bên tối đa X%" đang ngầm giả định là không có.
+  chu_so_huu: (v) => {
+    const t = String(v).trim()
+    if (t.length < 3) return 'phải dài ít nhất 3 ký tự — một tên gọi được, không phải một dấu chấm'
+    if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
+    return null
+  },
 }
 
 const CON_TRO_CHUNG_CU = new Set(['con_tro', 'con_tro_cong_phat_hanh'])
@@ -315,6 +323,27 @@ export function checkOne(path) {
     }
   }
 
+  // 5b. ô chủ sở hữu — TUỲ CHỌN, và cố ý tuỳ chọn.
+  //
+  // Vì sao không bắt buộc: tập từ chối của §5 là tập ĐÓNG, ba mã. Biến một ô mới thành điều kiện
+  // tiếp nhận là dựng căn cứ từ chối thứ tư bằng một dòng mã, đúng thứ chuẩn vừa gỡ đi. Nên ô này
+  // khai thì máy gom cụm được, không khai thì hồ sơ vẫn hợp lệ — và bộ chấm NÊU ra rằng nó không
+  // gom được, thay vì im lặng coi như mỗi hồ sơ một chủ.
+  const chuSoHuu = data.pointers?.chu_so_huu
+  const coChuSoHuu = !(chuSoHuu === undefined || chuSoHuu === null || String(chuSoHuu).trim() === '')
+  if (coChuSoHuu) {
+    const sai = KHUON_NEED.chu_so_huu(chuSoHuu)
+    if (sai) {
+      loi.push(`pointers.chu_so_huu ${sai} — nhận được: ${moTa(chuSoHuu)}`)
+      saiKhuon = true
+    }
+  } else {
+    canh.push(
+      'pointers.chu_so_huu chưa khai — hồ sơ vẫn hợp lệ, nhưng mọi trần dạng "mỗi bên tối đa X%" ' +
+      'đếm HỒ SƠ chứ không đếm NGƯỜI, nên không khai thì cụm hồ sơ cùng chủ không hiện ra ở đâu.'
+    )
+  }
+
   // 6. tính hạng niêm yết
   const tier = tinhHang(ranks, evMin, data)
 
@@ -324,6 +353,9 @@ export function checkOne(path) {
     // Cờ để CLI gắn đúng nhãn. Không dò chữ trong thông báo — thông báo là để người đọc, cờ là
     // để máy đọc; buộc hai thứ vào nhau thì sửa câu chữ là làm hỏng phân loại.
     r2_ve1: r2Ve1,
+    // Chuỗi chủ sở hữu đã khai (hoặc null). CLI gom cụm bằng trường này — cụm là tính chất của
+    // TẬP hồ sơ, không của một hồ sơ, nên nó không thể tính ở đây.
+    chu_so_huu: coChuSoHuu ? String(chuSoHuu).trim() : null,
     // Khối khai THÔ đã rút ra được. CLI không đọc trường này; nó có ở đây để chặng sau của
     // luồng (dựng giao dịch) lấy được lời khai từ CHÍNH lượt chấm, thay vì tự bóc lại khối
     // json một lần nữa. Hai đường bóc là hai đường lệch nhau được — một đường thì không.

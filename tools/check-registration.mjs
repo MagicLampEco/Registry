@@ -114,7 +114,7 @@ for (const f of readdirSync(join(ROOT, 'Registrations')).filter((f) => f.endsWit
       console.log(`\n! R1 — bỏ ${file} khỏi tập so trùng: platform_id ${loiKhuonPid(r.platform_id)}`)
       continue
     }
-    toanBo.push({ file, pid: String(r.platform_id), nguon: 'khai' })
+    toanBo.push({ file, pid: String(r.platform_id), nguon: 'khai', chu: r.chu_so_huu ?? null })
     continue
   }
   const duKien = f.replace(/\.md$/, '')
@@ -122,7 +122,7 @@ for (const f of readdirSync(join(ROOT, 'Registrations')).filter((f) => f.endsWit
     console.log(`\n! R1 — bỏ ${file} khỏi tập so trùng: tên tệp không dùng làm tên dự kiến được (${loiKhuonPid(duKien)})`)
     continue
   }
-  toanBo.push({ file, pid: duKien, nguon: 'nháp' })
+  toanBo.push({ file, pid: duKien, nguon: 'nháp', chu: r.chu_so_huu ?? null })
 }
 
 const theoChuan = new Map()
@@ -161,6 +161,66 @@ if (trungY === 0 && deNham === 0) {
   console.log(
     `\nR1 — ${deNham} cặp gây nhầm lẫn. KHÔNG tự động từ chối: "gây nhầm lẫn" là phán đoán của ` +
     `người, máy chỉ nêu cặp đáng nhìn. Người đối chiếu phải quyết và ghi lý do vào nhật ký hồ sơ.`
+  )
+}
+
+// ── CỤM SỞ HỮU: nhiều hồ sơ, một chủ ──
+//
+// Đây KHÔNG phải căn cứ từ chối, và cố ý không phải. Tập từ chối của §5 là tập ĐÓNG, ba mã, và
+// `REGISTRATION-STANDARD.md` §5 nói thẳng rằng cạnh tranh với thành phần sẵn có không phải lý do
+// từ chối. Một đội có quyền đăng ký nhiều dịch vụ thật.
+//
+// Vì sao vẫn phải NÊU: mọi trần dạng "mỗi bên tối đa X%" trong hệ đều áp trên `platform_id`, tức
+// đếm HỒ SƠ. Sổ này là nơi duy nhất biết có bao nhiêu định danh tồn tại, nên nếu chỗ này im lặng
+// thì không chỗ nào khác trong hệ thấy được một chủ đang đứng sau mấy hồ sơ. Trần khi ấy trông
+// như đang bảo vệ, mà không.
+//
+// Hai con số in kèm, để người đối chiếu khỏi phải tự tính:
+//   · trần thực của một chủ có k hồ sơ = min(100%, k · trần-mỗi-hồ-sơ);
+//   · nếu cơ chế chia thưởng dùng trọng số lõm dạng V^r (r < 1), thì cùng một lượng hoạt động V
+//     chẻ làm k phần cho trọng số k·(V/k)^r = V^r · k^(1−r) — tức CHẺ HỒ SƠ ĐƯỢC THƯỞNG, và phần
+//     thưởng đó không cần bơm thêm một đơn vị hoạt động nào.
+// Con số r và trần lấy theo cơ chế đang dùng; ở đây in cho r = 0,7 và trần 30% vì đó là giá trị
+// đang có trong hệ hôm nay. Chúng là THAM SỐ CỦA BÊN KHÁC — bộ chấm không giữ chúng làm luật, nó
+// chỉ nói cho người đọc thấy độ lớn.
+const TRAN_MOI_HO_SO = 0.30
+const MU_LOM = 0.7
+
+const theoChu = new Map()
+let khongKhaiChu = 0
+for (const x of toanBo) {
+  if (!x.chu) { khongKhaiChu++; continue }
+  const k = x.chu.toLowerCase()
+  if (!theoChu.has(k)) theoChu.set(k, [])
+  theoChu.get(k).push(x)
+}
+
+let cum = 0
+for (const [, nhom] of theoChu) {
+  if (nhom.length < 2) continue
+  cum++
+  const k = nhom.length
+  const tran = Math.min(1, k * TRAN_MOI_HO_SO)
+  const boi = Math.pow(k, 1 - MU_LOM)
+  console.log(
+    `\n! CỤM SỞ HỮU — ${k} hồ sơ cùng khai chủ "${nhom[0].chu}". ` +
+    `Trần thực của chủ này = ${(tran * 100).toFixed(0)}% (trần mỗi hồ sơ ${(TRAN_MOI_HO_SO * 100).toFixed(0)}%); ` +
+    `bội số trọng số do chẻ hồ sơ ≈ ${boi.toFixed(3)}× nếu cơ chế chia dùng số mũ lõm ${MU_LOM}.`
+  )
+  for (const x of nhom) console.log(`    ${nguonCua(x)}`)
+}
+if (cum === 0) {
+  console.log(`\nCỤM SỞ HỮU — không cụm nào (${toanBo.length - khongKhaiChu} hồ sơ có khai chủ, ${khongKhaiChu} chưa khai)`)
+} else {
+  console.log(
+    `\nCỤM SỞ HỮU — ${cum} cụm. KHÔNG phải căn cứ từ chối: §5 có tập từ chối ĐÓNG ba mã, và ` +
+    `"cùng chủ" không nằm trong đó. Máy nêu, người đối chiếu đọc.`
+  )
+}
+if (khongKhaiChu > 0) {
+  console.log(
+    `⚠ ${khongKhaiChu} hồ sơ chưa khai pointers.chu_so_huu ⇒ phép gom cụm KHÔNG phủ hết. ` +
+    `Đừng đọc "không cụm nào" thành "không ai đứng sau nhiều hồ sơ".`
   )
 }
 
