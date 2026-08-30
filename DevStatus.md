@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-08-27**.
+Cập nhật cuối: **2026-08-30**.
 
 ---
 
@@ -30,7 +30,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | `Specs/{CONTRACT,Tech-Spec,Feat-Spec,Exec-Spec,README}.md` + `onboarding.md` | `đã merge (commit c63372e)` | cùng PR | `git status --short -- Specs/ onboarding.md` (rỗng = không còn sửa treo) | — | 2026-08-17 |
 | `Registrations/codes.json` | `đã merge (commit c63372e)`, có sửa tiếp trên nhánh đang chạy | PR #8; sửa tiếp ở `34db63b` (R1 hai mức) và đợt rà 2026-08-17 | `node tools/check-registration.mjs` ; `bash tools/test-check.sh` | hồ sơ đăng ký | 2026-08-17 |
 | Quyết định `platform_id` do NGƯỜI đặt hay MÁY sinh | `đã merge (commit 51c5401)` — câu hỏi đã được nhặt lại vào `Math-Spec.md` L1, **chủ nhân chưa chốt** | PR #10, base `main` | `grep -n 'platform_id' Specs/Math-Spec.md \| head` | cửa sổ đóng lúc hồ sơ đầu tiên lên chuỗi | 2026-08-17 |
-| Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `đang làm` — PoC arity + năm việc từ hộp thư | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, năm dữ kiện D1–D5 cho câu `platform_id`, mục bằng chứng phủ định, phép thử cho `R3`, ví dụ thứ tư của §13.1.1 | `git log --oneline origin/main..HEAD` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` — nhưng hạn chót **có điều kiện**: D4 chỉ áp nếu `display_name` buộc lên chuỗi, và D5 trả lời là **không buộc** | 2026-08-27 |
+| Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `có PR (#12)` — 9 commit, chờ chủ nhân gộp | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, năm dữ kiện D1–D5 cho câu `platform_id`, mục bằng chứng phủ định, phép thử cho `R3`, ví dụ thứ tư và thứ năm của §13.1.1, mục giới hạn `L9`, ba điều kiện của đường ngoài-chuỗi, và loạt sửa tên tổ chức | `GH_TOKEN=$TOKEN gh pr view 12 -R MagicLampEco/Registry --json state,mergeable` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` — nhưng hạn chót **có điều kiện**: D4 chỉ áp nếu `display_name` buộc lên chuỗi, và D5 trả lời là **không buộc** | 2026-08-30 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
 

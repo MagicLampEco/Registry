@@ -842,6 +842,37 @@ sinh, quyết gấp trước deploy"*. Nó là hai câu, câu sau chỉ hỏi kh
    thái cấm-đặt-lại), không chỉ chốt "có thêm `display_name` hay không" — chốt thiếu một cờ hôm nay
    là mất nó vĩnh viễn theo D4.
 
+#### D6 — cửa sổ thêm trường có BA ứng viên, không phải một, và chúng dùng chung MỘT hạn chót
+
+D4 nói cửa sổ thêm trường vào `PlatformEntry` đóng ở lần deploy đầu. D1–D5 bàn cửa sổ ấy như thể chỉ
+có một ứng viên (`display_name`). Đo lại thì có **ba**, và hai cái sau chưa từng được đặt cạnh D4:
+
+| ứng viên | ai cần | nếu thiếu thì hỏng ra sao |
+|---|---|---|
+| `display_name` | máy-sinh `platform_id` (D3) | **BỊ BÁC** — D5: không có lý do nào buộc nó lên chuỗi |
+| `payee_did` | trả thưởng cho một chủ thể | hồ sơ không nói được **trả cho ai**; hôm nay không trường nào giữ DID người nhận |
+| bản đồ `thread → operator` | quy gán tiêu thụ về một bên | quy gán phải sống ngoài chuỗi, và bên khai tự chọn thứ mình được đối chiếu (đúng lớp **L9**) |
+
+Ba ứng viên độc lập về mục đích nhưng **dùng chung đúng một cửa sổ**. Nên câu hỏi thật không phải
+*"có thêm trường X không"* mà là *"chốt toàn bộ hình dạng hồ sơ, một lần"*. Chốt thiếu một trường hôm
+nay là mất nó vĩnh viễn, không phải hoãn nó.
+
+**Và hai ứng viên sau còn vướng một chỗ thứ hai mà D4 không nói tới.** `governed_fields_changed`
+(`onchain/lib/magiclamp/registry/platform.ak:172-174`) chỉ khoá **ba** trường — `governance_ref`,
+`accepted_assets`, `cut_bps`. Một trường mới **mặc định KHÔNG nằm trong nhóm ấy**, nghĩa là nó đổi được
+bằng **một chữ ký `registry_authority`**, không cần đồng thuận của chính platform (nhánh U-SIG,
+`onchain/validators/registry.ak:211-217`). Cộng với L2 — authority hôm nay là **một khoá đơn** — thì
+một trường quyết định *tiền đi về đâu* mà nằm ngoài nhóm quản trị là một đường O(1): chiếm khoá là
+viết lại toàn bộ hướng chi trong một giao dịch, và LAMP không đốt nên phần đã phát không thu về được.
+
+⇒ Ràng buộc bắt buộc, nếu ứng viên nào được chốt là CÓ: **trường đó phải vào `governed_fields_changed`
+ngay trong cùng lần chốt lược đồ.** Thêm trường mà quên nhóm quản trị thì hai lỗ cộng lại chứ không
+cộng dồn tuyến tính — cửa sổ lược đồ đã đóng, mà cửa quản trị thì chưa bao giờ mở.
+
+**Ràng buộc TẠM THỜI đang có hiệu lực (fail-closed):** chưa hồ sơ nào lên chuỗi
+(`DevStatus.md` §trạng thái triển khai), nên chưa mất phương án nào và đổi script hash còn miễn phí.
+Điều kiện chấm dứt trạng thái tạm này là **lần deploy đầu tiên**, không phải một ngày trên lịch.
+
 ### L2 — `registry_authority` một khoá đơn
 
 Một khoá rò = chiếm tên + onboard rác (T5). Trước mainnet **PHẢI** là committee multisig M-of-N.
