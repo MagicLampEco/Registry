@@ -931,6 +931,20 @@ cứng lúc deploy". Điểm chung: **cái được đối chiếu và cái đá
 khác nhau, và không dòng mã nào nói ra điều đó.** Tên hàm là chỗ duy nhất nói rằng có một kho thật,
 và tên hàm thì không thi hành được.
 
+**Biến thể thứ hai, PhoenixKey đề (thư 2026-08-30), cùng chỉ vào một chỗ:**
+
+> **Cổng của tôi an toàn với ĐIỀU KIỆN nào, và AI bảo đảm điều kiện đó?**
+
+Ca thật đi kèm: một trình phân giải danh tính công khai an toàn **với điều kiện chuỗi định danh khó
+lấy**. Điều kiện ấy chưa từng được viết ra ở đâu, nên không ai nhận trách nhiệm giữ nó — và một nhà
+khác công bố đúng chuỗi ấy trên một trang tra cứu, phá điều kiện đó, **mà không ai làm sai cả**. Mỗi
+bên soi cổng của mình đều thấy đúng vai.
+
+Hai biến thể ghép lại thành một mệnh đề dùng được: **một cổng đứng trên một giả định không được viết
+ra thì giả định đó không có người giữ.** Biến thể của LAMP hỏi về *đối tượng* đối chiếu; biến thể của
+PhoenixKey hỏi về *điều kiện* nền. Cả hai đều là thứ không lộ ra khi đọc một tệp — chỉ lộ khi có người
+đứng ở chỗ nhìn được cả hai đầu, và trong một hệ nhiều nhà thì thường không ai đứng ở đó.
+
 Chưa vá. Vá đúng nghĩa đòi nguồn của `custodyUtxo` **không do bên gọi chọn** — tra từ `custody_hash`
 trong chính entry, hoặc từ một reference input mà validator ràng. Ghi ra ở đây vì cả bộ kiểm hiện
 tại lẫn ba câu cũ đều không bắt được nó.

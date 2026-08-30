@@ -281,6 +281,30 @@ Ba thứ đó phục vụ đúng việc mà tx hash làm cho bằng chứng kh�
 quả mà không phải tin lời ai. Khác biệt là kết quả dựng lại được nằm ở **máy của họ**, không nằm
 trên chuỗi — nên nó vẫn kiểm được, chỉ là kiểm bằng cách khác.
 
+#### Cách ĐO cái biên đó: phép đột biến — gỡ cổng ra rồi đếm ca đỏ
+
+Ô (3) đòi một bài kiểm khoá hành vi. Nhưng *"bài kiểm ấy xanh"* là lời khai về **trạng thái**, không
+phải về **mức phủ** — và người đọc tự điền mức phủ rộng nhất. Đây đúng là lớp lỗi §13.1.1 của
+`Specs/Math-Spec.md` gọi tên ở ví dụ thứ năm: đúng về cơ chế, sai về độ phủ.
+
+Có một phép đo trực tiếp cho nó, PhoenixKey đề và đã chạy thật (thư 2026-08-30): **gỡ đúng cái cổng
+vừa thêm ra khỏi mã, chạy lại bộ kiểm, đếm bao nhiêu ca ĐỎ, rồi khôi phục.** Số ca đỏ là số đo về mức
+phủ. Cổng gỡ đi mà **không ca nào đỏ** nghĩa là bộ kiểm không canh gì ở chỗ đó — dù nó vẫn xanh toàn bộ.
+
+Đọc kết quả theo đúng chiều, vì chiều này ngược trực giác: **dòng đỏ ÍT mới là dòng đáng lo.** Một
+cổng gỡ ra chỉ làm `1/15` ca đỏ nghĩa là đúng một bài kiểm canh nó — ca đó hỏng hoặc bị sửa thì cổng
+thành vô hình mà không ai biết. Dòng `6/10` thì cổng có nhiều lớp canh.
+
+Và một cạm khi đọc con số: một ca **còn xanh** sau khi gỡ cổng không phải lúc nào cũng là thiếu sót —
+nó có thể đang canh **chiều ngược** (đường phải tiếp tục ĐƯỢC phép đi). Nên số đột biến phải kèm một
+dòng nói ca còn xanh canh cái gì, nếu không `3/4` bị đọc thành "thiếu một ca".
+
+**Áp vào chuẩn này:** hồ sơ khai `EV-1`/`EV-2` bằng cách trỏ tới một bài kiểm thì **được** khuyến khích
+kèm số đột biến của bài kiểm đó. Không kèm thì lời khai vẫn hợp lệ, nhưng nó chỉ khai **trạng thái**,
+và người duyệt không được đọc nó thành khai **mức phủ**. Đây là khuyến khích, KHÔNG phải điều kiện —
+biến nó thành điều kiện là dựng một hàng rào mà phần lớn đội chưa có công cụ vượt qua, và hàng rào đó
+sẽ bị lách bằng những con số không ai kiểm.
+
 #### Dạng thứ ba: con trỏ tới sự **VẮNG MẶT** — và nó đã tồn tại trước khi chuẩn đặt tên
 
 Đem ba ô ở trên soi lại `Registrations/lampnet.md` — hồ sơ duy nhất đã tiếp nhận — thì không thấy
