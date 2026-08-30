@@ -1,5 +1,9 @@
 # ── Hạ tầng agent riêng + bí mật: KHÔNG BAO GIỜ lên remote ──
 _Agents/
+# Dấu `/` cuối chỉ khớp THƯ MỤC. Nhà agent đã dời sang `~/Agents/Registry/` (chủ nhân chốt
+# 2026-08-30) và chỗ này còn lại một SYMLINK cùng tên — symlink không phải thư mục, nên mẫu trên
+# không chặn nó và `git status` báo `?? _Agents` ngay sau khi dời. Dòng dưới chặn cả hai dạng.
+_Agents
 CLAUDE.md
 .claude/
 .env

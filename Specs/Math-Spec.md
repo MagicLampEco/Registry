@@ -873,6 +873,26 @@ cộng dồn tuyến tính — cửa sổ lược đồ đã đóng, mà cửa q
 (`DevStatus.md` §trạng thái triển khai), nên chưa mất phương án nào và đổi script hash còn miễn phí.
 Điều kiện chấm dứt trạng thái tạm này là **lần deploy đầu tiên**, không phải một ngày trên lịch.
 
+#### D7 — chốt SuperApp gỡ MỘT ứng viên khỏi cửa sổ D6, và đúng một cái thôi
+
+Chủ nhân chốt 2026-08-30: **instance của SuperApp nằm DƯỚI định danh SuperApp**, không niêm yết
+riêng. Mỗi instance có một Phoenix DID riêng, nhưng DID là **tầng danh tính**, không phải một mục
+trong sổ này — hai sổ khác nhau. Đường tuân thủ bắc cầu: instance → luật SuperApp → Registry. Trong
+sổ: **một** thực thể, tên SuperApp.
+
+Trước chốt này, cửa sổ D6 còn treo một ứng viên thứ tư chưa đặt tên rõ: *một chỗ trong hồ sơ cho mỗi
+instance* — vì hai yêu cầu đã chốt của SuperApp kéo ngược nhau (thêm app phải miễn phí và không qua
+đội lõi ⟂ mỗi instance là pháp nhân riêng ở thế giới ngoài). Chốt trên **đóng ứng viên đó**: hồ sơ
+không cần trường nào cho instance, vì không có instance nào đứng trong sổ.
+
+**Nó gỡ đúng một ứng viên, không gỡ hai.** Bản đồ `thread → operator` của D6 phục vụ quy gán tiêu thụ
+cho **mọi** đường vào — API trực tiếp, web, app ngoài SuperApp — nên nó không sống nhờ và cũng không
+chết theo chốt này. Đọc chốt thành "hồ sơ không cần thêm gì nữa" là đọc rộng hơn thứ đã chốt.
+
+**Một hệ quả về Sybil, và nó nhỏ hơn nó trông.** Trục "một người dựng nhiều HỒ SƠ để lách trần
+30%/app" đóng **ở riêng đường instance của SuperApp**: hàng nghìn instance ra đời thì sổ vẫn thấy
+đúng một hồ sơ. Trục ấy còn nguyên với các đường vào khác, và chốt này không tuyên gì về chúng.
+
 ### L2 — `registry_authority` một khoá đơn
 
 Một khoá rò = chiếm tên + onboard rác (T5). Trước mainnet **PHẢI** là committee multisig M-of-N.
