@@ -70,14 +70,14 @@ describe("ô khai chủ sở hữu", () => {
 
   it("không khai thì phải NÊU ra, chứ không im lặng coi như mỗi hồ sơ một chủ", () => {
     const r = checkOne(nop("khong-khai-2", hoSo("khong-khai-2")));
-    expect(r.canh.some((c: string) => c.includes("chu_so_huu"))).toBe(true);
+    expect((r.canh ?? []).some((c: string) => c.includes("chu_so_huu"))).toBe(true);
   });
 
   it("chỗ giữ chỗ KHÔNG phải một lời khai", () => {
     for (const rac of ["tbd", "n/a", "-", "?"]) {
       const r = checkOne(nop(`giu-cho-${rac.replace(/\W/g, "x")}`, hoSo("giu-cho", rac)));
       expect(r.sai_khuon).toBe(true);
-      expect(r.loi.join(" ")).toContain("chu_so_huu");
+      expect((r.loi ?? []).join(" ")).toContain("chu_so_huu");
     }
   });
 
@@ -95,7 +95,10 @@ describe("ô khai chủ sở hữu", () => {
 describe("cụm sở hữu — tính chất của TẬP hồ sơ", () => {
   // Phép gom nằm ở CLI vì nó cần cả thư mục; ở đây kiểm chính cái phép gom đó trên dữ liệu do
   // `checkOne` trả ra, để nếu ai đổi kiểu trả về thì bài này đỏ chứ không phải người dùng phát hiện.
-  const gom = (rs: Array<{ chu: string | null }>) => {
+  // Ba trạng thái, không phải hai: có khai · chấm rồi mà không khai (`null`) · lượt chấm dừng
+  // sớm nên chưa tới ô đó (`undefined`). Phép gom bỏ qua cả hai trạng thái sau, nhưng chữ ký
+  // phải nói ra là có ba — gộp chúng làm một chính là cách một hồ sơ chưa nộp lọt vào cụm.
+  const gom = (rs: Array<{ chu: string | null | undefined }>) => {
     const m = new Map<string, number>();
     for (const r of rs) {
       if (!r.chu) continue;
