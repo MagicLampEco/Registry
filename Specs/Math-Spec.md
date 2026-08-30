@@ -528,6 +528,24 @@ là nó **sai**: cổng đó chưa tồn tại trên chuỗi. Phép thử phản
 cũ trượt hoàn toàn, vì nó soi **hình dạng** của lời khai (có con số tiền không) thay vì soi **hậu
 quả** của lời khai.
 
+**Ví dụ thứ năm — lời khai ĐÚNG về cơ chế, SAI về độ phủ.** PhoenixKey gửi sang (thư 2026-08-28)
+một ca ở chính nhà họ, và nó là biến thể khó bắt nhất trong năm ca: một bài kiểm được viết để
+*"ghim chính lý do của bản vá"*, và bài kiểm ấy **xanh**. Một agent đối kháng soi lại thì thấy nó
+ghim đúng lý do mà **không ghim phạm vi áp dụng** — trong khi phạm vi mới là chỗ hỏng: hai luồng ký
+vẫn còn khuôn cũ đi qua sạch, và một luồng thứ bảy thêm vào ngày mai cũng sẽ đi qua sạch.
+
+Áp phép thử phản-thực vào chính bài kiểm ấy: *có ai hành xử khác đi nếu biết nó chỉ gác một phần
+không?* **Có** — người đọc màu xanh rồi kết luận đã vá xong. ⇒ trong miền.
+
+Chỗ ca này khác bốn ca trên: bốn ca kia sai ở **nội dung** lời khai (sự việc không xảy ra, cổng
+chưa tồn tại). Ca này **không sai câu nào** — cơ chế đúng, bản vá đúng, bài kiểm đúng. Nó sai ở
+**biên** của lời khai, và biên là thứ không được nói ra nên không ai kiểm. Một lời khai không nêu
+biên thì người đọc tự điền biên rộng nhất, và đó chính là bên thứ ba hành xử khác đi.
+
+⇒ Hệ quả cho bốn trục khai báo của chuẩn đăng ký: một lời khai `EV-1`/`EV-2` trỏ tới một bài kiểm
+phải khai **bài kiểm ấy phủ tới đâu**, không chỉ khai nó xanh. Đây đúng là chỗ ô thứ ba của bằng
+chứng phủ định đã siết (`REGISTRATION-STANDARD.md` §3) — cùng một lỗ, gặp lại ở một trục khác.
+
 Rút ra, và đây là lý do phép thử được giữ ở dạng phản-thực chứ không dạng liệt kê: một tiêu chí
 không có phép thử thì mỗi người áp một kiểu, và cái đó **tệ hơn tiêu chí lỏng — nó lỏng mà trông
 chặt**. PhoenixKey lấy câu này làm ràng buộc chung cho mọi tiêu chí phân định ở nhà họ, không riêng
@@ -786,6 +804,36 @@ Giá phải trả, nói trước: tên hiển thị mất tính chống chối b
 và ai muốn xác minh tên phải lấy được bảng — tức có thêm một nguồn phải giữ sống. Đây là đánh đổi
 thật, không phải bữa trưa miễn phí.
 
+**Ba chỗ đường ngoài-chuỗi này còn hở, và cả ba đều phải nằm trong spec trước khi ai cài đặt.**
+Không chỗ nào lật kết luận trên; chúng là điều kiện để kết luận đó không hỏng lúc thi công.
+
+*Hở thứ nhất — luật thuộc về BÊN ĐỌC, không thuộc về bảng.* Lý do duy nhất chọn ngoài-chuỗi là sửa
+tên nhanh, nên sẽ có áp lực hiển thị tên mới **trước khi** nó được ký. Nếu bên tiêu thụ hiển thị
+phần bảng mà chữ ký chưa phủ, cái neo thành đồ trang trí — nó chứng thực một thứ khác với thứ người
+dùng đang nhìn. ⇒ Luật: **chỉ hiển thị phần mà chữ ký phủ; phần chưa được phủ hiển thị như CHƯA CÓ
+TÊN, không hiển thị như một cái tên.** Đây là một dòng trong hợp đồng đọc, không phải một khuyến nghị.
+
+*Hở thứ hai — một bảng tươi và một bảng chết ba tháng trả về Y HỆT NHAU.* Không có gì đỏ vì không có
+gì phân biệt được: đây là **đầu dò mù**, không phải rủi ro vận hành. ⇒ Chữ ký phải mang `valid_until`,
+và bên tiêu thụ **hỏng ĐÓNG** khi quá hạn: bảng hết hạn hiển thị "chưa xác minh", không bao giờ hiển
+thị tên. Khi đó không ai cần ép tần suất ký — cơ chế tự ép, vì không ký lại thì tên biến mất khỏi màn
+hình chứ không âm thầm cũ đi. **Cạm phải chặn ngay trong spec: `valid_until` VẮNG MẶT nghĩa là ĐÃ HẾT
+HẠN, không phải vô hạn.**
+
+*Hở thứ ba — "một băm của bảng" ở trên là băm PHẲNG, và nó hỏng ba đường.* Muốn xác minh tên của một
+platform phải có toàn bộ bảng, nên bên tiêu thụ nhẹ (ví, màn hình điện thoại) hoặc tải hết hoặc phải
+tin một máy chủ — mà "phải tin một máy chủ" đúng là thứ đường này nói nó tránh được; ai giữ bản sao cũ
+chỉ biết băm khác chứ **không biết mục nào đổi**, nên không cảnh báo có mục tiêu được; và câu **ai phục
+vụ bảng** thì đoạn trên chưa trả lời, tức là dựng một điểm chết mới đúng chỗ vừa rời khỏi chuỗi. ⇒ Neo
+bằng **gốc Merkle** trên tập `(platform_id, display_name)` **đã sắp xếp**, thay cho băm phẳng. Được ba
+thứ cùng lúc: chứng minh **theo từng mục** (một nhánh, không cần cả bảng), phân giải **mục nào đổi**, và
+bảng nhân bản ở đâu cũng được vì bản sao nào cũng dựng được nhánh chứng minh — không ai phải là máy chủ
+tin cậy. **Cạm: spec phải chốt thứ tự sắp xếp VÀ cách mã hoá lá.** Hai bản cài đặt dựng ra hai gốc khác
+nhau cho cùng một bảng sẽ trông y hệt một cuộc tấn công.
+
+Chi phí của cả ba trên chuỗi: **bằng 0** — không mục nào thêm trường vào `PlatformEntry`, nên D4 vẫn
+không áp.
+
 ⇒ **Hình đúng của câu hỏi trình lên chủ nhân đã đổi.** Không còn là *"pid do người đặt hay máy
 sinh, quyết gấp trước deploy"*. Nó là hai câu, câu sau chỉ hỏi khi câu trước trả lời một cách:
 
@@ -826,6 +874,35 @@ Chưa có bên thứ ba nào audit. Bắt buộc trước mainnet.
 
 PK11. Mọi lời hứa về uy tín dựa trên `app_id` hiện **không có nền**. §13 chốt **tiêu chí** phân
 định biên nhận (`T-RECEIPT`) nhưng **không** thi công gì: L8 vẫn mở nguyên.
+
+### L9 — cổng nhận ĐẦU-BÊN-KIA làm đối số: `verifyEntryAgainstCustody`
+
+`verifyEntryAgainstCustody(entry, custodyUtxo)` (`offchain/src/registryQuery.ts:197-231`) mang tên
+"đối soát với kho", nhưng nó chỉ kiểm hồ sơ **tự nhất quán** với một UTxO mà **bên gọi tự đưa vào**.
+Kẻ gọi chọn luôn thứ mình sẽ bị đối chiếu với. Bảng ở §14 L1 D1 đã ghi hệ quả đo được: van này PASS
+với một kho **tự dựng hoàn toàn** (`onchain/validators/registry_beacon.ak:164-167`).
+
+Đây không phải "cổng thiếu", cũng không phải "cổng sai" — nó là một lớp riêng, và lớp đó cần một câu
+hỏi riêng để bắt. Ba câu vẫn dùng để soi một cổng là: *(1) đầu bên kia có tồn tại không · (2) cổng
+kiểm có đúng điều nó khai không · (3) cổng có kiểm CHẶT HƠN thứ đặc tả hứa không.* Cả ba đều cho
+`verifyEntryAgainstCustody` đi qua: kho tồn tại, hàm làm đúng điều nó làm, và nó không chặt quá.
+
+**Câu thứ tư, do LAMP đề (thư 2026-08-28), là câu bắt được nó:**
+
+> **Cổng đối chiếu với CÁI GÌ, và AI chọn cái đó?**
+
+Bên gọi chọn ⇒ cổng chỉ là một phép kiểm **hình dạng** đội lốt một phép kiểm **danh tính**.
+
+Lớp này có ít nhất một biến thể khác cơ chế, cùng chỗ hổng, đo được ở kho LAMP: một validator gác
+quyền bằng cách đếm `extra_signatories`, nhưng danh sách người ký lại là apply-param **nướng vào
+chính script hash** — nên "đối soát với uỷ ban" thật ra là "đối soát với một bản sao uỷ ban đã đông
+cứng lúc deploy". Điểm chung: **cái được đối chiếu và cái đáng lẽ phải được đối chiếu là hai thứ
+khác nhau, và không dòng mã nào nói ra điều đó.** Tên hàm là chỗ duy nhất nói rằng có một kho thật,
+và tên hàm thì không thi hành được.
+
+Chưa vá. Vá đúng nghĩa đòi nguồn của `custodyUtxo` **không do bên gọi chọn** — tra từ `custody_hash`
+trong chính entry, hoặc từ một reference input mà validator ràng. Ghi ra ở đây vì cả bộ kiểm hiện
+tại lẫn ba câu cũ đều không bắt được nó.
 
 ---
 
