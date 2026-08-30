@@ -893,6 +893,106 @@ chết theo chốt này. Đọc chốt thành "hồ sơ không cần thêm gì n
 30%/app" đóng **ở riêng đường instance của SuperApp**: hàng nghìn instance ra đời thì sổ vẫn thấy
 đúng một hồ sơ. Trục ấy còn nguyên với các đường vào khác, và chốt này không tuyên gì về chúng.
 
+#### D8 — hình dạng hồ sơ CHỐT: 11 trường, không thêm gì. Và cửa thứ hai mà D6 chưa kê
+
+Hội đồng đã chạy trên ba ứng viên còn lại của cửa sổ D6 — `payee_did`, bản đồ `thread → operator`,
+và không-thêm-gì. **Chốt: không thêm trường nào.** Lược đồ đứng ở 11 trường.
+
+**Vì sao, gọn trong một câu:** cả hai trường định thêm đều mua *tính bất biến*, trong khi thứ bài
+toán cần là *truy được trách nhiệm* — và một chữ ký truy được trách nhiệm dù nó nằm ở đâu. §D5 đã
+tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ này chỉ là áp câu ấy cho hai ứng viên.
+
+**Ba dữ kiện dẫn tới chốt, mỗi cái tự đứng được:**
+
+1. **Thứ `payee_did` định mua thì hồ sơ đã có, rẻ hơn.** Đích trả tiền nằm sẵn ở `custody_hash` +
+   `instance_id` + `seed_policy` (`platform.ak:74-76`), và chi tiêu chỗ đó đã bị `governance_ref`
+   của chính platform gác. `payee_did` **không khép được vòng**: DID không phải payment credential,
+   vẫn phải phân giải DID → địa chỉ ở ngoài chuỗi. Nó đổi một trường bất biến lấy thêm một chặng
+   tin cậy — đúng biến thể L9 của cửa phân giải.
+2. **Bản đồ `thread → operator` không giải được bài toán nó nhắm, và kho này đã có phản chứng.**
+   `bench/DOI-CHIEU.md:30-35`: đường "không đốt gì, chỉ khai CUNG để lấy phần của tổng do người khác
+   đốt" có lợi nhuận dương với **mọi** tham số, và chặn được bằng đúng ba thứ — biên nhận do bên
+   **không hưởng lợi** ký, thách thức có phát hiện thật, cổng danh tính cho node. Không thứ nào
+   trong ba là một trường datum. Bản đồ do chính bên hưởng lợi khai, đặt lên chuỗi, chỉ làm **lời
+   khai sai thành bất biến** — và tốn ADA vĩnh viễn: ở N=100 cặp, min-ADA ô hồ sơ ước lượng ~29 ADA
+   so với ~1,5–2 ADA hôm nay, khoá cứng vì `value_not_drained` (`util.ak:227-231`) chỉ cho lovelace
+   **tăng**. Thêm thread từng cái một là O(N²) ExUnit, và vượt trần kích thước tx thì hồ sơ **không
+   spend được nữa** — gạch chết mang theo beacon, phá thẳng PK5.
+3. **Không validator nào ở LAMP đọc entry này để quyết đích chi** (đo 2026-08-30):
+   `LAMP/Distribution/onchain/validators/claim_account.ak:117` dùng `tx.reference_inputs` để lấy
+   beacon **của Distribution**, không phải entry Registry; đích chi là `util.vk_address(t_owner)`
+   (`:401`), tức chủ tài khoản claim. Đây là giả định load-bearing của chốt này, nên nó được viết ra
+   để có người giữ: **nếu** về sau một validator chia thưởng đọc entry Registry làm đầu vào tham
+   chiếu để lấy đích chi, **và** tập người nhận gồm cả hạng KHÔNG KHO, thì chốt này hụt và không mua
+   lại được. Điều kiện chấm dứt: lần deploy đầu tiên.
+
+**Hai luật thay cho hai trường** — cả hai sửa được sau deploy, hồi tố được, giá 0 giao dịch:
+- thay `payee_did`: **muốn nhận thưởng thì phải đăng ký ở hạng CÓ KHO** (`REGISTRATION-STANDARD.md`
+  §2.3). Người nhận thưởng khi ấy được gác bằng cổng quản trị của chính họ — chặt hơn một chuỗi DID
+  nằm trong datum;
+- thay bản đồ: quy gán bằng **biên nhận do bên không hưởng lợi ký**, neo ở metadata giao dịch chứ
+  không ở datum — đúng khuôn D5 đã dùng khi bác `display_name`.
+
+**Cái mà chốt này giữ được, và chưa tài liệu nào ghi:** 11 trường hôm nay chia hết thành 1
+`spec_version` (đóng băng ở Update, `registry.ak:183`) + 6 trường định danh (`identity_preserved`,
+`platform.ak:144`) + 3 trường quản trị + `status`. **Không trường nào để một khoá đơn ghi byte do nó
+tự chọn.** Đó là tính chất mạnh nhất của lược đồ hiện tại; cả `payee_did` lẫn bản đồ đều phá nó.
+
+**Giá phải trả, nói trước:** mất tính chống-chối-bỏ *liên tục* của đích trả và của quy gán — chỉ còn
+neo tại mốc ký — và phải giữ sống một nguồn ngoài chuỗi. Đây là đánh đổi thật, không phải chi phí ẩn.
+
+##### D8-b — điều kiện của D6 kê THIẾU một chỗ
+
+D6 chốt: trường mới phải vào `governed_fields_changed` ngay trong cùng lần chốt lược đồ. Đúng, nhưng
+**chưa đủ**. `pure_revive` (`registry.ak:204-206`) liệt kê **từng trường khả biến** phải y hệt:
+
+```
+entry_in.status == Paused && entry_out.status == Active
+  && entry_out.spec_version == entry_in.spec_version
+  && entry_out.governance_ref == entry_in.governance_ref
+  && entry_out.accepted_assets == entry_in.accepted_assets
+  && entry_out.cut_bps == entry_in.cut_bps
+```
+
+Một trường mới không có trong danh sách này ⇒ đường **Paused → Active** thành cửa đổi trường mới mà
+**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy (`registry.ak:213-216`).
+Chính khối chú thích ở `:201-203` đã cảnh báo đúng hình dạng lỗi này cho `cut_bps`.
+
+⇒ Điều kiện đúng, nếu về sau có ai mở lại cửa sổ lược đồ: **trường mới phải vào CẢ
+`governed_fields_changed` LẪN `pure_revive`, trong cùng một lần chốt.** Một trong hai là chưa đóng.
+
+#### L10 — tính DUY NHẤT của `platform_id` đứng trên một chữ ký người, không trên một dòng mã
+
+R1 của chuẩn đăng ký từ chối hồ sơ trùng `platform_id`, và nó **kiểm được bằng máy** — nhưng máy đó
+là bộ quét thư mục `Registrations/` chạy ngoài chuỗi (`REGISTRATION-STANDARD.md` §R1). Trên chuỗi,
+`onchain/validators/registry_beacon.ak` ép: mint đúng một token của policy này (R-MINT-1, `:79-82`),
+tên token khớp `entry.platform_id` (R-NAME, `:98-99`), và authority ký (R-SIG, `:76`). **Không bước
+nào so tên vừa mint với các beacon đã mint trước đó** — không có phép đo nào làm được việc ấy trong
+một validator, vì nó cần biết trạng thái toàn sổ.
+
+Chỗ này validator tự khai, không phải phát hiện ngầm — `registry_beacon.ak:6`:
+
+> mỗi đăng ký → đảm bảo platform_id DUY NHẤT (**authority không ký trùng**)
+
+⇒ Bất biến "một tên, một platform" là **giả định về hành vi của người giữ khoá**, không phải một
+ràng buộc mã. Hai lần ký cho cùng một tên — do bị lừa, do bất cẩn, do quy trình duyệt ngoài chuỗi
+chạy chậm hơn tốc độ ký — sinh **hai beacon cùng tên dưới cùng policy**, và validator nhận cả hai là
+hợp lệ. Bên đọc sổ theo tên sẽ thấy hai hồ sơ chính danh, không có căn cứ trên chuỗi để phân định.
+
+**Hai hệ quả phải nói ra:**
+
+1. **Nó độc lập với hình dạng hồ sơ.** Chọn thêm trường hay không thêm trường đều không chạm tới lỗ
+   này — nó nằm ở tầng mint. Đừng tính nó vào bảng so sánh D6 như một điểm trừ của phương án nào.
+2. **Nó cộng hưởng với L2.** Khoá authority là khoá đơn, và cùng khoá đó vừa gác tính duy nhất vừa
+   là đường cứu duy nhất: `registry.ak:122-126` ghi thẳng — *"MẤT KHOÁ AUTHORITY ⇒ TOÀN SỔ ĐÔNG CỨNG.
+   U-SIG và M-SIG đều đòi ĐÚNG `registry_authority`, kể cả nhánh cứu MigrateEntry"*. Nên hỏng ở đây
+   không có đường lùi trên chuỗi: phải triển khai registry mới với policy beacon mới và onboard lại
+   từ đầu.
+
+Đường đóng đúng là đường validator đã tự chỉ: chuyển `registry_authority` sang script nhiều chữ ký
+hoặc DAO — **không** thêm luật vào validator này. Và chừng nào chưa chuyển, chuẩn đăng ký phải nói
+thẳng rằng tính duy nhất được bảo đảm bằng quy trình, không bằng mã.
+
 ### L2 — `registry_authority` một khoá đơn
 
 Một khoá rò = chiếm tên + onboard rác (T5). Trước mainnet **PHẢI** là committee multisig M-of-N.

@@ -155,6 +155,31 @@ phải là thiếu sót. `CU-N` vẫn **bắt buộc khai `governance_ref`**, v�
 xem §6, chuyển sang `Retired` đòi đồng thuận của chính platform, nên hồ sơ không có `governance_ref`
 là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô đó bảo vệ bên đăng ký.
 
+#### Muốn NHẬN THƯỞNG từ hệ thì phải ở hạng CÓ KHO
+
+Điều khoản này thay cho một trường `payee_did` đã được cân rồi bác (`Specs/Math-Spec.md` §D8).
+
+**Dịch vụ muốn nhận phần thưởng nào do hệ chi trả phải khai `CU-1`** — tức có Treasury custody
+instance on-chain. Hạng `CU-0` (kế toán trong cơ sở dữ liệu riêng) và `CU-N` (không thu asset) vẫn
+niêm yết được bình thường, vẫn dùng hệ token bình thường; chúng chỉ không có đích nhận thưởng mà hệ
+trả tới được.
+
+Vì sao là một dòng luật chứ không phải một trường trong hồ sơ:
+
+- Đích trả tiền **đã nằm trên chuỗi rồi** — `custody_hash` + `instance_id` + `seed_policy` — và chi
+  tiêu chỗ đó đã bị `governance_ref` của chính dịch vụ gác. Thêm một trường DID không khép được
+  vòng: DID không phải payment credential, vẫn phải phân giải sang địa chỉ ở ngoài chuỗi, tức thêm
+  một chặng phải tin mà chưa ai nhận giữ.
+- Cửa sổ thêm trường vào hồ sơ **đóng ở lần deploy đầu và đóng theo cả hai chiều** — thừa một trường
+  cũng vĩnh viễn y như thiếu. Một dòng luật thì sửa được sau deploy, hồi tố cho mọi hồ sơ, và tốn 0
+  giao dịch.
+- Người nhận thưởng khi ấy được gác bằng cổng quản trị của chính họ, chặt hơn một chuỗi ký tự nằm
+  trong datum mà một chữ ký quyền đăng ký sửa được.
+
+⚠ Giới hạn phải nói ra: điều khoản này là **luật văn bản**, người duyệt áp — không có ràng buộc mã
+nào ép. Máy đọc được hạng `custody` trong hồ sơ, nhưng máy không biết một khoản chi ở nơi khác có
+phải "phần thưởng của hệ" hay không.
+
 #### Bốn tính chất bắt buộc của `governance_ref` — đọc trước khi chọn script
 
 Đây là ô dễ khai sai nhất, và khai sai thì hậu quả **không đảo ngược được**. Nguồn máy đọc:
