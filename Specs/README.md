@@ -43,7 +43,7 @@ Các file này viết khi Registry còn nằm trong repo LAMP, nên đường d�
 | Dạng đường dẫn | Trỏ tới |
 |---|---|
 | `onchain/...` | Trong repo này. ⚠ Script hash **đã đổi** ở đợt sửa v2 (đổi có chủ ý) — đọc hash hiện hành bằng `cd onchain && aiken build` rồi xem `plutus.json`, đừng chép hash từ tài liệu cũ. |
-| `Treasury/...`, `Governance/...`, `Genesis/...` | Repo [`MagicLampEcosystem/LAMP`](https://github.com/MagicLampEcosystem/LAMP), tính từ gốc repo đó. |
+| `Treasury/...`, `Governance/...`, `Genesis/...` | Repo [`MagicLampEco/LAMP`](https://github.com/MagicLampEco/LAMP), tính từ gốc repo đó. |
 | `offchain/...`, `examples/...`, `scripts/...`, `tests/...` | Đang được chuyển về repo này. Trạng thái thật (đã track chưa, ở nhánh nào) đọc ở [../DevStatus.md](../DevStatus.md) — kiểm bằng `git log --oneline -3 -- offchain/`. Bản gốc vẫn ở `PlatformKit/` trong repo LAMP. |
 
 ## Con số kiểm thử — KHÔNG chép vào đây

@@ -59,10 +59,10 @@ Mục tiêu cuối: **làm LAMP có giá trị** bằng open SDK. Mỗi platform
 
 | Chủ đề | Thuộc |
 |---|---|
-| Custody/collect/release internals, bảo-toàn-value, split cut | [Treasury](https://github.com/MagicLampEcosystem/LAMP/tree/main/Treasury) (FEAT/MATH/TECH) |
+| Custody/collect/release internals, bảo-toàn-value, split cut | [Treasury](https://github.com/MagicLampEco/LAMP/tree/main/Treasury) (FEAT/MATH/TECH) |
 | Datum `PlatformEntry`, redeemer registry, bất biến on-chain | [TECH](./Tech-Spec.md) |
 | **Định giá phí** (bò ≠ gà — `animal_fee`), quy đổi LAMP↔USD/ADA | App (OriLife/PhoenixKey) + Oracle, **NGOÀI** Registry |
-| Cơ chế vote / Voting Power (đích `governance_ref`) | [Governance/VotingPower](https://github.com/MagicLampEcosystem/LAMP/tree/main/Governance/VotingPower) |
+| Cơ chế vote / Voting Power (đích `governance_ref`) | [Governance/VotingPower](https://github.com/MagicLampEco/LAMP/tree/main/Governance/VotingPower) |
 | Lộ trình deploy registry, onboard PhoenixKey/OriLife, tích hợp collect | [EXEC](./Exec-Spec.md) |
 
 ---

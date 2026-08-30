@@ -95,7 +95,7 @@ Cả hai kết quả đều nộp, không giấu cái nào.
  ngày chạy : 2026-08-13 23:17:20 +07
  python    : Python 3.14.5
  hạt giống : 20260813 (cố định trong từng script)
- thư mục   : /Users/ductiger/Projects/Registry/bench
+ thư mục   : /Users/ductiger/Projects/MagicLampEco/Registry/bench
 ==============================================================================
 
 ###### model_a_rho.py ######

@@ -858,14 +858,14 @@ Không chép số. Chạy lệnh:
 
 ```bash
 # sáu trường định danh + các mã ràng buộc v2 có thật trong mã
-grep -n 'identity_preserved' -A6 /Users/ductiger/Projects/Registry/onchain/lib/magiclamp/registry/platform.ak
-grep -o '[RUM]-[A-Z0-9-]*' /Users/ductiger/Projects/Registry/onchain/validators/*.ak | sort -u
+grep -n 'identity_preserved' -A6 /Users/ductiger/Projects/MagicLampEco/Registry/onchain/lib/magiclamp/registry/platform.ak
+grep -o '[RUM]-[A-Z0-9-]*' /Users/ductiger/Projects/MagicLampEco/Registry/onchain/validators/*.ak | sort -u
 
 # kiểm thử + build
-cd /Users/ductiger/Projects/Registry/onchain && aiken check && aiken build
+cd /Users/ductiger/Projects/MagicLampEco/Registry/onchain && aiken check && aiken build
 
 # script hash trước/sau khi sửa validator
-cd /Users/ductiger/Projects/Registry/onchain && aiken build && \
+cd /Users/ductiger/Projects/MagicLampEco/Registry/onchain && aiken build && \
   jq -r '.validators[] | "\(.title) \(.hash)"' plutus.json
 ```
 
