@@ -18,7 +18,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { checkOne } from "../tools/check-registration-core.mjs";
+import { KHOA_CHU, checkOne } from "../tools/check-registration-core.mjs";
 
 let workDir: string;
 beforeAll(() => { workDir = mkdtempSync(join(tmpdir(), "registry-cum-")); });
@@ -98,11 +98,13 @@ describe("cụm sở hữu — tính chất của TẬP hồ sơ", () => {
   // Ba trạng thái, không phải hai: có khai · chấm rồi mà không khai (`null`) · lượt chấm dừng
   // sớm nên chưa tới ô đó (`undefined`). Phép gom bỏ qua cả hai trạng thái sau, nhưng chữ ký
   // phải nói ra là có ba — gộp chúng làm một chính là cách một hồ sơ chưa nộp lọt vào cụm.
+  // Khoá gom lấy từ LÕI (`KHOA_CHU`), không chép lại ở đây: một bản chép sẽ vẫn xanh sau khi bản
+  // thật đã lệch, tức bài kiểm khoá đúng cái nó tự viết chứ không khoá cái đang chạy.
   const gom = (rs: Array<{ chu: string | null | undefined }>) => {
     const m = new Map<string, number>();
     for (const r of rs) {
       if (!r.chu) continue;
-      const k = r.chu.toLowerCase();
+      const k = KHOA_CHU(r.chu);
       m.set(k, (m.get(k) ?? 0) + 1);
     }
     return m;
@@ -114,6 +116,26 @@ describe("cụm sở hữu — tính chất của TẬP hồ sơ", () => {
     const m = gom([{ chu: a.chu_so_huu }, { chu: b.chu_so_huu }]);
     expect(m.size).toBe(1);
     expect([...m.values()][0]).toBe(2);
+  });
+
+  it("hai cách MÃ HOÁ cùng một cái tên gom về một cụm — NFKC, không phải gấp đồng hình", () => {
+    // "Bảo" dựng sẵn (U+1EA2 …) và "Bảo" viết bằng chữ + dấu tổ hợp trông y hệt nhau trên màn
+    // hình. Không NFKC thì hai lời khai của CÙNG một chủ tách thành hai cụm, và cụm không hiện.
+    const dungSan = "Công ty B\u1EA3o L\u00E2m";
+    const toHop   = "Co\u0302ng ty Ba\u0309o La\u0302m";
+    expect(dungSan).not.toBe(toHop);           // khác chuỗi
+    expect(KHOA_CHU(dungSan)).toBe(KHOA_CHU(toHop));  // cùng một chủ
+    expect(gom([{ chu: dungSan }, { chu: toHop }]).size).toBe(1);
+  });
+
+  it("KHÔNG gấp đồng hình — hai chủ khác nhau thật phải ở hai cụm", () => {
+    // Đây là ranh giới với `CHUAN_HOA` của R1. R1 gấp 0↔o, 1↔l↔i… vì miền của nó đã đóng về
+    // [a-z0-9-] bởi cổng khuôn platform_id. Ô chủ sở hữu KHÔNG có cổng đó: nó là tên người, tên
+    // tổ chức, chữ Việt có dấu. Gấp đồng hình lên miền ấy sẽ in ra một cụm không tồn tại — và
+    // cụm in ra là thứ người đối chiếu đem đi phán xử một hồ sơ thật.
+    expect(KHOA_CHU("Bao")).not.toBe(KHOA_CHU("Bảo"));
+    expect(KHOA_CHU("Linh")).not.toBe(KHOA_CHU("L1nh"));
+    expect(gom([{ chu: "Bao" }, { chu: "Bảo" }]).size).toBe(2);
   });
 
   it("hồ sơ không khai chủ KHÔNG bị gom bừa vào một cụm chung", () => {

@@ -17,10 +17,10 @@
 // LƯU Ý ĐÚNG PHẠM VI: bộ chấm chỉ kiểm hồ sơ có khai ĐỦ và ĐÚNG HÌNH DẠNG không. Nó KHÔNG
 // kiểm lời khai có đúng sự thật không — căn cứ từ chối R3 vẫn là việc của người đối chiếu.
 
-import { readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-import { ROOT, checkOne, loiKhuonPid } from './check-registration-core.mjs'
+import { ROOT, KHOA_CHU, checkOne, loiKhuonPid } from './check-registration-core.mjs'
 
 // ── chạy ──
 const args = process.argv.slice(2)
@@ -190,7 +190,7 @@ const theoChu = new Map()
 let khongKhaiChu = 0
 for (const x of toanBo) {
   if (!x.chu) { khongKhaiChu++; continue }
-  const k = x.chu.toLowerCase()
+  const k = KHOA_CHU(x.chu)
   if (!theoChu.has(k)) theoChu.set(k, [])
   theoChu.get(k).push(x)
 }
@@ -222,6 +222,30 @@ if (khongKhaiChu > 0) {
     `⚠ ${khongKhaiChu} hồ sơ chưa khai pointers.chu_so_huu ⇒ phép gom cụm KHÔNG phủ hết. ` +
     `Đừng đọc "không cụm nào" thành "không ai đứng sau nhiều hồ sơ".`
   )
+}
+
+// ── tên đã từng bị từ chối ──
+//
+// `Registrations/_tu-choi/` nằm NGOÀI tập so trùng R1, và điều đó là cố ý: một tệp bị từ chối mà
+// nằm lại trong `Registrations/` sẽ giữ tên đó khỏi tay người khác vô thời hạn — một lệnh cấm
+// không ai ký. Thả tên ra thì đúng, nhưng thả im lặng thì người duyệt sau không biết tên mình sắp
+// cấp từng bị từ chối vì gì. Nên nó bị THẢ và bị NÊU, hai việc cùng lúc.
+// Luật ở REGISTRATION-STANDARD.md §5 "Hồ sơ bị từ chối thì tệp đi đâu".
+const thuMucTuChoi = join(ROOT, 'Registrations', '_tu-choi')
+if (existsSync(thuMucTuChoi)) {
+  // Dùng lại `BO_QUA` để tệp README của chính thư mục không bị đọc thành một hồ sơ bị từ chối
+  // — nó có mặt để giải thích luật, và văn xuôi của nó có chứa chữ "R1".
+  const daTuChoi = readdirSync(thuMucTuChoi).filter((f) => f.endsWith('.md') && !BO_QUA.has(f))
+  if (daTuChoi.length > 0) {
+    console.log(`\nTÊN ĐÃ TỪNG BỊ TỪ CHỐI — ${daTuChoi.length} tệp trong Registrations/_tu-choi/ (KHÔNG nằm trong tập so trùng R1; tên đã được thả)`)
+    for (const f of daTuChoi) {
+      const ten = f.replace(/\.md$/, '')
+      // Mã từ chối lấy từ chính tệp, không từ tên tệp — tên tệp đổi được mà không ai thấy.
+      const ma = (readFileSync(join(thuMucTuChoi, f), 'utf8').match(/\bR[123]\b/) ?? ['chưa ghi mã'])[0]
+      const dungLai = toanBo.find((x) => CHUAN_HOA(x.pid) === CHUAN_HOA(ten))
+      console.log(`    ${ten}  (${ma})${dungLai ? `  ⚠ một hồ sơ đang dùng lại tên này: ${dungLai.file}` : ''}`)
+    }
+  }
 }
 
 // ── mã thoát: chỉ hai thứ mới đỏ ──
