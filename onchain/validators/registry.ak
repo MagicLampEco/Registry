@@ -190,8 +190,10 @@ validator registry(registry_authority: ByteArray) {
         // U-ADDR: ô hồ sơ ra phải ở địa chỉ ENTERPRISE của chính registry. U-SINGLE ngay
         // trên kia đếm theo payment hash (cố ý — xem util.ak), nên nó một mình cho phép
         // dời hồ sơ sang biến thể stake CÙNG payment hash. Hồ sơ đó vẫn hợp lệ, vẫn mang
-        // beacon NFT, và TÀNG HÌNH với `utxosAt(<địa chỉ enterprise>)` mà off-chain dựng
-        // (`scripts/config.ts:124`). Hai dòng cộng lại ghim địa chỉ ô ra về DUY NHẤT.
+        // beacon NFT, và TÀNG HÌNH với bất kỳ bên nào đọc sổ bằng `utxosAt(<địa chỉ
+        // enterprise>)`. Hai dòng cộng lại ghim địa chỉ ô ra về DUY NHẤT.
+        // ⚠ Bên đọc ấy nằm NGOÀI kho này — `utxosAt(` có 0 call site ở đây (đo 2026-09-01);
+        // `scripts/03_*` đọc bằng `utxosByOutRef`. Xem `util.has_no_stake_part` để biết đủ.
         expect util.has_no_stake_part(reg_out.address)
 
         expect InlineDatum(od) = reg_out.datum

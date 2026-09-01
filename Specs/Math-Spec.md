@@ -386,8 +386,21 @@ Hai dòng đáng đọc kỹ: **T5** và **T15**. Chúng là hai chỗ duy nhấ
 **Vì sao T16 là một dòng RIÊNG, không phải một ca của T1.** T1 nói "script lạ" và bị R-OUT-1 chặn
 bằng `is_at_script(_, H_reg)`. Ô hồ sơ của T16 có payment credential **đúng là** `Script(H_reg)`, nên
 `is_at_script` xanh, R-OUT-1 xanh, U-SINGLE đếm đủ "đúng một ô", beacon NFT vẫn nằm trong đó — hồ sơ
-hợp lệ mọi đường. Cái khác là ĐỊA CHỈ, và bên đọc sổ quét theo địa chỉ enterprise
-(`scripts/config.ts:124` dựng bằng `credentialToAddress`, không phần stake) sẽ không thấy nó.
+hợp lệ mọi đường. Cái khác là ĐỊA CHỈ, và bên nào đọc sổ quét theo địa chỉ enterprise sẽ không
+thấy nó.
+
+⚠ **Bên đọc ấy ở NGOÀI kho** (đo 2026-09-01): `command grep -rn "utxosAt(" offchain/src scripts/*.ts
+tests/` → 3 dòng, cả ba là chú thích; `scripts/03_*` đọc bằng `utxosByOutRef`. `config.ts:124` chỉ
+DỰNG địa chỉ, không ĐỌC theo nó. Bản trước của dòng này viết như thể có một call site trong kho —
+sai, và sai theo chiều làm cái giá của R-ADDR/U-ADDR/M-ADDR (bỏ quyền uỷ thác của mọi ô) trông như
+đang trả cho một bên hưởng lợi ở đây.
+
+⚠ **Và ba cổng đó KHÔNG đủ để hai đường đọc luôn đồng ý** (audit đối kháng 2026-09-01, có PoC).
+Chiều còn hở là chiều ngược lại: ai cũng trả ~2 ADA tạo được một ô **rác** ở đúng địa chỉ enterprise
+với datum tự khai, vì lúc TẠO ô không validator nào chạy. Đường địa chỉ thấy nó, đường beacon NFT
+thì không. Bản vá còn biến enterprise thành địa chỉ **chính tắc**, tức đúng chỗ kẻ gieo rác nhắm
+tới. ⇒ Kết luận cho bên đọc: đọc theo **beacon NFT với policy tự tính lại** (không lấy từ datum) là
+đường lành duy nhất; `utxosAt` là đường KHÔNG LÀNH kể cả sau v2.1.
 
 Thiệt hại không phải mất tiền — sổ không giữ giá trị (PK1). Thiệt hại là **sổ chỉ đường mà đường
 chuẩn đọc không ra mục**, tức đúng thứ sổ này tồn tại để làm. Và nó không tự kêu: không phép đo nào

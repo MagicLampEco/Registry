@@ -43,11 +43,26 @@ pub fn is_at_script(addr: Address, script_hash: ByteArray) -> Bool {
 /// nên hai ô cùng payment hash lọt qua như một). Nên phép đếm giữ nguyên, và ô ra bị
 /// GHIM thêm bằng dòng này — hai ràng buộc cộng lại xác định địa chỉ ô ra DUY NHẤT.
 ///
-/// Cái nó đóng KHÔNG phải rút tiền (sổ không giữ giá trị — PK1) mà là TÀNG HÌNH:
-/// `scripts/config.ts:124` dựng địa chỉ enterprise (`credentialToAddress`, không phần
-/// stake), nên ai lấy UTxO bằng `utxosAt(<địa chỉ đó>)` KHÔNG thấy hồ sơ đã dời sang
-/// biến thể stake — dù hồ sơ vẫn hợp lệ và vẫn mang beacon NFT. Sổ chỉ đường mà đọc
-/// bằng đường chuẩn lại không thấy mục thì nó thôi là sổ chỉ đường.
+/// Cái nó đóng KHÔNG phải rút tiền (sổ không giữ giá trị — PK1) mà là TÀNG HÌNH: ai lấy
+/// UTxO bằng `utxosAt(<địa chỉ enterprise>)` KHÔNG thấy hồ sơ đã dời sang biến thể stake
+/// — dù hồ sơ vẫn hợp lệ và vẫn mang beacon NFT.
+///
+/// ⚠ ĐÍNH CHÍNH (đo 2026-09-01) — bản trước của đoạn này viết rằng đó là đường mà
+/// `scripts/02_*`/`03_*` "thật sự dùng". SAI, và sai theo chiều đắt: nó làm cái giá dưới
+/// đây trông như đang trả cho một bên hưởng lợi trong kho.
+///   command grep -rn "utxosAt("     offchain/src scripts/*.ts tests/  → 3 dòng, CẢ BA là chú thích
+///   command grep -rn "utxosByOutRef" scripts/*.ts                     → 03_register_platform.ts:228,341,354
+/// Kho này KHÔNG có call site `utxosAt` nào. `scripts/config.ts:124` chỉ DỰNG địa chỉ,
+/// không ĐỌC theo nó. Bên hưởng lợi thật là bên tích hợp NGOÀI kho — SDK riêng, dịch vụ
+/// định tuyến phí, bảng theo dõi. Vẫn đáng đóng, nhưng phải biết đang trả cho ai.
+///
+/// ⚠ VÀ DÒNG NÀY KHÔNG ĐỦ để hai đường đọc luôn đồng ý (audit đối kháng 2026-09-01, có
+/// PoC). Ca rẻ nhất: ai cũng trả ~2 ADA tạo được một ô rác ở ĐÚNG địa chỉ enterprise với
+/// datum tự khai — lúc TẠO ô không validator nào chạy, nên không cổng nào chạm tới được.
+/// Nghịch lý phải nói thẳng: dòng này biến enterprise thành địa chỉ CHÍNH TẮC, tức đúng
+/// chỗ kẻ gieo rác nhắm tới. ⇒ đường đọc LÀNH duy nhất là theo beacon NFT với policy TỰ
+/// TÍNH LẠI (không lấy từ datum) — `discoverPlatforms`. Đọc bằng `utxosAt` là đường
+/// KHÔNG LÀNH, dù có dòng này.
 ///
 /// Đánh đổi, có chủ ý: ghim enterprise là bỏ quyền uỷ thác (delegate) phần ADA khoá
 /// trong ô hồ sơ. Giá đó nhỏ (mỗi ô chỉ min-ADA) và đổi lại bỏ được một câu hỏi không
