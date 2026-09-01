@@ -15,6 +15,7 @@
 // Phong cách mirror custody_seed_test.ak: placeholder tx, beacon NFT trong value,
 // authority vkh đặt trong extra_signatories.
 
+use aiken/collection/list
 use cardano/address.{Script}
 use cardano/assets
 use cardano/transaction.{Input, Output, OutputReference, Transaction, placeholder}
@@ -1331,4 +1332,107 @@ test migrate_out_staked_variant() fail {
       [authority],
     )
   run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 28. GOV-DISTINCT ở HAI CỬA SPEND — `governance_ref` trùng `custody_hash` (fail).
+//     Cùng họ với mục 19 (S-GOVSELF) nhưng KHÁC giá trị và KHÁC hệ quả. Ở 19, cổng đồng
+//     thuận tự thoả vì ô hồ sơ nằm ở chính `Script(reg_sh)`. Ở đây nó tự thoả vì kho
+//     Treasury của platform có nhánh `Collect` PERMISSIONLESS — đo 2026-09-01:
+//     `command grep -c "extra_signatories"` trên
+//     `LAMP/Treasury/onchain/validators/custody.ak` → **0**, không nhánh nào đòi chữ ký
+//     ⇒ AI CŨNG dựng được một input kho hợp lệ. Không cổng nào cũ cấm khai
+//     `governance_ref = custody_hash`: `entry_well_formed` chỉ ép 28 byte, R-GOVSELF chỉ
+//     cấm `== registry_hash`. Mà đó là nhầm lẫn rất tự nhiên — "kho của tôi gác luật của
+//     tôi". Hai bài dưới dựng ĐÚNG tx tấn công đã có PoC: validator NHẬN nó trước bản vá.
+// ════════════════════════════════════════════════════════════
+// Hồ sơ khai cổng quản trị CHÍNH LÀ kho của mình.
+fn entry_gov_is_custody() -> PlatformEntry {
+  PlatformEntry { ..entry_in(), governance_ref: custody_hash }
+}
+
+// Input kho — trên chuỗi thật đây là một tx `Collect` mà bất kỳ ai cũng dựng được.
+fn custody_input() -> Input {
+  util.mk_input(
+    util.mk_ref(8),
+    util.mk_output_no_datum(
+      util.script_address(custody_hash),
+      assets.from_lovelace(2_000_000),
+    ),
+  )
+}
+
+// 28a. Retire bằng MỘT chữ ký authority + một input kho (fail). Đây là toàn bộ đòn: sau
+//      Retire, U-TERMINAL khoá đường Update vĩnh viễn ⇒ gỡ niêm yết không đảo ngược được
+//      mà không cần platform đồng ý lần nào.
+test update_gov_ref_is_custody_hash_rejected() fail {
+  let e_out = PlatformEntry { ..entry_gov_is_custody(), status: Retired }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_gov_is_custody()), custody_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_gov_is_custody(), tx)
+}
+
+// 28b. Cùng lỗ ở cửa di trú (fail) — M-GOV đọc cùng `governance_ref` nên cùng bị vô hiệu.
+//      Không có bài này thì bản vá mới nửa đường: nhánh anh em ghi được cùng trường.
+test migrate_gov_ref_is_custody_hash_rejected() fail {
+  let e_out = PlatformEntry { ..entry_gov_is_custody(), spec_version: 3 }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_gov_is_custody()), custody_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_gov_is_custody(), new_reg_sh, 3, tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 29. TRẦN `accepted_assets` ở cửa Update (platform.max_accepted_assets = 32).
+//     Lý lẽ + số đo: `platform.max_accepted_assets`. Ràng ở đây là ràng ĐỐI XỨNG với cửa
+//     đúc — nếu chỉ chặn lúc đăng ký thì `UpdateEntry` là cửa sau bơm danh sách dài.
+// ════════════════════════════════════════════════════════════
+fn many_assets(n: Int) -> List<AssetKey> {
+  list.map(
+    list.range(1, n),
+    fn(_i) { AssetKey { policy: lamp_policy, name: lamp_name } },
+  )
+}
+
+// 29a. Cập nhật lên ĐÚNG trần (pass) — không siết nhầm; biên là "≤ 32".
+test update_accepted_at_cap_ok() {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      accepted_assets: many_assets(platform.max_accepted_assets),
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 29b. Cập nhật vượt trần đúng MỘT phần tử (fail).
+test update_accepted_over_cap_rejected() fail {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      accepted_assets: many_assets(platform.max_accepted_assets + 1),
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
 }

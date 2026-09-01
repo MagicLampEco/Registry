@@ -51,7 +51,21 @@
 //   U-ID      identity bất biến 6 field (thêm beacon_policy so với v1).
 //   U-VER     spec_version KHÔNG đổi (đổi phiên bản phải đi đường MigrateEntry).
 //   U-MUT     field khả biến sau cập nhật vẫn hợp lệ (governance_ref đúng 28 byte,
-//             và entry vẫn thuộc ĐÚNG MỘT hạng hình dạng — không nửa vời).
+//             và entry vẫn thuộc ĐÚNG MỘT hạng hình dạng — không nửa vời). Từ 2026-09-01
+//             hàm này gánh thêm HAI cổng, và cùng lúc là đáy chung của cửa đúc (R-WF gọi
+//             `entry_well_formed`, hàm đó gọi lại chính nó) ⇒ thêm ở đó là thêm cho cả ba
+//             cửa, không còn vá được nửa đường:
+//              · GOV-DIST `governance_ref` KHÁC custody_hash / seed_policy / beacon_policy.
+//                Ca `== custody_hash` là cửa GIẢ MẠO đồng thuận: kho Treasury có nhánh
+//                `Collect` permissionless (đo 2026-09-01: 0 lần `extra_signatories` trong
+//                `LAMP/Treasury/onchain/validators/custody.ak`) ⇒ authority MỘT MÌNH ghép
+//                được một input kho vào tx, U-GOV qua, đặt `Retired`, U-TERMINAL khoá
+//                luôn ⇒ gỡ niêm yết vĩnh viễn bằng một chữ ký. PoC đã dựng, validator
+//                NHẬN tx đó trước bản vá. Hai ca kia là cửa TỰ KHOÁ (minting policy không
+//                có nhánh spend ⇒ đồng thuận hằng False). Lý lẽ + phân biệt với chốt
+//                "KHÔNG vá bằng mã" ở util.ak:200 — xem `platform.governance_ref_distinct`.
+//              · CAP `len(accepted_assets) ≤ platform.max_accepted_assets` (=32). Số đo và
+//                vì sao 32 ở platform.ak.
 //   U-GOVSELF-OUT `entry_out.governance_ref != own_hash`. ĐÂY LÀ NỬA CÒN LẠI của
 //             S-GOVSELF: đợt trước chỉ chặn ở datum VÀO và ở cửa nộp, còn datum RA chỉ bị
 //             `mutable_fields_valid` ép ĐỘ DÀI 28 — mà `own_hash` dài đúng 28. Hệ quả đã
@@ -104,6 +118,9 @@
 //                 `governance_consented` không bao giờ thoả ⇒ hồ sơ VĨNH VIỄN không
 //                 Retire được, không di trú tiếp được. Chính là "hồ sơ kẹt vĩnh viễn" mà
 //                 nhánh Migrate sinh ra để vá — nhánh cứu tự tạo lại cái nó cứu.
+//                 Từ 2026-09-01 gánh thêm GOV-DIST và CAP (xem U-MUT) — đối xứng bắt buộc:
+//                 Migrate ghi được đúng những trường Update ghi được, nên hở một cửa là hở
+//                 cả hai (bài học M-GOV2 ngay dưới đây).
 //   M-GOV2        ĐỔI `governance_ref` KHI DI TRÚ = BÀN GIAO HAI CHIỀU, y hệt U-GOV2 ở
 //                 nhánh Update. M-GOV chỉ đòi ref CŨ, M-ID không gồm `governance_ref`,
 //                 M-MUT chỉ ép ĐỘ DÀI 28 ⇒ trước bản vá, di trú là cửa sau đi vòng qua

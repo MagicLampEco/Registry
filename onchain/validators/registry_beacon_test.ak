@@ -9,6 +9,7 @@
 // Phong cách mirror custody_seed_test.ak: mint test + self-ref NFT, placeholder tx,
 // authority vkh đặt trong extra_signatories.
 
+use aiken/collection/list
 use aiken/interval.{Finite, Interval, IntervalBound}
 use cardano/address.{Script}
 use cardano/assets
@@ -832,6 +833,125 @@ test register_non_custodial_no_governance_consent() fail {
       [authority],
       bucket_range(reg_epoch),
       [],
+    )
+  run(tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 15. GOV-DISTINCT — `governance_ref` trùng một định danh KHÁC của chính hồ sơ (fail).
+//     Xem lý lẽ đầy đủ ở `platform.governance_ref_distinct`. Ba ca dưới đều dựng tx HỢP
+//     LỆ MỌI ĐƯỜNG KHÁC (authority ký, mint đúng, R-BIND đủ, R-GOVLIVE có input ở đúng
+//     Script(governance_ref)) ⇒ chúng cô lập đúng cổng mới. Trước bản vá cả ba ĐƯỢC NHẬN.
+// ════════════════════════════════════════════════════════════
+// Input chứng minh cổng quản trị chạy, đặt ở MỘT script hash tuỳ ý — cần khi hồ sơ khai
+// `governance_ref` trùng custody/seed/beacon (R-GOVLIVE phải thoả thì bài mới cô lập được
+// cổng mới, chứ không đỏ nhờ R-GOVLIVE).
+fn gov_input_at(sh: ByteArray) -> Input {
+  util.mk_input(
+    util.mk_ref(7),
+    util.mk_output_no_datum(
+      util.script_address(sh),
+      assets.from_lovelace(2_000_000),
+    ),
+  )
+}
+
+// 15a. governance_ref == custody_hash (fail). Ca ĐẮT NHẤT: kho Treasury có nhánh
+//      `Collect` permissionless (đo: 0 lần `extra_signatories` trong custody.ak) ⇒ ai
+//      cũng ghép được một input kho vào tx ⇒ `governance_consented` thành thủ tục rỗng ⇒
+//      authority MỘT MÌNH Retire/đổi cut_bps/di trú được. Đây là cửa GIẢ MẠO đồng thuận,
+//      không phải cửa tự khoá — nên nó nguy hơn hai ca kế.
+test register_gov_ref_is_custody_hash_rejected() fail {
+  let e = PlatformEntry { ..entry(), governance_ref: custody_hash }
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+      bucket_range(reg_epoch),
+      [gov_input_at(custody_hash)],
+    )
+  run(tx)
+}
+
+// 15b. governance_ref == seed_policy (fail) — cửa TỰ KHOÁ: seed_policy là minting policy,
+//      script của nó không có nhánh spend ⇒ trên chuỗi thật không input nào ở địa chỉ đó
+//      chi tiêu được ⇒ đồng thuận là hằng False vĩnh viễn. Trong bài này input đó dựng
+//      được (mock), nên bài đỏ đúng nhờ cổng mới chứ không nhờ R-GOVLIVE.
+test register_gov_ref_is_seed_policy_rejected() fail {
+  let e = PlatformEntry { ..entry(), governance_ref: seed_policy }
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+      bucket_range(reg_epoch),
+      [gov_input_at(seed_policy)],
+    )
+  run(tx)
+}
+
+// 15c. governance_ref == beacon_policy (fail) — cùng cửa tự khoá, và ở đây chứng minh
+//      được bằng mã ngay trong kho: `registry_beacon` có `else(_) { fail }` ⇒ MỌI input
+//      đặt ở Script(beacon_policy) làm hỏng tx.
+test register_gov_ref_is_beacon_policy_rejected() fail {
+  let e = PlatformEntry { ..entry(), governance_ref: beacon_policy }
+  let tx =
+    reg_tx_full(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+      bucket_range(reg_epoch),
+      [gov_input_at(beacon_policy)],
+    )
+  run(tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 16. TRẦN `accepted_assets` (platform.max_accepted_assets = 32).
+//     Không có trần, hồ sơ vài trăm asset làm MỌI đường cần đồng thuận (Retire, Migrate,
+//     đổi ba trường quản trị — kể cả đường CỨU là rút ngắn chính danh sách) hết ngân sách
+//     ex-unit chung với validator quản trị chạy cùng tx, trong khi đường chỉ-authority
+//     (Pause) vẫn chạy ⇒ hồ sơ kẹt ở trạng thái một-bên. Số đo ở platform.ak.
+// ════════════════════════════════════════════════════════════
+fn many_assets(n: Int) -> List<AssetKey> {
+  list.map(
+    list.range(1, n),
+    fn(_i) { AssetKey { policy: lamp_policy, name: lamp_name } },
+  )
+}
+
+// 16a. accepted_assets dài ĐÚNG BẰNG trần (pass) — chứng minh bản vá không siết nhầm:
+//      biên là "≤ 32", không phải "< 32".
+test register_accepted_at_cap_ok() {
+  let e =
+    PlatformEntry { ..entry(), accepted_assets: many_assets(platform.max_accepted_assets) }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// 16b. Dài hơn trần đúng MỘT phần tử (fail) — biên chặn ở đúng chỗ, không lệch một nhịp.
+test register_accepted_over_cap_rejected() fail {
+  let e =
+    PlatformEntry {
+      ..entry(),
+      accepted_assets: many_assets(platform.max_accepted_assets + 1),
+    }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
     )
   run(tx)
 }

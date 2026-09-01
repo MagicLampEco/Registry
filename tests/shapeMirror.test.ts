@@ -461,3 +461,74 @@ describe("quét sổ · hồ sơ KHÔNG KHO nói đúng lý do, không giả v�
     expect(res.reasons.join(" ")).toMatch(/KHÔNG KHO/);
   });
 });
+
+// ── Gương R-GOVDIST + R-CAP (thêm 2026-09-01) ──────────────────────────────
+//
+// Hai ràng buộc on-chain VÔ ĐIỀU KIỆN, nên gương off-chain cũng phải vô điều kiện — nếu
+// không, bên tích hợp dựng được tx mà `tsc` + `vitest` đều xanh và chain từ chối 100%.
+//
+//  · `governance_ref != custody_hash` — GIẢ MẠO ĐỒNG THUẬN. `custody.ak` nhánh `Collect`
+//    permissionless (đo: `grep -c "extra_signatories" custody.ak` → 0) ⇒ ai cũng dựng được
+//    input ở script đó, và `governance_consented` đọc nó thành "quản trị đã cho phép".
+//    Hệ quả: authority MỘT MÌNH gỡ niêm yết vĩnh viễn. Có PoC chạy được.
+//  · `governance_ref != seed_policy / beacon_policy` — TỰ KHOÁ, lý do khác hẳn: minting
+//    policy không có handler `spend` ⇒ `governance_consented` là hằng False ⇒ hồ sơ kẹt.
+//  · `accepted_assets.length <= 32` — quá trần thì MỌI đường cần đồng thuận chết (validator
+//    quản trị chạy cùng tx, chia chung 14M ExUnit), kể cả đường CỨU là rút ngắn chính nó.
+//
+// Nguồn on-chain: `platform.ak:188` (governance_ref_distinct) · `:90` (max_accepted_assets)
+//                 `:242-247` (mutable_fields_valid — đáy chung ba cửa)
+//                 `:209-213` (entry_well_formed GỌI mutable_fields_valid — dây nối cửa đúc)
+describe("gương R-GOVDIST + R-CAP — hai ràng buộc on-chain vô điều kiện", () => {
+  it("governance_ref == custody_hash bị chặn ở CẢ entryWellFormed lẫn mutableFieldsValid", () => {
+    const bad: PlatformEntry = { ...custodialEntry(), governance_ref: CUSTODY_HASH };
+    expect(mutableFieldsValid(bad)).toBe(false);
+    expect(entryWellFormed(bad)).toBe(false);
+  });
+
+  it("governance_ref == seed_policy bị chặn — tự khoá, không phải giả mạo", () => {
+    const bad: PlatformEntry = { ...custodialEntry(), governance_ref: SEED_POLICY };
+    expect(mutableFieldsValid(bad)).toBe(false);
+    expect(entryWellFormed(bad)).toBe(false);
+  });
+
+  it("governance_ref == beacon_policy bị chặn", () => {
+    const bad: PlatformEntry = { ...custodialEntry(), governance_ref: BEACON_POLICY };
+    expect(mutableFieldsValid(bad)).toBe(false);
+    expect(entryWellFormed(bad)).toBe(false);
+  });
+
+  it("phép so KHÔNG phân biệt hoa/thường — hex viết hoa vẫn là cùng một hash", () => {
+    // Ca này khoá riêng phép chuẩn hoá. Bỏ `normHex` thì ba bài trên vẫn xanh, còn bài này đỏ:
+    // một hồ sơ khai `governance_ref` viết HOA của đúng `custody_hash` lọt qua gương off-chain
+    // rồi bị chain từ chối — đúng loại lệch mà tệp này sinh ra để chặn.
+    const bad: PlatformEntry = { ...custodialEntry(), governance_ref: CUSTODY_HASH.toUpperCase() };
+    expect(mutableFieldsValid(bad)).toBe(false);
+  });
+
+  it("đúng 32 asset vẫn QUA — trần là 32, không phải 31", () => {
+    const e = custodialEntry();
+    const at: PlatformEntry = {
+      ...e,
+      accepted_assets: Array.from({ length: 32 }, (_, i) => ({ policy: "", name: i.toString(16).padStart(2, "0") })),
+    };
+    expect(mutableFieldsValid(at)).toBe(true);
+    expect(entryWellFormed(at)).toBe(true);
+  });
+
+  it("33 asset bị chặn — và chặn ở cả cửa đăng ký, không riêng cửa cập nhật", () => {
+    const e = custodialEntry();
+    const over: PlatformEntry = {
+      ...e,
+      accepted_assets: Array.from({ length: 33 }, (_, i) => ({ policy: "", name: i.toString(16).padStart(2, "0") })),
+    };
+    expect(mutableFieldsValid(over)).toBe(false);
+    expect(entryWellFormed(over)).toBe(false);
+  });
+
+  it("hồ sơ hợp lệ vẫn qua — hai cổng mới không siết nhầm cái đang đúng", () => {
+    const ok = custodialEntry();
+    expect(mutableFieldsValid(ok)).toBe(true);
+    expect(entryWellFormed(ok)).toBe(true);
+  });
+});
