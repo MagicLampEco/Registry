@@ -151,11 +151,15 @@ export function entryShapeValid(e: PlatformEntry): boolean {
 export function entryWellFormed(e: PlatformEntry): boolean {
   return e.spec_version === SPEC_VERSION_V2
     && normHex(e.platform_id) !== ""
-    && isScriptHash28(e.governance_ref)
     && isScriptHash28(e.beacon_policy)
     && e.created_epoch >= 0n
     && e.status === "Active"
-    && entryShapeValid(e);
+    // Gọi `mutableFieldsValid` thay vì chép lại — giữ ĐÚNG quan hệ bao hàm mà on-chain vừa
+    // dựng (`platform.ak:209-213`). Hai hàm gác cùng một datum ở hai thời điểm; ràng thành
+    // bao hàm thì "vá nửa đường" không biểu diễn được: mọi điều kiện thêm vào hàm kia tự
+    // áp cho cửa đăng ký. Giá phải trả, giống hệt bên on-chain: NỚI hàm kia là nới luôn
+    // cửa này — chủ ý, vì nới một cửa mà quên cửa còn lại tệ hơn.
+    && mutableFieldsValid(e);
 }
 
 // ── R-GOVSELF / S-GOVSELF ───────────────────────────────────────────────────
@@ -256,8 +260,32 @@ export function identityPreserved(a: PlatformEntry, b: PlatformEntry): boolean {
 // Retire được, không di trú tiếp được, không đổi được ba trường quản trị.
 // Và dùng lại `shape_*` để hồ sơ sau cập nhật vẫn thuộc đúng MỘT hạng — cấm nửa vời.
 
+/** Trần số phần tử `accepted_assets` — gương `platform.max_accepted_assets` (`platform.ak:90`). */
+export const MAX_ACCEPTED_ASSETS = 32;
+
+/**
+ * Gương `platform.governance_ref_distinct` (`platform.ak:188`).
+ *
+ * `governance_ref` trùng `custody_hash` là GIẢ MẠO ĐỒNG THUẬN: `custody.ak` nhánh `Collect`
+ * là permissionless (đo: `grep -c "extra_signatories" custody.ak` → 0), nên ai cũng dựng
+ * được một input ở script đó, và `governance_consented` đọc input ấy thành "quản trị đã cho
+ * phép". Hệ quả: authority MỘT MÌNH gỡ niêm yết vĩnh viễn / đổi `cut_bps` / di trú hồ sơ.
+ *
+ * Trùng `seed_policy` hoặc `beacon_policy` là TỰ KHOÁ, lý do khác: minting policy không có
+ * handler `spend`, nên `governance_consented` thành hằng False ⇒ hồ sơ kẹt vĩnh viễn.
+ */
+export function governanceRefDistinct(e: PlatformEntry): boolean {
+  const g = normHex(e.governance_ref);
+  return g !== normHex(e.custody_hash)
+    && g !== normHex(e.seed_policy)
+    && g !== normHex(e.beacon_policy);
+}
+
 export function mutableFieldsValid(e: PlatformEntry): boolean {
-  return isScriptHash28(e.governance_ref) && entryShapeValid(e);
+  return isScriptHash28(e.governance_ref)
+    && governanceRefDistinct(e)
+    && e.accepted_assets.length <= MAX_ACCEPTED_ASSETS
+    && entryShapeValid(e);
 }
 
 // ── U-VALUE / M-VALUE: không rút giá trị khỏi ô hồ sơ ───────────────────────

@@ -24,6 +24,19 @@
 //             beacon_policy ĐÚNG 28 byte, status Active, và hồ sơ thuộc ĐÚNG MỘT hạng
 //             hình dạng — CÓ KHO (instance_id/custody_hash/seed_policy/accepted đủ) hoặc
 //             KHÔNG KHO (rỗng hết, cut_bps 0). Không có trạng thái nửa vời.
+//   R-GOVDIST entry.governance_ref KHÁC custody_hash, seed_policy, beacon_policy — ba định
+//             danh KHÁC của chính hồ sơ đó. Anh em của R-GOVSELF, chỉ đổi giá trị bị cấm.
+//             `== custody_hash` là ca ĐẮT: kho Treasury có nhánh `Collect` permissionless
+//             (đo 2026-09-01: 0 lần `extra_signatories` trong custody.ak) ⇒ ai cũng ghép
+//             được input kho ⇒ `governance_consented` thành thủ tục rỗng ⇒ authority MỘT
+//             MÌNH Retire được (PoC đã dựng). `== seed_policy`/`== beacon_policy` là ca tự
+//             khoá: minting policy không có nhánh spend ⇒ đồng thuận hằng False.
+//             Ép trong `platform.governance_ref_distinct`, gọi từ `mutable_fields_valid`
+//             ⇒ áp CẢ BA cửa (R-WF ở đây, U-MUT và M-MUT ở registry.ak). Lý lẽ đầy đủ +
+//             phân biệt với chốt "không vá bằng mã" ở util.ak:200 — xem platform.ak.
+//   R-CAP     len(accepted_assets) ≤ platform.max_accepted_assets (=32). Danh sách này là
+//             kênh duy nhất bên đăng ký bơm dài tuỳ ý; số đo + vì sao 32 ở platform.ak.
+//             Cùng đường ép với R-GOVDIST ⇒ cũng áp đủ ba cửa.
 //   R-GOVSELF entry.governance_ref != registry_hash. Nếu hồ sơ khai cổng quản trị CHÍNH
 //             LÀ registry, thì `governance_consented` bên spend (quét tx.inputs tìm input
 //             ở Script(governance_ref), mà ô hồ sơ luôn ở đó) thành hằng True vĩnh viễn ⇒

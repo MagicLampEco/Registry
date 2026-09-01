@@ -34,6 +34,7 @@
 //     ⇒ Bản nào đặt TIỀN CỌC hay bất kỳ giá trị nào vào ô hồ sơ phải cân lại chỗ này
 //     TRƯỚC, không được kế thừa câu "nó trơ".
 
+use aiken/collection/list
 use aiken/primitive/bytearray
 use cardano/assets.{Value}
 use magiclamp/registry/types.{AssetKey}
@@ -55,6 +56,38 @@ pub const script_hash_len: Int = 28
 /// `MigrateEntry` chỉ được TĂNG (M-VER). Tên hằng viết thường vì Aiken bắt const phải
 /// snake_case (chữ hoa đầu = tên kiểu → parser báo lỗi).
 pub const spec_version_v2: Int = 2
+
+/// TRẦN độ dài `accepted_assets`. Không có nó, danh sách này là kênh DUY NHẤT trong hồ
+/// sơ mà bên đăng ký tự bơm dài tuỳ ý, và mỗi phần tử phải được duyệt LẠI nhiều lần trong
+/// một lần chi tiêu (`mutable_fields_valid` ở ra, `governed_fields_changed` so vào↔ra,
+/// `shape_*` ở cả hai đầu).
+///
+/// SỐ ĐO (aiken v1.1.21, chính kho này, 2026-09-01 — bài đo tạm trong `registry_test.ak`,
+/// nhánh `UpdateEntry`, đã gỡ sau khi đo). Bốn điểm N = 2 / 32 / 64 / 132, mem của bài:
+/// 526.881 / 1.068.021 / 1.645.237 / 2.871.821. Trừ chi phí RIÊNG của fixture (cùng hàm
+/// dựng, thân bài không gọi validator): 103.619 tại N=2 và 822.259 tại N=132 ⇒ 5.528
+/// mem/phần tử là của fixture. Dốc TỔNG là 18.038 mem/phần tử, TUYẾN TÍNH khít trên cả ba
+/// khoảng (541.140/30 = 577.216/32 = 1.226.584/68 = 18.038) ⇒ phần của RIÊNG validator là
+/// 18.038 − 5.528 = **12.510 mem/phần tử**, nền (N=0) ≈ 398.242 mem.
+///   · riêng validator chạm `maxTxExMem` = 14.000.000 ở N ≈ **1.087**;
+///   · tại trần 32: ≈ 798.562 mem = **5,7%** ngân sách tx ⇒ còn ~13,2M cho validator quản
+///     trị của platform chạy CÙNG tx.
+/// Đây là CẬN DƯỚI: chưa tính phần ledger tính cho việc nạp/giải mã datum vào.
+///
+/// VÌ SAO CẦN TRẦN chứ không phải "để ledger tự chặn": mọi việc KHÔNG đảo ngược được
+/// (Retire, Migrate, đổi `governance_ref`/`cut_bps`/`accepted_assets`) đều buộc validator
+/// quản trị của platform chạy TRONG CÙNG tx và chia chung 14M — kể cả việc CỨU là rút
+/// ngắn chính danh sách này. Đường chỉ-authority (Pause) thì không cần ai chạy cùng, nên
+/// nó sống lâu hơn. Hồ sơ phình quá cỡ ⇒ kẹt ở trạng thái CHỈ authority điều khiển được,
+/// đúng thứ rào "hai bên" sinh ra để chặn.
+///
+/// VÌ SAO 32 chứ không cao hơn: hai chiều sai lệch nhau về giá. Trần quá THẤP = phiền
+/// (dịch vụ nhận ít loại tài sản hơn mong muốn), sửa được bằng một lần đăng ký lại. Trần
+/// quá CAO = hồ sơ kẹt vĩnh viễn ở đường một-bên. Nên chọn phía rẻ. 32 vẫn dư cho hình
+/// dạng thật của hệ (ADA + LAMP + vài chục token).
+/// ⚠ Trần nằm trong MÃ, không trong datum ⇒ đổi nó sau khi triển khai = đổi script hash =
+/// phải di trú từng hồ sơ, mà di trú lại cần đúng cái đồng thuận đang kẹt. Chốt bây giờ.
+pub const max_accepted_assets: Int = 32
 
 /// Vòng đời một platform trong registry. Constr index theo thứ tự khai báo (khớp offchain).
 pub type PlatformStatus {
@@ -123,18 +156,60 @@ pub fn shape_non_custodial(e: PlatformEntry) -> Bool {
   e.instance_id == #"" && e.custody_hash == #"" && e.seed_policy == #"" && e.accepted_assets == [] && e.cut_bps == 0
 }
 
-/// Entry well-formed tại đăng ký: định danh có, `governance_ref`/`beacon_policy` đúng
-/// 28 byte, status Active, và hồ sơ thuộc ĐÚNG MỘT trong hai hạng hình dạng.
+/// GOV-DISTINCT — `governance_ref` KHÔNG được trùng bất kỳ định danh script/policy nào
+/// khác của CHÍNH hồ sơ đó. Ba giá trị, hai lý do khác nhau:
+///
+///  · `== custody_hash` — CỬA GIẢ MẠO ĐỒNG THUẬN, đã dựng lại bằng thực thi. Kho Treasury
+///    của platform (`LAMP/Treasury/onchain/validators/custody.ak`) có nhánh `Collect`
+///    PERMISSIONLESS — đo 2026-09-01: `command grep -c "extra_signatories" custody.ak` →
+///    **0**, tức không nhánh nào của kho đòi chữ ký. `governance_consented` (util.ak:215)
+///    chỉ hỏi "có input nào ở `Script(governance_ref)` bị chi tiêu không", nên ai cũng
+///    ghép được một input kho vào tx. Hệ quả: `registry_authority` MỘT MÌNH dựng được tx
+///    {ô hồ sơ + một input kho redeemer `Collect`} và đặt `status = Retired` — U-GOV qua,
+///    U-TERMINAL (`registry.ak:185`) khoá luôn ⇒ gỡ niêm yết VĨNH VIỄN bằng một chữ ký.
+///    Cùng đường đó đổi được `cut_bps`, `accepted_assets`, hoặc di trú hồ sơ đi. Mà khai
+///    `governance_ref = custody_hash` là nhầm lẫn RẤT tự nhiên ("kho của tôi gác luật của
+///    tôi"), không cần ác ý ai cũng khai được.
+///  · `== seed_policy` / `== beacon_policy` — CỬA TỰ KHOÁ. Hai giá trị đó là minting
+///    policy: `registry_beacon` có `else(_) { fail }` (registry_beacon.ak:189) nên MỌI
+///    input đặt ở `Script(beacon_policy)` làm hỏng tx, và `custody_seed` cùng hình dạng.
+///    Không input nào ở đó chi tiêu được ⇒ `governance_consented` là hằng False vĩnh viễn
+///    ⇒ hồ sơ không Retire, không di trú, không đổi ba trường quản trị được nữa. Cùng họ
+///    với PoC `newF` (di trú tới một script chỉ có `mint`, ghi ở registry.ak:83-90).
+///
+/// ⚠ ĐỪNG NHẦM VỚI CHỐT Ở `util.ak:200-210` ("KHÔNG vá bằng mã ở v2"). Chốt ấy nói về ca
+/// TỔNG QUÁT — "cổng quản trị của platform có một nhánh permissionless" — thứ validator
+/// KHÔNG kiểm được on-chain (nó không đọc được mã của script lạ) và đã chuyển sang chuẩn
+/// đăng ký. Đây là ca RIÊNG và KIỂM ĐƯỢC: `governance_ref` trùng ĐÚNG MỘT giá trị khác
+/// nằm trong CHÍNH datum này — so hai trường với nhau, không cần biết gì về script bên
+/// ngoài. Cùng họ với `R-GOVSELF` (registry_beacon.ak:123) và `entry_out.governance_ref
+/// != own_hash` (registry.ak:198), hai cổng đã có sẵn. Ai định xoá dòng này: đọc lại đoạn
+/// trên, đó là ca có PoC.
+pub fn governance_ref_distinct(e: PlatformEntry) -> Bool {
+  e.governance_ref != e.custody_hash && e.governance_ref != e.seed_policy && e.governance_ref != e.beacon_policy
+}
+
+/// Entry well-formed tại đăng ký: định danh có, `beacon_policy` đúng 28 byte, status
+/// Active, CỘNG toàn bộ điều kiện của `mutable_fields_valid`.
+///
+/// ⚠ VÌ SAO GỌI `mutable_fields_valid` THAY VÌ CHÉP LẠI ĐIỀU KIỆN. Registry đã ăn đúng
+/// lỗi này một lần (M-GOV2, xem registry.ak:107-115): một ràng buộc dựng ở cửa này, cửa
+/// anh em ghi được cùng trường mà không mang cùng ràng buộc ⇒ mới vá nửa lỗ. Hai hàm này
+/// gác CÙNG một datum ở hai thời điểm — đăng ký (cửa đúc) và sau cập nhật/di trú (hai cửa
+/// spend). Ràng thành quan hệ BAO HÀM thì "vá nửa đường" không biểu diễn được nữa: mọi
+/// điều kiện thêm vào `mutable_fields_valid` tự động áp cho cả cửa đúc.
+/// Chiều ngược lại có giá: NỚI `mutable_fields_valid` là nới luôn cửa đúc. Đó là chủ ý —
+/// nới cửa đúc mà quên cửa spend còn tệ hơn, và cách này bắt người nới phải nhìn thấy cả
+/// hai.
 ///
 /// `governance_ref` BẮT BUỘC cho CẢ HAI hạng — không phải để gác tiền (hồ sơ không kho
 /// chẳng có tiền để gác), mà để hồ sơ luôn có MỘT BÊN đồng thuận được. Hồ sơ không có
 /// nó là hồ sơ mà authority một mình Retire vĩnh viễn được — đúng thứ U-GOV dựng ra để
 /// chặn.
 pub fn entry_well_formed(e: PlatformEntry) -> Bool {
-  e.platform_id != #"" && bytearray.length(e.governance_ref) == script_hash_len && e.created_epoch >= 0 && e.status == Active && bytearray.length(e.beacon_policy) == script_hash_len && or {
-    shape_custodial(e),
-    shape_non_custodial(e),
-  }
+  e.platform_id != #"" && e.created_epoch >= 0 && e.status == Active && bytearray.length(
+    e.beacon_policy,
+  ) == script_hash_len && mutable_fields_valid(e)
 }
 
 /// Identity (6 field) bảo toàn giữa entry_in và entry_out — áp cho CẢ UpdateEntry lẫn
@@ -159,8 +234,15 @@ pub fn identity_preserved(a: PlatformEntry, b: PlatformEntry) -> Bool {
 /// Dùng lại `shape_*` để hồ sơ sau cập nhật vẫn thuộc đúng một hạng — cấm mọi trạng thái
 /// nửa vời. Việc CẤM CHUYỂN HẠNG ép riêng ở validator (`shape_custodial(in) ==
 /// shape_custodial(out)`), vì hai hàm này chỉ nói về một entry đơn lẻ.
+///
+/// ⚠ HÀM NÀY LÀ ĐÁY CHUNG CỦA CẢ BA CỬA. `entry_well_formed` gọi nó ⇒ cửa đúc
+/// (registry_beacon.ak:118, R-WF) áp; `registry.ak:192` (U-MUT) và `:225` (M-MUT) gọi
+/// thẳng ⇒ hai cửa spend áp. Thêm điều kiện ở đây là thêm cho cả ba; đừng thêm ở một chỗ
+/// khác rồi tưởng đã đủ.
 pub fn mutable_fields_valid(e: PlatformEntry) -> Bool {
-  bytearray.length(e.governance_ref) == script_hash_len && or {
+  bytearray.length(e.governance_ref) == script_hash_len && governance_ref_distinct(e) && list.length(
+    e.accepted_assets,
+  ) <= max_accepted_assets && or {
     shape_custodial(e),
     shape_non_custodial(e),
   }
