@@ -428,22 +428,45 @@ Kho riêng tư vẫn lên `L2`–`L3` được, bằng **hai** đường không 
 
 Hai điều kiện phụ, ghi ra để không phải cãi từng ca:
 
+> **Mọi câu "máy hiện chưa kiểm được X" dưới đây phải kèm MỘT LỆNH CHẠY ĐƯỢC cho ra câu trả lời
+> hôm nay.** Đề nghị của nhà SuperApp, nhận nguyên, và lý do đắt hơn vẻ ngoài của nó: một câu
+> "hiện chưa" hết đúng theo chiều **tốt lên** — bên kia bổ sung tính năng, câu thành sai, và
+> **không gì đỏ**. Ca thật họ đo được: một khối cảnh báo có sẵn điều kiện gỡ viết rõ ràng
+> (*"gỡ khi endpoint trả khác 404"*), điều kiện ấy **đã đạt**, và nó vẫn sống thêm **17 ngày** —
+> vì thứ đọc điều kiện là con người và không có nhịp nào bắt ai đo lại. Ba trường (ai quyết · đo
+> lần cuối khi nào · kho này không kiểm) không đủ; thiếu trường thứ tư thì câu không có đường tự
+> hết hạn. Câu nào không viết nổi lệnh ấy thì đó là dấu hiệu nó **chưa đo được**, và phải nói thế
+> thay vì nói "hiện chưa". Cột *Lệnh kiểm* của [`DevStatus.md`](./DevStatus.md) là đúng trường
+> này, dựng độc lập ở nhà này trước khi nhận thư — hai chỗ hội tụ nên nó thành nếp, không phải
+> một sáng kiến.
+
 - **Từ chối cấp quyền đọc cho bên duyệt ⇒ con trỏ tính như KHÔNG CÓ**, không phải `R3`. Không mở
   kho là quyền của nhà đó, không phải lời khai sai — hệ quả là hạ hạng, không phải từ chối.
 - **Máy chưa phân biệt được hai loại con trỏ.** `tools/check-registration-core.mjs` hôm nay chỉ soi
   cú pháp, nên một con trỏ riêng tư vẫn qua. Cho tới khi bộ chấm biết hỏi kho có công khai không,
   mục này do **người duyệt** áp — và chỗ đó phải ghi rõ, đừng để ai đọc bộ chấm xanh ra thành đã kiểm.
+  **Đo lại bằng:** `command grep -nE '^import ' tools/check-registration-core.mjs`
+  — chừng nào danh sách nhập chỉ có `node:fs`, `node:path`, `node:url` thì bộ chấm **không có
+  đường nào** hỏi GitHub kho công khai hay không, nên câu này còn đúng. Thêm một dòng nhập khác
+  là dấu hiệu phải đọc lại mục này.
 - **`EV-2` không được xác minh trên chuỗi.** Máy chỉ hỏi con trỏ có chứa một chuỗi **64 ký tự hex**
   hay không (`tools/check-registration-core.mjs`, mẫu `CO_TX`). Nó **không** hỏi explorer xem giao
   dịch đó có thật không, và **không** đọc nội dung giao dịch. Một chuỗi `openssl rand -hex 32` bịa ra
   vẫn qua. Nên `EV-2` hôm nay là **lời khai có định dạng kiểm được**, chưa phải chứng cứ đã kiểm —
   người duyệt vẫn phải tự tra explorer, và phải xem giao dịch đó có nói đúng điều đang viện dẫn không.
+  **Đo lại bằng:** `command grep -nE '\bfetch\(|node:(https?|net)|axios|undici' tools/check-registration-core.mjs`
+  — rỗng = bộ chấm không có lời gọi mạng nào, tức câu này còn đúng. (Đừng dùng mẫu trần
+  `https://`: nó khớp cả chú thích lẫn phép kiểm định dạng ô đầu mối, và trả 2 dòng cho một tệp
+  **không** gọi mạng — một lệnh đo mà báo động giả thì tệ hơn không có lệnh nào.)
 - **Luật ba-thứ cũng chỉ được kiểm ở mức định dạng.** Hai lệnh `git branch --contains` và
   `git cat-file -e` ở mục trên là việc của **người** duyệt: máy **không** chạy lệnh nào trong hai
   lệnh đó. Nó chỉ khớp biểu thức chính quy xem câu con trỏ có mang đủ ba mảnh không — `file:line`,
   chữ "nhánh"/"branch" kèm một tên, và một chuỗi 7–40 ký tự hex. Một SHA bịa đúng hình dạng vẫn qua.
   Máy trả lời được câu "con trỏ này có đủ hình không", không trả lời được câu "commit này có thật và
   có trên `main` không".
+  **Đo lại bằng:** `command grep -nE 'node:child_process|execSync\(|spawnSync\(' tools/check-registration-core.mjs`
+  — rỗng = bộ chấm không có đường chạy tiến trình con, nên nó không chạy được `git` gì cả. (Mẫu
+  `git ` trần khớp hai dòng chú thích **nói rằng** nó không chạy git — đo trúng chữ, trượt việc.)
 
 ### Hạng chứng thực — và một câu phải đọc kỹ
 
@@ -535,6 +558,33 @@ Hai hệ quả thực dụng của phép thử, cả hai đều **thu hẹp** `R
 - Ngược lại, người duyệt viện `R3` phải chỉ ra được **bên thứ ba đó là ai** và **họ đổi hành xử ra
   sao**. Không chỉ ra được thì đó chưa phải quyết định `R3` — cộng thêm hai điều kiện ở §5 (nêu
   dòng khai nào sai, nêu bằng chứng nào cho thấy nó sai).
+
+#### Một họ lời khai áp `R3` được ngay: "không lộ dữ liệu người dùng, vì có ZK"
+
+Chỗ này viết ra vì nó là ca `R3` **dễ lọt nhất**: câu nghe như một sự kiện kỹ thuật, người duyệt
+không có nền để bác, và bên khai thường tin nó thật.
+
+> **Có ZK KHÔNG cho phép khai "không lộ dữ liệu người dùng".** Câu khai được là **"không lộ giá
+> trị đã chứng minh"**. Mọi thứ ngoài giá trị đó — **có gọi hay không, gọi lúc nào, bao lâu, bao
+> nhiêu lần, kích thước, và quan hệ giữa hai lần chứng minh của cùng một chủ thể** — không nằm
+> trong bảo đảm của proof.
+
+Câu này do nhà Glint cấp và tự nêu giới hạn của chính mình: *"ZK ≠ unlinkability; nhiều proof +
+nullifier **có thể cùng lộ**"* (`Glint-Math.md:348`, Định lý G.2), và chống-liên-kết cần
+pseudorandomness + key-hiding chứ collision-resistance **không đủ** (`Glint-Math.md:162`).
+
+Vì sao nó là căn cứ chứ không phải một lời nhắc: bên thứ ba **hành xử khác đi** nếu biết — một
+dịch vụ xử lý dữ liệu người thật khai "không lộ" thì bên tích hợp bỏ qua đúng phần rà soát đường
+đi của dữ liệu. Đó là phép thử `R3` ở trên, thoả đủ.
+
+⚠ **Và người duyệt hôm nay KHÔNG tự đối chiếu được bằng tài liệu.** Đã hỏi Glint chỉ ra mục nào
+trong đặc tả của họ liệt kê "cái gì vẫn lộ khi proof đã đúng"; câu trả lời của họ là **không có
+mục nào**, và họ nhận việc viết. Nên tới lúc mục đó có, ba câu trên là thứ duy nhất người duyệt
+cầm — đủ để **bác một lời khai quá rộng**, chưa đủ để **chấm một lời khai hẹp là đúng**. Đừng
+dùng nó theo chiều thứ hai.
+
+**Đo lại bằng:** `command grep -rn 'vẫn lộ\|ranh giới lộ\|leakage' /Users/ductiger/Projects/VeDataIO/Specs/Glint-Math.md`
+— có dòng trả về nghĩa là mục kia đã được viết, và mục này phải đọc lại theo nó.
 
 Không có căn cứ nào ngoài ba mục này. Cụ thể, **không** phải căn cứ từ chối:
 
