@@ -199,7 +199,7 @@ nên gợi ý update entry cho khớp.
 
 `discoverPlatforms` **CHỈ đọc datum** trong entry — datum có thể khai `seed_policy/instance_id/custody_hash`
 **bất kỳ**. Vì vậy discover là **chỉ-mục để tìm**, KHÔNG phải bằng chứng đủ để **route phí** tới một
-custody. Người tin (ví/app gửi value tới kho của một platform) PHẢI qua ba van trước khi tin:
+custody. Người tin (ví/app gửi value tới kho của một platform) PHẢI qua bốn van trước khi tin:
 
 1. **Đối soát custody THẬT (audit #6, BẮT BUỘC trước route phí).** Gọi `verifyEntryAgainstCustody(entry,
    custodyUtxo)` — kiểm custody UTxO thật mang đúng 1 NFT authenticity `(seed_policy, instance_id)` Ở
@@ -215,10 +215,18 @@ custody. Người tin (ví/app gửi value tới kho của một platform) PHẢ
    → KHÔNG im lặng chọn cái đầu; phải đối soát custody chọn entry thật hoặc từ chối.
 3. **Cảnh báo entry ở Script lạ (audit #3).** Cấp `registryScriptHash` cho `discoverPlatforms` → entry
    mà NFT beacon nằm ngoài registry validator thật bị đánh dấu `foreignScript=true`. Bỏ qua hoặc soi kỹ.
+4. **Cảnh báo entry ở BIẾN THỂ STAKE của đúng registry (van #4).** Cấp thêm `stakeCredential` cho mỗi
+   UTxO → entry ở đúng `registryScriptHash` nhưng có phần stake bị đánh `stakedVariant=true`. Van #3
+   **xanh** với ca này (payment credential đúng), nên nó không thay được van #4. Cái khác là **địa
+   chỉ**: bên đọc bằng `utxosAt(<địa chỉ enterprise>)` không thấy entry đó, còn `discoverPlatforms`
+   thấy — vì nó tìm theo beacon NFT. Đây là chỗ duy nhất trong SDK phát hiện được sự bất đồng giữa
+   hai đường đọc sổ. Gương của `R-ADDR`/`U-ADDR`/`M-ADDR` on-chain (`Math-Spec.md` §8 T16).
+   ⚠ `stakedVariant === undefined` là **CHƯA ĐO** (bên gọi không cấp `stakeCredential`), không phải
+   "sạch". Kiểm bằng `=== false`; viết `!p.stakedVariant` là đọc "chưa đo" thành "an toàn".
 
 > **Vì sao discover một mình KHÔNG đủ tin (first-principles):** một beacon NFT + datum chỉ chứng minh
 > "authority đã ký một đăng ký", KHÔNG chứng minh "entry này trỏ đúng custody thật ở thời điểm route phí".
-> Ba van trên đưa discover từ "thấy" sang "đủ tin để gửi tiền". (Chi tiết SDK ở `Tech-Spec.md §6.4`; mô hình
+> Bốn van trên đưa discover từ "thấy" sang "đủ tin để gửi tiền". (Chi tiết SDK ở `Tech-Spec.md §6.4`; mô hình
 > tin cậy + lộ trình đóng ở `CONTRACT.md §8`.)
 >
 > ⛔ **F13 (vá lần 2 — nhấn mạnh):** `verifyEntryAgainstCustody` + dedup (`findDuplicatePlatformIds`) chỉ
@@ -269,7 +277,7 @@ ký + ký register/update + đảm bảo `platform_id` duy nhất. KHÔNG độn
 ### 5.3 Người discover (ví, explorer, app khác)
 
 Bất kỳ ai cần biết "hệ sinh thái này có platform nào" — quét beacon policy ra danh sách. Không cần quyền,
-không cần ai vận hành danh bạ. **Nếu định route phí** (không chỉ liệt kê): phải qua ba van §3.4 — đối
+không cần ai vận hành danh bạ. **Nếu định route phí** (không chỉ liệt kê): phải qua bốn van §3.4 — đối
 soát custody thật (`verifyEntryAgainstCustody`), kiểm trùng id (`duplicate`), cảnh báo script lạ
 (`foreignScript`). Discover một mình KHÔNG đủ tin để gửi tiền.
 

@@ -454,7 +454,7 @@ có KHÔNG phải lý do từ chối**.
 |---|---|---|
 | Registry ↔ Treasury | entry trỏ tới một `(S_seed, iid, H_cust)` tồn tại lúc đăng ký (PK8) | kho là Treasury thật; `spend_spec_hash` gồm `instance_id` |
 | Registry ↔ Governance | đòi `governance_consented` cho việc không đảo ngược được | `G` chỉ đồng thuận khi platform thật sự muốn (A-GOV) |
-| Registry ↔ SDK off-chain | thứ tự trường datum + chỉ số constructor cố định (A-DATA) | decode đúng thứ tự; gọi đủ ba van ở §6.2 |
+| Registry ↔ SDK off-chain | thứ tự trường datum + chỉ số constructor cố định (A-DATA) | decode đúng thứ tự; gọi đủ bốn van ở §6.2 |
 | Registry ↔ Mint-Authority Registry của LAMP | **không liên quan** | hai sổ khác nhau: sổ này niêm yết platform; sổ kia gác quyền phát hành token |
 
 ---
