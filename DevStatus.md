@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-08-30**.
+Cập nhật cuối: **2026-09-01**.
 
 ---
 
@@ -23,7 +23,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | Thứ | Trạng thái | Neo | Lệnh kiểm | Chặn cái gì | Cập nhật |
 |---|---|---|---|---|---|
 | Validator on-chain v2 (`registry.ak`, `registry_beacon.ak`, `platform.ak`, `util.ak`) | `đã merge (commit c63372e)` | PR #8 gộp vào `main` 2026-08-15 | `git log --oneline main -- onchain/` ; `cd onchain && aiken check && aiken build` | Math-Spec, Tech-Spec §1–§5, toàn bộ SDK off-chain | 2026-08-17 |
-| Kiểm thử on-chain (`registry_test.ak`, `registry_beacon_test.ak`) | `đã merge (commit c63372e)` | cùng PR | `cd onchain && aiken check` (110 test) | mốc M2, M3 của Exec-Spec | 2026-08-17 |
+| Kiểm thử on-chain (`registry_test.ak`, `registry_beacon_test.ak`) | `đã merge (commit c63372e)` | cùng PR | `cd onchain && aiken check` | mốc M2, M3 của Exec-Spec | 2026-09-01 |
 | SDK off-chain (`offchain/`) | `đã merge (commit c63372e)` | cùng PR | `npm test` ; `npm run typecheck` | mốc M4, M5 | 2026-08-17 |
 | `bench/`, `examples/`, `tests/` | `đã merge (commit c63372e)` | cùng PR | `git ls-files bench/ examples/ tests/` (có tệp = đã track) | đo ExUnit, kịch bản E2E | 2026-08-17 |
 | `Specs/Math-Spec.md` (đặc tả toán) | `đã merge (commit c63372e)` | cùng PR | `git log --oneline main -- Specs/Math-Spec.md` (**có** dòng = đã vào `main`) | cổng duyệt của cả bốn đặc tả | 2026-08-17 |
@@ -31,6 +31,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | `Registrations/codes.json` | `đã merge (commit c63372e)`, có sửa tiếp trên nhánh đang chạy | PR #8; sửa tiếp ở `34db63b` (R1 hai mức) và đợt rà 2026-08-17 | `node tools/check-registration.mjs` ; `bash tools/test-check.sh` | hồ sơ đăng ký | 2026-08-17 |
 | Quyết định `platform_id` do NGƯỜI đặt hay MÁY sinh | `đã merge (commit 51c5401)` — câu hỏi đã được nhặt lại vào `Math-Spec.md` L1, **chủ nhân chưa chốt** | PR #10, base `main` | `grep -n 'platform_id' Specs/Math-Spec.md \| head` | cửa sổ đóng lúc hồ sơ đầu tiên lên chuỗi | 2026-08-17 |
 | Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `có PR (#12)` — 9 commit, chờ chủ nhân gộp | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, năm dữ kiện D1–D5 cho câu `platform_id`, mục bằng chứng phủ định, phép thử cho `R3`, ví dụ thứ tư và thứ năm của §13.1.1, mục giới hạn `L9`, ba điều kiện của đường ngoài-chuỗi, và loạt sửa tên tổ chức | `GH_TOKEN=$TOKEN gh pr view 12 -R MagicLampEco/Registry --json state,mergeable` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` — nhưng hạn chót **có điều kiện**: D4 chỉ áp nếu `display_name` buộc lên chuỗi, và D5 trả lời là **không buộc** | 2026-08-30 |
+| Nhánh `fix/ghim-dia-chi-ho-so-khong-phan-stake` | `đang làm` — ghim ô hồ sơ về địa chỉ **enterprise** ở cả ba cửa (`R-ADDR`/`U-ADDR`/`M-ADDR`), đóng lỗ TÀNG HÌNH Math-Spec §8 T16 | đo tại chỗ: `aiken check` 116 kiểm 0 lỗi (nền 113) · đột biến gỡ ba dòng gác ⇒ đúng ba bài kiểm mới đỏ, không bài nào khác đổi · `vitest` 218/218 · `tsc` 0 · `test-check.sh` 18/0 | `cd onchain && aiken check` ; `cd onchain && aiken build && grep -o '"hash": "[a-f0-9]*"' plutus.json \| sort -u` | **script hash ĐỔI CÓ CHỦ Ý** — `registry` `d4202913…65f6` → `d10bb50d…0115`, `registry_beacon` `e596b61f…bd6f` → `73a25648…b97d`. Miễn phí vì chưa deploy mạng nào | 2026-09-01 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
 

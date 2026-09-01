@@ -35,6 +35,10 @@ const reg_sh: ByteArray = #"4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f
 // script hash registry validator MỚI (đích di trú).
 const new_reg_sh: ByteArray = #"7e777e777e777e777e777e777e777e777e777e777e777e777e777e77"
 
+// stake credential dùng dựng BIẾN THỂ STAKE của một script hash — cùng payment
+// credential, khác địa chỉ (U-ADDR / M-ADDR).
+const stake_sh: ByteArray = #"57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a"
+
 const platform_id: ByteArray = #"706b"
 
 const instance_id: ByteArray = #"abcd"
@@ -1271,6 +1275,58 @@ test migrate_gov_ref_unchanged_no_extra_consent() {
     upd_tx(
       [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
       [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 27. ĐỊA CHỈ Ô HỒ SƠ RA — U-ADDR / M-ADDR.
+//
+//     Loại lỗ này KHÔNG phải rút tiền (sổ không giữ giá trị — PK1) mà là TÀNG HÌNH.
+//     U-SINGLE / M-DEST đếm theo PAYMENT hash (cố ý, chống double-satisfaction), nên
+//     một ô ra ở biến thể stake CÙNG payment hash vẫn được đếm là "đúng 1 ô" và vẫn
+//     mang beacon NFT — hợp lệ mọi đường, mà `utxosAt(<địa chỉ enterprise>)` mà
+//     off-chain dựng (`scripts/config.ts:124`) KHÔNG thấy.
+//
+//     Hai ca dưới là phép đo cho chính bản vá: bỏ dòng `has_no_stake_part` ra thì cả
+//     hai chuyển sang PASS, tức chúng không xanh nhờ một ràng buộc nào khác.
+// ════════════════════════════════════════════════════════════
+
+// 27a. Cập nhật, ô ra ở biến thể STAKE của chính registry (fail — U-ADDR).
+test update_out_staked_variant() fail {
+  let e_out = PlatformEntry { ..entry_in(), status: Paused }
+  let staked_out =
+    util.mk_output(
+      util.script_address_staked(reg_sh, stake_sh),
+      with_nft(platform_id),
+      e_out,
+    )
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in())],
+      [staked_out],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 27b. Di trú, ô ra ở biến thể STAKE của registry ĐÍCH (fail — M-ADDR). Nặng hơn 27a:
+//      hồ sơ đã rời quyền tài phán này, nên không đường nào ở đây gọi nó về.
+test migrate_out_staked_variant() fail {
+  let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
+  let staked_out =
+    util.mk_output(
+      util.script_address_staked(new_reg_sh, stake_sh),
+      with_nft(platform_id),
+      e_out,
+    )
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [staked_out],
       assets.zero,
       [authority],
     )

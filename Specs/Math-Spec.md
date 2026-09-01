@@ -378,9 +378,30 @@ khoá `A` (trừ T5), **không** phá được blake2b-224 hay Ed25519.
 | T13 | Dùng di trú làm đường `Retire` trá hình, né U-GOV | M-STATUS | **chặn** |
 | T14 | Di trú vòng về chính mình / hạ `spec_version` | M-DEST, M-VER | **chặn** |
 | T15 | **Đăng ký trùng `pid`** với một platform đã có | — | **không chặn được on-chain** — xem §14 L1 |
+| T16 | Đặt ô hồ sơ ở **biến thể stake** của `H_reg` (cùng payment credential, khác địa chỉ) để nó TÀNG HÌNH với `utxosAt(<địa chỉ enterprise>)` | R-ADDR, U-ADDR, M-ADDR (v2.1) | **chặn** |
 
 Hai dòng đáng đọc kỹ: **T5** và **T15**. Chúng là hai chỗ duy nhất mà bảo đảm nằm ở con người, không
 ở mã.
+
+**Vì sao T16 là một dòng RIÊNG, không phải một ca của T1.** T1 nói "script lạ" và bị R-OUT-1 chặn
+bằng `is_at_script(_, H_reg)`. Ô hồ sơ của T16 có payment credential **đúng là** `Script(H_reg)`, nên
+`is_at_script` xanh, R-OUT-1 xanh, U-SINGLE đếm đủ "đúng một ô", beacon NFT vẫn nằm trong đó — hồ sơ
+hợp lệ mọi đường. Cái khác là ĐỊA CHỈ, và bên đọc sổ quét theo địa chỉ enterprise
+(`scripts/config.ts:124` dựng bằng `credentialToAddress`, không phần stake) sẽ không thấy nó.
+
+Thiệt hại không phải mất tiền — sổ không giữ giá trị (PK1). Thiệt hại là **sổ chỉ đường mà đường
+chuẩn đọc không ra mục**, tức đúng thứ sổ này tồn tại để làm. Và nó không tự kêu: không phép đo nào
+đỏ, hồ sơ vẫn ở đó, chỉ là không ai thấy.
+
+Phép đếm KHÔNG được sửa để đóng chỗ này. `is_at_script` cố ý chỉ so payment credential
+(`onchain/lib/magiclamp/registry/util.ak:3-4`, bài học audit C1/C2/M1): gộp stake vào phép TÌM là mở
+lại double-satisfaction, vì khi đó hai ô cùng payment hash khác stake đếm thành hai chứ không phải
+một, và "đúng một ô" không còn chặn được gì. Nên đếm giữ nguyên theo payment hash, còn ô RA bị ghim
+thêm bằng `has_no_stake_part`. Hai ràng buộc cộng lại xác định địa chỉ ô ra là duy nhất.
+
+Ghim ở CẢ BA cửa vì mỗi cửa bỏ sót thì hai cửa kia không cứu được: R-ADDR là cửa sinh (không hồ sơ
+nào ra đời ở chỗ không quét tới), U-ADDR là cửa sửa, M-ADDR là cửa đi — và M-ADDR đắt nhất, vì hồ sơ
+đã rời quyền tài phán này thì không đường nào ở đây gọi nó về.
 
 ---
 
