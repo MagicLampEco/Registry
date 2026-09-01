@@ -27,6 +27,10 @@ const authority: ByteArray = #"a07a01"
 // script hash registry validator (entry UTxO PHẢI sống ở đây — R-OUT-1 v2).
 const reg_sh: ByteArray = #"4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f4e6f"
 
+// stake credential dùng dựng BIẾN THỂ STAKE của `reg_sh` — cùng payment credential,
+// khác địa chỉ (R-ADDR).
+const stake_sh: ByteArray = #"57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a57a4e57a"
+
 const platform_id: ByteArray = #"706b"
 
 const instance_id: ByteArray = #"abcd"
@@ -243,6 +247,29 @@ test register_output_foreign_script() fail {
     reg_tx(
       beacon_mint(platform_id, 1),
       [foreign],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// 5a'. Output mang NFT ở BIẾN THỂ STAKE của ĐÚNG registry hash (fail — R-ADDR).
+//      Ca này lọt qua CẢ R-OUT-1 lẫn 5a: payment credential đúng là Script(reg_sh), nên
+//      `is_at_script` xanh và "script lạ" không mô tả được nó. Cái khác là địa chỉ:
+//      off-chain quét `utxosAt(<enterprise reg_sh>)` (`scripts/config.ts:124`) không
+//      thấy ô này. Không có R-ADDR thì hồ sơ SINH RA đã tàng hình, và mọi bản vá ở
+//      registry.ak về sau chỉ giữ nguyên chỗ nó đang nằm chứ không gọi nó về được.
+test register_output_staked_variant() fail {
+  let staked =
+    util.mk_output(
+      util.script_address_staked(reg_sh, stake_sh),
+      with_nft(platform_id),
+      entry(),
+    )
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [staked],
       [custody_ref_ok()],
       [authority],
     )

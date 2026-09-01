@@ -1,4 +1,4 @@
-// Registry · quét sổ theo policy từ utxos[] thuần (không cần chain thật) + BA VAN trước khi
+// Registry · quét sổ theo policy từ utxos[] thuần (không cần chain thật) + BỐN VAN trước khi
 // route phí: đối soát kho thật, tìm định danh trùng, cảnh báo hồ sơ ở script lạ.
 
 import { describe, it, expect } from "vitest";
@@ -227,14 +227,14 @@ describe("VAN #1 — đối soát hồ sơ với kho THẬT", () => {
   });
 });
 
-describe("safeToRouteFees — gộp ba van thành một lượt kiểm", () => {
+describe("safeToRouteFees — gộp bốn van thành một lượt kiểm", () => {
   const instHex = asciiToHex("PhoenixKey-inst");
   const okCustody: QueryUtxo = {
     assets: { lovelace: 2_000_000n, [SEED_POLICY + instHex]: 1n },
     scriptHash: CUSTODY_HASH,
   };
 
-  it("sạch cả ba van + Active + kho khớp → ok", () => {
+  it("sạch cả bốn van + Active + kho khớp → ok", () => {
     const found = discoverPlatforms(
       [{ ...entryUtxo(mkEntry("PhoenixKey")), scriptHash: REGISTRY_HASH }],
       BEACON, { registryScriptHash: REGISTRY_HASH },

@@ -8,6 +8,10 @@
 //
 // PHẠM VI — nói trước để không ai đọc tên tệp rồi tưởng nhiều hơn:
 //   · CÓ nối: 1 nộp hồ sơ · 2 chấm ra hạng · 3 dựng giao dịch đăng ký · 6 quét sổ tìm lại.
+//   · CÓ thêm (khối cuối tệp): chặng 6 có HAI đường đọc — theo beacon NFT (SDK) và theo ĐỊA CHỈ
+//     (`utxosAt`, đường của `scripts/02_*`/`03_*`). Chúng chỉ bằng nhau khi mọi ô hồ sơ ở địa
+//     chỉ enterprise, và điều kiện ấy trước đây không bài kiểm nào phát biểu — đó là chỗ
+//     Math-Spec §8 T16 nấp.
 //   · KHÔNG chạm: 4 đúc beacon và 5 tiêu ô hồ sơ — hai chặng đó là validator on-chain, kiểm ở
 //     `onchain/.../registry_beacon_test.ak` và `registry_test.ak`.
 //   · KHÔNG có mạng, KHÔNG có Emulator. `tests/noExternalImports.test.ts` cấm mọi phụ thuộc leo
@@ -33,6 +37,8 @@ import type { PlatformConfig } from "../offchain/src/types.js";
 
 const BEACON_POLICY = "12".repeat(28);
 const AUTHORITY     = "ab".repeat(28);
+const REGISTRY_HASH = "4e".repeat(28);
+const STAKE_HASH    = "57".repeat(28);
 
 let workDir: string;
 beforeAll(() => { workDir = mkdtempSync(join(tmpdir(), "registry-e2e-")); });
@@ -111,12 +117,17 @@ function planFromDeclaration(declaration: Record<string, any>) {
 }
 
 /** CHẶNG 6 — sổ trên chuỗi: một ô UTxO mang beacon NFT + inline datum. */
-function ledgerUtxo(entry: Parameters<typeof platformEntryToCbor>[0], txHash = "aa".repeat(32)): QueryUtxo {
+function ledgerUtxo(
+  entry: Parameters<typeof platformEntryToCbor>[0],
+  txHash = "aa".repeat(32),
+  addr: { scriptHash?: string; stakeCredential?: string | null } = {},
+): QueryUtxo {
   return {
     assets: { lovelace: 2_000_000n, [BEACON_POLICY + entry.platform_id]: 1n },
     datum: platformEntryToCbor(entry),
     txHash,
     outputIndex: 0,
+    ...addr,
   };
 }
 
@@ -174,6 +185,20 @@ describe("E2E · trục tuỳ chọn `ownership` KHÔNG phải điều kiện v�
     expect((r.loi ?? []).join(" ")).toContain("chung_nhan_chu_so_huu");
   });
 });
+
+/**
+ * CHẶNG 6b — đường đọc THỨ HAI: `utxosAt(<địa chỉ>)`.
+ *
+ * Đây là đường mà `scripts/02_*` và `scripts/03_*` thật sự dùng — địa chỉ dựng ở
+ * `scripts/config.ts:124` bằng `credentialToAddress`, tức ENTERPRISE, không phần stake. Mô hình
+ * hoá nó ở đây vì hai đường đọc sổ này KHÔNG tương đương, và chỗ chúng lệch nhau là chỗ một hồ
+ * sơ hợp lệ biến mất mà không phép đo nào đỏ.
+ */
+function utxosAtEnterprise(utxos: QueryUtxo[], scriptHash: string): QueryUtxo[] {
+  return utxos.filter(
+    (u) => u.scriptHash === scriptHash && (u.stakeCredential === null || u.stakeCredential === undefined),
+  );
+}
 
 describe("E2E · đường xuôi — hồ sơ nộp vào đầu này, tìm lại được ở đầu kia", () => {
   it("1 nộp → 2 chấm ra L3 → 3 dựng tx → 6 quét sổ tìm lại đúng platform đó", () => {
@@ -273,5 +298,91 @@ describe("E2E · ba ca âm — luồng phải DỪNG đúng chặng, không trô
     const [dupId, group] = [...dupes.entries()][0]!;
     expect(dupId).toBe(asciiToHex("trung-ten").toLowerCase());
     expect(group).toHaveLength(2);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// HAI ĐƯỜNG ĐỌC SỔ — và chỗ chúng KHÔNG bằng nhau.
+//
+// Sổ có hai đường đọc, và repo cho tới nay chỉ có bài kiểm cho MỘT:
+//   · theo BEACON NFT  — `discoverPlatforms`, đường của SDK. Mù với địa chỉ, nên tìm ra hồ sơ
+//     ở mọi địa chỉ.
+//   · theo ĐỊA CHỈ     — `utxosAt(<địa chỉ enterprise>)`, đường của `scripts/02_*`/`03_*`.
+//
+// Chúng bằng nhau CHỈ KHI mọi ô hồ sơ nằm ở địa chỉ enterprise. Không bài kiểm nào từng phát
+// biểu điều kiện ấy, nên nó chưa bao giờ được ép — và đó chính là chỗ Math-Spec §8 T16 nấp:
+// một ô ở biến thể stake của ĐÚNG registry hash thì đường thứ nhất thấy, đường thứ hai không.
+//
+// Nay điều kiện ấy được ép on-chain ở cả ba cửa (R-ADDR/U-ADDR/M-ADDR), nên trạng thái dưới
+// đây KHÔNG dựng được trên chuỗi nữa. Bài kiểm vẫn dựng nó bằng tay, có chủ ý: nó đo cái
+// KHOẢNG CÁCH giữa hai đường đọc, tức thứ giải thích vì sao ràng buộc kia phải tồn tại. Bỏ
+// bài này đi thì ai đó gỡ ba dòng gác on-chain sẽ không thấy gì hỏng ở tầng off-chain.
+// ════════════════════════════════════════════════════════════════════════════
+describe("E2E · hai đường đọc sổ phải trả cùng một tập hồ sơ", () => {
+  function entryAt(name: string) {
+    const scored = checkOne(submit(name, fullDeclaration(name)));
+    expect(scored.hop_le).toBe(true);
+    return planFromDeclaration(scored.khai!).entry;
+  }
+
+  it("ô ở địa chỉ ENTERPRISE: cả hai đường đọc đều tìm ra, và van #4 kết là sạch", () => {
+    const entry = entryAt("dia-chi-thuong");
+    const utxo = ledgerUtxo(entry, "aa".repeat(32), {
+      scriptHash: REGISTRY_HASH, stakeCredential: null,
+    });
+
+    // đường 1 — theo beacon NFT
+    const byNft = discoverPlatforms([utxo], BEACON_POLICY, { registryScriptHash: REGISTRY_HASH });
+    expect(byNft).toHaveLength(1);
+    expect(byNft[0]!.foreignScript).toBe(false);
+    // `=== false` chứ không phải `!...`: undefined nghĩa là CHƯA ĐO, không phải sạch.
+    expect(byNft[0]!.stakedVariant).toBe(false);
+
+    // đường 2 — theo địa chỉ
+    expect(utxosAtEnterprise([utxo], REGISTRY_HASH)).toHaveLength(1);
+  });
+
+  it("ô ở BIẾN THỂ STAKE của đúng registry: đường NFT thấy, đường ĐỊA CHỈ không — van #4 bắt", () => {
+    const entry = entryAt("bien-the-stake");
+    const utxo = ledgerUtxo(entry, "cc".repeat(32), {
+      scriptHash: REGISTRY_HASH, stakeCredential: STAKE_HASH,
+    });
+
+    const byNft = discoverPlatforms([utxo], BEACON_POLICY, { registryScriptHash: REGISTRY_HASH });
+
+    // Đây là chỗ đắt: van #3 XANH. Payment credential đúng là registry thật, nên mọi phép kiểm
+    // "hồ sơ có ở đúng script không" đều nói CÓ. Không có van #4 thì SDK báo hồ sơ này lành.
+    expect(byNft).toHaveLength(1);
+    expect(byNft[0]!.foreignScript).toBe(false);
+    expect(byNft[0]!.stakedVariant).toBe(true);
+
+    // Và hai đường đọc BẤT ĐỒNG: đường địa chỉ trả sổ TRỐNG cho cùng một ô hồ sơ hợp lệ.
+    expect(utxosAtEnterprise([utxo], REGISTRY_HASH)).toHaveLength(0);
+
+    // Cái này mới là thiệt hại thật: không phải mất tiền, mà là hồ sơ có thật, hợp lệ, mang
+    // beacon NFT thật — và người tra sổ bằng đường chuẩn kết luận "platform này chưa đăng ký".
+    expect(findPlatform(byNft, entry.platform_id)).toBeDefined();
+  });
+
+  it("van #4 KHÔNG kết khi bên gọi chưa cấp stakeCredential — chưa đo, không phải sạch", () => {
+    const entry = entryAt("chua-do");
+    const utxo = ledgerUtxo(entry, "dd".repeat(32), { scriptHash: REGISTRY_HASH });
+
+    const byNft = discoverPlatforms([utxo], BEACON_POLICY, { registryScriptHash: REGISTRY_HASH });
+    expect(byNft[0]!.foreignScript).toBe(false);
+    // undefined, KHÔNG phải false. Ai đọc `!stakedVariant` thành "an toàn" sẽ đọc ca này sai.
+    expect(byNft[0]!.stakedVariant).toBeUndefined();
+  });
+
+  it("van #4 im khi hồ sơ ở SCRIPT LẠ — câu 'biến thể stake của registry' không phát biểu được", () => {
+    const entry = entryAt("script-la");
+    const utxo = ledgerUtxo(entry, "ee".repeat(32), {
+      scriptHash: "be".repeat(28), stakeCredential: STAKE_HASH,
+    });
+
+    const byNft = discoverPlatforms([utxo], BEACON_POLICY, { registryScriptHash: REGISTRY_HASH });
+    // Van #3 đã kết rồi; van #4 không chồng lên nó một lời kết thứ hai về cùng một ô.
+    expect(byNft[0]!.foreignScript).toBe(true);
+    expect(byNft[0]!.stakedVariant).toBeUndefined();
   });
 });

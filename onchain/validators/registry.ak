@@ -170,6 +170,13 @@ validator registry(registry_authority: ByteArray) {
         let reg_in = util.input_at_script(tx.inputs, own_hash)
         let reg_out = util.output_at_script(tx.outputs, own_hash)
 
+        // U-ADDR: ô hồ sơ ra phải ở địa chỉ ENTERPRISE của chính registry. U-SINGLE ngay
+        // trên kia đếm theo payment hash (cố ý — xem util.ak), nên nó một mình cho phép
+        // dời hồ sơ sang biến thể stake CÙNG payment hash. Hồ sơ đó vẫn hợp lệ, vẫn mang
+        // beacon NFT, và TÀNG HÌNH với `utxosAt(<địa chỉ enterprise>)` mà off-chain dựng
+        // (`scripts/config.ts:124`). Hai dòng cộng lại ghim địa chỉ ô ra về DUY NHẤT.
+        expect util.has_no_stake_part(reg_out.address)
+
         expect InlineDatum(od) = reg_out.datum
         expect entry_out: PlatformEntry = od
 
@@ -260,6 +267,12 @@ validator registry(registry_authority: ByteArray) {
         expect util.count_outputs_at_script(tx.outputs, new_registry_hash) == 1
         let reg_in = util.input_at_script(tx.inputs, own_hash)
         let reg_out = util.output_at_script(tx.outputs, new_registry_hash)
+
+        // M-ADDR: cùng lỗ với U-ADDR, ở đường di trú. Đây là chỗ nó ĐẮT hơn: hồ sơ vừa
+        // rời quyền tài phán này, nên nếu nó hạ cánh ở biến thể stake của registry mới
+        // thì bên tiếp nhận quét địa chỉ enterprise sẽ thấy MỘT SỔ TRỐNG, và không đường
+        // nào ở đây gọi nó về được nữa.
+        expect util.has_no_stake_part(reg_out.address)
 
         expect InlineDatum(od) = reg_out.datum
         expect entry_out: PlatformEntry = od

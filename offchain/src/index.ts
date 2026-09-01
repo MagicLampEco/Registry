@@ -4,7 +4,7 @@
 // riêng của mình, và người khác quét sổ để tìm. Sổ KHÔNG giữ giá trị; kho là của từng dịch vụ.
 //
 // Gồm: lược đồ (types) + codec datum/redeemer v2 + builder (đăng ký/cập nhật/di trú) + adapter
-// thu phí (trung lập chính sách giá) + quét sổ kèm ba van đối soát trước khi route phí.
+// thu phí (trung lập chính sách giá) + quét sổ kèm bốn van đối soát trước khi route phí.
 //
 // KHÔNG có phụ thuộc nhập nào ra ngoài repo Registry. Kiểu mượn của Treasury được khai lại tại
 // chỗ ở ./treasuryShapes.js; hàm dựng kho / dựng tx thu phí đi vào bằng THAM SỐ (tiêm phụ thuộc).

@@ -92,6 +92,15 @@ validator registry_beacon(registry_authority: ByteArray, registry_hash: ByteArra
     let entry_out = util.output_with_token(tx.outputs, policy_id, platform_id)
     expect util.is_at_script(entry_out.address, registry_hash)
 
+    // R-ADDR: ô hồ sơ đăng ký ở địa chỉ ENTERPRISE của registry, không phải biến thể
+    // stake cùng payment hash. Đây là cửa vào DUY NHẤT của mọi hồ sơ, nên ghim ở đây là
+    // ghim được điều kiện đầu: không hồ sơ nào SINH RA ở chỗ off-chain không quét tới.
+    // Ghi lại vì bản ghi cũ nói ngược: chỗ này từng bị xếp là "giới hạn cấu trúc, không
+    // đóng được ở beacon". Câu đó đúng với cách vá `reg_out.address == own_addr` —
+    // beacon không biết `own_addr`. Nó SAI với cách vá này, vì `has_no_stake_part` chỉ
+    // đọc chính ô ra, không cần biết địa chỉ của ai.
+    expect util.has_no_stake_part(entry_out.address)
+
     expect InlineDatum(od) = entry_out.datum
     expect entry: PlatformEntry = od
 

@@ -10,7 +10,7 @@
 
 use aiken/collection/list
 use aiken/interval.{Finite, IntervalBound, IntervalBoundType}
-use cardano/address.{Address, Credential, Script, VerificationKey}
+use cardano/address.{Address, Credential, Inline, Script, VerificationKey}
 use cardano/assets.{Value}
 use cardano/transaction.{InlineDatum, Input, NoDatum, Output, OutputReference,
   Transaction}
@@ -33,6 +33,27 @@ pub fn is_at_script(addr: Address, script_hash: ByteArray) -> Bool {
     Script(h) -> h == script_hash
     _ -> False
   }
+}
+
+/// Address KHÔNG mang phần stake (= biến thể "enterprise" của script).
+///
+/// ⚠ VÌ SAO LÀ MỘT KIỂM RIÊNG, KHÔNG GỘP VÀO `is_at_script`. Chú thích đầu tệp chốt:
+/// đếm/tìm PHẢI theo payment hash, cố ý bỏ stake — gộp stake vào phép tìm là mở lại lỗ
+/// double-satisfaction C1/C2/M1 (phép ĐẾM "đúng 1 ô" sẽ không nhìn thấy biến thể stake,
+/// nên hai ô cùng payment hash lọt qua như một). Nên phép đếm giữ nguyên, và ô ra bị
+/// GHIM thêm bằng dòng này — hai ràng buộc cộng lại xác định địa chỉ ô ra DUY NHẤT.
+///
+/// Cái nó đóng KHÔNG phải rút tiền (sổ không giữ giá trị — PK1) mà là TÀNG HÌNH:
+/// `scripts/config.ts:124` dựng địa chỉ enterprise (`credentialToAddress`, không phần
+/// stake), nên ai lấy UTxO bằng `utxosAt(<địa chỉ đó>)` KHÔNG thấy hồ sơ đã dời sang
+/// biến thể stake — dù hồ sơ vẫn hợp lệ và vẫn mang beacon NFT. Sổ chỉ đường mà đọc
+/// bằng đường chuẩn lại không thấy mục thì nó thôi là sổ chỉ đường.
+///
+/// Đánh đổi, có chủ ý: ghim enterprise là bỏ quyền uỷ thác (delegate) phần ADA khoá
+/// trong ô hồ sơ. Giá đó nhỏ (mỗi ô chỉ min-ADA) và đổi lại bỏ được một câu hỏi không
+/// có người trả lời — ai giữ stake credential của ô hồ sơ, và quyền uỷ thác ấy của ai.
+pub fn has_no_stake_part(addr: Address) -> Bool {
+  addr.stake_credential == None
 }
 
 /// payment credential của address có phải VerificationKey(pkh) không (= ví thường).
@@ -234,6 +255,15 @@ pub fn value_not_drained(v_in: Value, v_out: Value) -> Bool {
 
 pub fn script_address(hash: ByteArray) -> Address {
   Address { payment_credential: Script(hash), stake_credential: None }
+}
+
+/// Biến thể STAKE của cùng một script hash — cùng payment credential, khác địa chỉ.
+/// Dùng để dựng đúng ca mà `has_no_stake_part` chặn.
+pub fn script_address_staked(hash: ByteArray, stake: ByteArray) -> Address {
+  Address {
+    payment_credential: Script(hash),
+    stake_credential: Some(Inline(Script(stake))),
+  }
 }
 
 pub fn vk_address(pkh: ByteArray) -> Address {

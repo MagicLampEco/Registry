@@ -29,7 +29,7 @@ ChangeLog.md               chuyện đã xảy ra, thêm vào đầu, không s�
 Specs/                     đặc tả đầy đủ (CONTRACT · Math · Feat · Tech · Exec · onboarding)
 Registrations/             hồ sơ đăng ký từng dịch vụ + mẫu + codes.json (tập đóng các mã khai báo)
 onchain/                   hai validator Aiken: registry_beacon (mint) + registry (spend)
-offchain/                  SDK dựng giao dịch + ba van đối soát trước khi route phí
+offchain/                  SDK dựng giao dịch + bốn van đối soát trước khi route phí
 tools/                     bộ chấm hồ sơ đăng ký bằng máy
 bench/                     mô phỏng tìm số cho các tham số kinh tế
 tests/ examples/ scripts/  kiểm thử, ví dụ cấu hình, kịch bản triển khai

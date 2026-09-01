@@ -73,6 +73,11 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 > Tổng mã ràng buộc v2 (đếm từ mã): **13** `R-*` (cửa đúc) + **1** `S-*` (chung hai nhánh spend) +
 > **14** `U-*` (nhánh Update) + **13** `M-*` (nhánh Migrate).
 >
+> **v2.1 thêm ĐÚNG ba mã, cùng một bất biến ở ba cửa**: `R-ADDR` (cửa đúc) · `U-ADDR` (nhánh Update) ·
+> `M-ADDR` (nhánh Migrate) — ô hồ sơ phải ở địa chỉ **enterprise**, không phải biến thể stake cùng
+> payment hash. Đây là lỗ TÀNG HÌNH, không phải lỗ mất tiền: xem Math-Spec §8 T16. Sau v2.1 tổng là
+> **14** `R-*` + **1** `S-*` + **15** `U-*` + **14** `M-*`.
+>
 > **Đã chép sang v2 trong tài liệu này:** §2 (datum 11 trường, identity 6, redeemer 2 nhánh), §3 mục
 > `R-WF`, §4 mục `U-MUT` (phần `governance_ref`), §5 (phá vòng — chiều tham số đã đảo), §7, §9, §22.F.
 > **CÒN v1, chưa chép:** §1 (sơ đồ: tham số + danh sách ràng buộc), §3 (các mục R-* khác — thiếu hẳn
@@ -221,6 +226,14 @@ R-OUT-1   ĐÚNG 1 output mang NFT đó (SELF-REF), ở SCRIPT (registry validat
             rồi gửi vào ví thường (mất tính "entry sống ở registry").
           > self-ref (chọn output bằng "token tôi vừa mint") = KHÔNG cần param registry_hash → phá vòng.
 
+R-ADDR    ô hồ sơ ra ở địa chỉ ENTERPRISE của registry (v2.1):
+            util.has_no_stake_part(entry_out.address)     // stake_credential == None
+          ⇒ R-OUT-1 ép PAYMENT credential đúng `Script(registry_hash)`, và dừng ở đó. Một ô ở BIẾN THỂ
+            STAKE của cùng hash qua được R-OUT-1 — hồ sơ hợp lệ, mang beacon NFT thật — nhưng
+            `utxosAt(<địa chỉ enterprise>)` mà off-chain dựng (`scripts/config.ts:124`) KHÔNG thấy nó.
+            Đây là cửa SINH của mọi hồ sơ, nên ghim ở đây là ghim điều kiện đầu: không hồ sơ nào ra đời
+            ở chỗ đường đọc chuẩn không tới. Math-Spec §8 T16. Code: `registry_beacon.ak` R-ADDR.
+
 R-NAME    entry.platform_id == platform_id   // datum khai đúng tên NFT đã mint
           ⇒ platform_id trong datum == asset name → entry không thể nói dối định danh.
 
@@ -281,6 +294,11 @@ U-SINGLE  ĐÚNG 1 entry input + 1 output theo SCRIPT HASH:
             count_outputs_at_script(tx.outputs, own_hash) == 1
             reg_out ở Script (!is_vk)         // chống double-satisfaction qua nhiều entry khác stake-cred
                                               // (bài học C1/C2 Distribution — đếm theo PAYMENT SCRIPT HASH)
+U-ADDR    ô hồ sơ ra ở địa chỉ ENTERPRISE của chính registry (v2.1):
+            util.has_no_stake_part(reg_out.address)
+          ⇒ U-SINGLE ngay trên đếm theo PAYMENT hash (cố ý — xem khối dưới), nên nó MỘT MÌNH cho phép
+            dời hồ sơ sang biến thể stake cùng payment hash. Hai dòng cộng lại ghim địa chỉ ô ra về DUY
+            NHẤT. Không được đóng bằng cách cho U-SINGLE so full-address: làm thế là mở lại C1/C2.
 U-ID      identity_preserved(entry_in, entry_out):
             platform_id ∧ instance_id ∧ custody_hash ∧ seed_policy ∧ created_epoch BẢO TOÀN (5 field)
           ⇒ update KHÔNG đổi định danh — đổi = platform khác (phải register mới), không lén qua update.
@@ -603,6 +621,7 @@ Chèn giữa hay đổi thứ tự = phá mọi bên đang decode.
 | Token dust / nhét token lạ vào UTxO | **có** | R-VALUE, U-VALUE, M-VALUE |
 | Rút cạn ADA khỏi UTxO | **có** | U-VALUE `lovelace(out) ≥ lovelace(in)` |
 | Đặt hồ sơ ở script lạ để thoát quyền tài phán | **có** (đã từng lọt ở v1) | R-OUT-1 v2 ép đúng `Script(registry_hash)` |
+| Đặt hồ sơ ở **biến thể stake** của đúng script ⇒ tàng hình với `utxosAt(enterprise)` | **có** (lọt tới v2 — R-OUT-1 chỉ so payment credential) | R-ADDR, U-ADDR, M-ADDR (v2.1) |
 | Datum khai gian (`beacon_policy`, `created_epoch`) | **có** | R-POLICY, R-EPOCH |
 | Gánh mint policy ngoài trong cùng tx | **có** | R-MINT-2 |
 | Reentrancy | **không** — mô hình eUTxO không có lời gọi lại | — |
