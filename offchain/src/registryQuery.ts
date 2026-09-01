@@ -4,10 +4,10 @@
 // THUẦN (không cần chain thật): nhận utxos[] (bên gọi đã lấy từ provider) → lọc UTxO mang
 // token của policy beacon → giải mã inline datum PlatformEntry → trả danh sách platform.
 //
-// ─── BA VAN TRƯỚC KHI ROUTE PHÍ (đọc kỹ; Feat-Spec §3.4 đặt trọng lượng an toàn ở đây) ───
+// ─── BỐN VAN TRƯỚC KHI ROUTE PHÍ (đọc kỹ; Feat-Spec §3.4 đặt trọng lượng an toàn ở đây) ───
 // Quét sổ CHỈ đọc datum. Datum có thể khai `seed_policy/instance_id/custody_hash/beacon_policy`
 // BẤT KỲ. Vì vậy quét là CHỈ-MỤC ĐỂ TÌM, KHÔNG phải bằng chứng đủ để GỬI TIỀN. Ai định gửi
-// giá trị tới kho của một platform PHẢI qua ba van:
+// giá trị tới kho của một platform PHẢI qua bốn van:
 //   1. `verifyEntryAgainstCustody(entry, custodyUtxo)` — đối soát với UTxO kho THẬT. Đừng hiểu
 //      nhầm R-BIND on-chain: nó chỉ kiểm hồ sơ TỰ NHẤT QUÁN (mọi trường đều do người đăng ký
 //      khai), nên KHÔNG chứng minh kho đó là kho thật. Chưa đối soát → KHÔNG route phí.
@@ -16,6 +16,13 @@
 //   3. Cờ `foreignScript` (cấp `registryScriptHash`) — beacon NFT nằm ngoài registry validator
 //      thật thì bỏ qua hoặc soi kỹ. Kèm cờ `policyMismatch`: datum tự khai beacon_policy khác
 //      policy đang quét (hồ sơ tự dựng — trơ nhưng vẫn tồn tại được).
+//   4. Cờ `stakedVariant` (cấp `registryScriptHash` VÀ `stakeCredential` mỗi UTxO) — hồ sơ ở
+//      ĐÚNG registry hash nhưng ở BIẾN THỂ STAKE của nó. Van #3 xanh với ca này: payment
+//      credential đúng. Cái khác là ĐỊA CHỈ — và bên đọc bằng `utxosAt(<địa chỉ enterprise>)`
+//      không thấy hồ sơ đó. Bộ quét này thấy, vì nó tìm theo beacon NFT chứ không theo địa chỉ,
+//      nên nó là chỗ DUY NHẤT trong SDK phát hiện được sự bất đồng giữa hai đường đọc.
+//      Gương của R-ADDR/U-ADDR/M-ADDR on-chain (Math-Spec §8 T16).
+//      ⚠ `undefined` = CHƯA ĐO, không phải "sạch". Kiểm bằng `=== false`, đừng dùng `!`.
 //
 // ⛔ Đây là VAN SDK. SDK KHÔNG ép được — người tích hợp PHẢI tự gọi trước khi route phí.
 
@@ -33,6 +40,13 @@ export interface QueryUtxo {
   /** script hash của payment credential địa chỉ UTxO (hex 28-byte). Tuỳ chọn — cấp để đối
    *  soát van #3 và để `verifyEntryAgainstCustody` so với entry.custody_hash. */
   scriptHash?: string;
+  /** phần STAKE của địa chỉ UTxO. `null`/`undefined` = địa chỉ enterprise (không phần stake);
+   *  chuỗi = có phần stake. Tuỳ chọn — cấp để đối soát van #4.
+   *
+   *  ⚠ `undefined` ở đây nghĩa là "bên gọi KHÔNG cấp", không phải "đã đo và không có". Van #4
+   *  vì thế chỉ chạy khi bên gọi cấp `registryScriptHash`, và nó đọc `undefined` là chưa đo —
+   *  xem chú thích ở `stakedVariant`. */
+  stakeCredential?: string | null;
   /** ngữ cảnh tham chiếu (tuỳ chọn — bên gọi giữ để chi tiêu sau). */
   txHash?: string;
   outputIndex?: number;
@@ -50,6 +64,16 @@ export interface DiscoveredPlatform {
   policyMismatch: boolean;
   /** TRUE nếu có cấp registryScriptHash VÀ utxo.scriptHash != registryScriptHash (van #3). */
   foreignScript?: boolean;
+  /** VAN #4 — hồ sơ ở ĐÚNG registry hash nhưng ở BIẾN THỂ STAKE của nó (van #3 xanh, địa chỉ
+   *  khác). Gương của R-ADDR/U-ADDR/M-ADDR on-chain.
+   *
+   *  Vì sao chỉ bộ quét này thấy được: nó tìm theo BEACON NFT, nên nó tìm ra hồ sơ ở mọi địa
+   *  chỉ. Bên đọc bằng `utxosAt(<địa chỉ enterprise>)` thì KHÔNG — với họ hồ sơ đó không tồn
+   *  tại. Cờ này là chỗ duy nhất trong SDK phát hiện được sự bất đồng ấy.
+   *
+   *  `undefined` = CHƯA ĐO (bên gọi không cấp `stakeCredential`), KHÔNG phải "sạch". Đọc
+   *  `!p.stakedVariant` thành "an toàn" là sai — phải kiểm `p.stakedVariant === false`. */
+  stakedVariant?: boolean;
 }
 
 function normHex(hex: string): string {
@@ -87,6 +111,8 @@ function tokensOfPolicy(assets: Record<string, bigint>, policy: string): Map<str
  * Van #2 (duplicate): sau khi gom, đánh dấu MỌI hồ sơ trùng platform_id `duplicate=true`.
  * Van #3 (script lạ): cấp `opts.registryScriptHash` → hồ sơ mà utxo.scriptHash khác registry
  * thật bị đánh `foreignScript=true`.
+ * Van #4 (biến thể stake): cấp THÊM `stakeCredential` mỗi UTxO → hồ sơ ở đúng registry hash mà
+ * địa chỉ có phần stake bị đánh `stakedVariant=true`. Không cấp ⇒ khoá VẮNG MẶT (chưa đo).
  * Ngoài ra luôn đánh `policyMismatch` khi datum tự khai beacon_policy khác policy đang quét.
  */
 export function discoverPlatforms(
@@ -146,7 +172,18 @@ export function discoverPlatforms(
     const base = { entry, nftUnit: pol + nftName, utxo: u, duplicate: false, policyMismatch };
     if (regHash !== undefined) {
       const foreignScript = u.scriptHash === undefined || normHex(u.scriptHash) !== regHash;
-      out.push({ ...base, foreignScript });
+      // Van #4: chỉ có nghĩa khi hồ sơ Ở ĐÚNG registry (van #3 xanh) — script lạ thì câu
+      // "biến thể stake của registry" không phát biểu được. Và chỉ kết khi bên gọi ĐÃ CẤP
+      // `stakeCredential`; không cấp = chưa đo, để `undefined` chứ không để `false`.
+      //
+      // `exactOptionalPropertyTypes` bật ⇒ "chưa đo" phải là KHÔNG CÓ KHOÁ, không phải khoá
+      // mang `undefined`. Hợp với ngữ nghĩa: cờ vắng mặt = van này chưa chạy.
+      if (foreignScript || u.stakeCredential === undefined) {
+        out.push({ ...base, foreignScript });
+      } else {
+        const stakedVariant = u.stakeCredential !== null && u.stakeCredential !== "";
+        out.push({ ...base, foreignScript, stakedVariant });
+      }
     } else {
       out.push(base);
     }
@@ -231,7 +268,7 @@ export function verifyEntryAgainstCustody(
 }
 
 /**
- * Gộp ba van thành một lượt kiểm cho MỘT platform trước khi route phí.
+ * Gộp bốn van thành một lượt kiểm cho MỘT platform trước khi route phí.
  * Trả {ok:false, reasons:[...]} nếu bất kỳ van nào chưa qua. Đây là tiện ích — nó KHÔNG thay
  * bên tích hợp quyết định; nó chỉ khiến việc bỏ qua van thành cố ý chứ không phải vì quên.
  */
@@ -242,6 +279,12 @@ export function safeToRouteFees(
   const reasons: string[] = [];
   if (p.duplicate) reasons.push("platform_id TRÙNG trong lô quét (van #2) — phải chọn bằng đối soát kho hoặc từ chối");
   if (p.foreignScript === true) reasons.push("beacon NFT nằm ngoài registry validator thật (van #3)");
+  if (p.stakedVariant === true) {
+    reasons.push(
+      "hồ sơ ở BIẾN THỂ STAKE của registry (van #4) — đúng payment credential, khác địa chỉ; " +
+      "bên đọc bằng utxosAt(<địa chỉ enterprise>) KHÔNG thấy hồ sơ này",
+    );
+  }
   if (p.policyMismatch) reasons.push("datum tự khai beacon_policy khác policy đang quét");
   if ((opts.requireActive ?? true) && p.entry.status !== "Active") {
     reasons.push(`status = ${p.entry.status} (không phải Active)`);

@@ -11,6 +11,39 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-01 — ô hồ sơ bị ghim về địa chỉ **enterprise** (`R-ADDR` · `U-ADDR` · `M-ADDR`)
+
+- **Đổi gì.** Ba dòng ràng buộc mới, cùng một bất biến ở ba cửa của vòng đời hồ sơ: ô hồ sơ ra phải
+  có `stake_credential == None`. Cửa đúc (`registry_beacon.ak`), nhánh Update và nhánh Migrate
+  (`registry.ak`). Helper `util.has_no_stake_part`. Kèm `Math-Spec.md` §8 dòng **T16** và ba mục
+  trong `Tech-Spec.md`.
+- **Vì sao.** `is_at_script` — thứ mọi phép đếm và phép tìm của hai validator dùng — cố ý chỉ so
+  **payment credential**, và rà toàn kho thì **không dòng nào so `stake_credential`**. Nên một ô hồ
+  sơ đặt ở biến thể stake của đúng `registry_hash` qua được **mọi** ràng buộc đang có: payment
+  credential đúng, beacon NFT thật, `U-SINGLE` đếm đủ một ô. Hồ sơ hợp lệ, và **tàng hình** với
+  `utxosAt(<địa chỉ enterprise>)` mà đường đọc chuẩn dựng (`scripts/config.ts:124`).
+
+  Thiệt hại không phải mất tiền — sổ không giữ giá trị (PK1). Thiệt hại là sổ chỉ đường mà đường đọc
+  chuẩn không ra mục, tức đúng thứ sổ này tồn tại để làm. Và nó im: không phép đo nào đỏ.
+
+  Phép đếm **không** được sửa để đóng chỗ này — gộp stake vào phép tìm là mở lại double-satisfaction
+  C1/C2/M1. Nên đếm giữ theo payment hash, ô ra ghim thêm bằng một vị từ riêng.
+
+  Ghi lại một chỗ bản ghi cũ **nói sai**: chỗ này từng được xếp là "không đóng được ở
+  `registry_beacon` — validator chỉ biết `registry_hash`, giới hạn cấu trúc". Câu đó đúng với cách vá
+  `reg_out.address == own_addr` (beacon không biết `own_addr`), và **sai** với cách vá này, vì
+  `has_no_stake_part` chỉ đọc chính ô ra. Cửa sinh đóng được, và đóng ở đó mới là chỗ đáng đóng nhất:
+  không hồ sơ nào ra đời ở chỗ đường đọc chuẩn không tới.
+- **Gãy gì nếu ai đó bám bản cũ.** **Script hash đổi cả hai** — `registry`
+  `d4202913…65f6` → `d10bb50d…0115`; `registry_beacon` `e596b61f…bd6f` → `73a25648…b97d`. Ai đã ghim
+  hash cũ vào tham số, địa chỉ, hay tài liệu thì phải cập nhật. Miễn phí lúc này vì **chưa deploy
+  mạng nào** (`find . -iname '*LIVE_DEPLOY*'` rỗng) — sau hồ sơ đầu tiên lên chuỗi thì không.
+
+  Và: ô hồ sơ **thôi uỷ thác được** phần ADA khoá trong nó. Đánh đổi có chủ ý — mỗi ô chỉ min-ADA,
+  đổi lại bỏ được một câu không có người trả lời: ai giữ stake credential của ô hồ sơ.
+
+---
+
 ## 2026-08-15 — `T-RECEIPT` có **miền** (`D-RECEIPT`), và `tồn liên lạc` có điều kiện thứ tư
 
 - **Đổi gì (hai chỗ, hai nhà nêu).**

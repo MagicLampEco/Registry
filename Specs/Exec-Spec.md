@@ -146,7 +146,7 @@ Trạng thái mốc dùng bộ đóng của chuẩn: `not_started` / `blocked-by
 - **Test:** giải mã datum khớp Aiken; `planRegister` / `planUpdateEntry` dựng được giao dịch hợp lệ
   và **từ chối** đúng chỗ (`REG-BIND`, `UPD-TERMINAL`); `discoverPlatforms` đánh dấu `duplicate` và
   `foreignScript`; `verifyEntryAgainstCustody` bắt được entry lệch kho.
-- **Acceptance:** **ba van** ở [`Math-Spec.md`](./Math-Spec.md) §6.2 đều gọi được và đều có ca kiểm
+- **Acceptance:** **bốn van** ở [`Math-Spec.md`](./Math-Spec.md) §6.2 đều gọi được và đều có ca kiểm
   thử; tài liệu SDK nói rõ bỏ van là tự chịu.
 - **Evidence:** output thô của bộ kiểm thử.
 - **Tech:** TypeScript, Node. **Libs:** `lucid` (ghim phiên bản), `vitest`.
