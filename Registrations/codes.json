@@ -8,24 +8,26 @@
       "condition": "2.1",
       "label": "Danh tính người dùng",
       "gate": "soft",
-      "_gate_doc": "soft = khai đúng thì được tiếp nhận; mã thấp chỉ hạ hạng niêm yết, không phải căn cứ từ chối.",
+      "_gate_doc": "soft = khai đúng thì được tiếp nhận; mã thấp chỉ hạ hạng niêm yết, không phải căn cứ từ chối. Trục này KHÔNG gọi tên một nhà cung cấp, và đó là ràng buộc chứ không phải phong cách: whitepaper §10 (`:241`) đóng tập độc quyền có chủ đích ở HAI (phát hành CARP + cổng đăng ký), danh tính KHÔNG nằm trong đó; `:120` viết 'Hệ không khoá người dùng vào một nhà cung cấp'; `:201` viết 'định danh qua PhoenixKey (HOẶC DANH TÍNH TƯƠNG ĐƯƠNG)'. Một sàn mà PhoenixKey đạt còn `did:tiger` không bao giờ đạt thì chữ 'hạng' chỉ là vỏ của chữ 'từ chối'. Nên hạng ở đây đo TÍNH CHẤT của chính dịch vụ (ai giữ khoá riêng · có đọc chứng thực không), không đo tên hệ nó dùng.",
+      "_lich_su": "Tới 2026-09-02 ba mã ID-1/2/3 ghim cứng chữ 'PhoenixKey', và mọi hệ danh tính khác bị đẩy sang một mã thoát `ID-A` có `rank: null`. Đo được hệ quả: `null` trượt MỌI ngưỡng `identity_min`, mà `L0` là hạng duy nhất không đòi ngưỡng đó ⟹ hồ sơ khai `ID-A` kẹt `L0` VĨNH VIỄN, kể cả khi hệ được trỏ tới đạt `ID-3`. Tức câu 'cạnh tranh trực tiếp không phải căn cứ từ chối' của chuẩn này đã RỖNG trên mã, và rỗng lặng lẽ — bộ chấm còn in ra một cảnh báo nghe như tạm thời ('chưa chấm được'). Bỏ tên nhà cung cấp khỏi ba mã kia làm `ID-A` hết việc: hạng tính từ tính chất của chính dịch vụ, không thừa kế, nên không còn chuỗi, không còn vòng, không còn ca 'hệ kia tụt hạng mà hồ sơ này không hay'. 0 hồ sơ đang khai `ID-A` lúc bỏ.",
       "codes": {
-        "ID-0": { "rank": 0, "label": "chưa nối danh tính hệ", "needs": ["moc_du_kien"] },
-        "ID-1": { "rank": 1, "label": "dùng PhoenixKey DID, nhưng dịch vụ còn giữ khoá riêng của người dùng", "needs": ["con_tro", "moc_du_kien"] },
-        "ID-2": { "rank": 2, "label": "dùng PhoenixKey DID, khoá riêng nằm ở thiết bị người dùng", "needs": ["con_tro"] },
-        "ID-3": { "rank": 3, "label": "như ID-2, và dịch vụ đọc personhood_level khi cấp uy tín hoặc quyền biểu quyết", "needs": ["con_tro"] },
-        "ID-A": { "rank": null, "label": "dùng một hệ danh tính khác ĐÃ đăng ký trong hệ — hạng lấy theo hạng của hệ đó", "needs": ["platform_id_he_danh_tinh"] }
-      }
+        "ID-0": { "rank": 0, "label": "chưa nối hệ danh tính nào của hệ", "needs": ["moc_du_kien"] },
+        "ID-1": { "rank": 1, "label": "dùng một hệ danh tính ĐÃ đăng ký trong sổ, nhưng dịch vụ còn giữ khoá riêng của người dùng", "needs": ["con_tro", "moc_du_kien", "platform_id_he_danh_tinh"] },
+        "ID-2": { "rank": 2, "label": "như ID-1, và khoá riêng nằm ở thiết bị người dùng — dịch vụ không giữ hộ", "needs": ["con_tro", "platform_id_he_danh_tinh"] },
+        "ID-3": { "rank": 3, "label": "như ID-2, và dịch vụ ĐỌC tập chứng thực (attestations) của hệ danh tính khi cấp uy tín hoặc quyền biểu quyết", "needs": ["con_tro", "platform_id_he_danh_tinh"] }
+      },
+      "_id3_doc": "ID-3 nói 'tập chứng thực', KHÔNG nói `personhood_level`. Bản trước dùng cái tên đó, và đo được là nó KHÔNG TỒN TẠI: `personhood` xuất hiện 21 lần trong kho PhoenixKeyDID, TẤT CẢ trong `_Agents/` (thư giữa các nhà), 0 lần trong `PhoenixKey-Specs/` · `PhoenixKey-Database/src` · `PhoenixKey-SDK`. Giao diện Phoenix đã chốt là một TẬP MỆNH ĐỀ — `personhood(did) → { attestations, as_of }` với `Attestation ∈ { did-chain, hardware-rooted-key, person-in-jurisdiction(<mã pháp quyền>) }` — kèm câu 'trả một số là sai kiểu'. Một tập mã công khai trỏ vào một tên không có thật thì bên tích hợp sẽ đi tìm rồi tự bịa, và khả năng cao là bịa thành một con số: đúng cái đã bị cảnh báo. ⚠ ID-3 chỉ khai rằng dịch vụ CÓ ĐỌC tập đó, KHÔNG khai rằng nội dung nó đúng — xem §7."
     },
 
     "token": {
       "condition": "2.2",
       "label": "Hệ token dùng chung",
       "gate": "hard",
-      "_gate_doc": "hard = đây là ba điều kiện duy nhất của whitepaper (tiêu MAGIC · dùng CARP · đăng ký). Chỉ trục này chặn TIẾP NHẬN: TK-X là mã duy nhất khiến hồ sơ không đạt nổi L0. Đừng đọc thành 'chỉ trục này ảnh hưởng niêm yết' — L1 (nhãn 'đã niêm yết') còn đòi identity_min 1, custody_min 2, infra_min 1, nên ba trục soft vẫn là NGƯỠNG của niêm yết, chỉ không phải CỔNG của tiếp nhận.",
+      "_gate_doc": "hard = đây là ba điều kiện duy nhất của whitepaper (tiêu MAGIC · dùng CARP · đăng ký — `Whitepaper-MagicLamp-Ecosystem-(Vi).md:201`). Chỉ trục này chặn TIẾP NHẬN: TK-X là mã duy nhất khiến hồ sơ không đạt nổi L0. Đừng đọc thành 'chỉ trục này ảnh hưởng niêm yết' — L1 (nhãn 'đã niêm yết') còn đòi identity_min 1, custody_min 2, infra_min 1, nên ba trục soft vẫn là NGƯỠNG của niêm yết, chỉ không phải CỔNG của tiếp nhận.",
+      "_carp_doc": "Vế 'dùng CARP' của §10 mô tả HỆ, không mô tả việc một platform làm — nên cổng này KHÔNG hỏi về CARP. Đo trên `MagicLampEco/MAGIC/SPEC/MagicLamp-Tripletoken-Feat-(Vi).md`: MAGIC có BA dòng vào (`:65-67`), và dòng thứ nhất là `LAMP → MAGIC` qua InstantGen/ScheduleGen, KHÔNG chạm CARP. `:376` viết thẳng 'app CHỌN nguồn khoá', `:378` Nguồn A = nắm LAMP, `:379` Nguồn B = khoá CARP. ⟹ 'tiêu MAGIC ⇒ dùng CARP' SAI theo nghĩa chặt: app đi rail A tiêu được MAGIC mà không chạm CARP lần nào. Chọn rail là quyết định TÀI CHÍNH của chính đội, không phải thuộc tính của dịch vụ — hỏi nó là bắt đội giải trình chiến lược ngân quỹ, ngoài thứ một sổ niêm yết được phép phán. Và CARP vẫn nằm trên đường QUYẾT TOÁN ở cả hai rail (`:381`), nên không hỏi cũng không mất gì. Câu đúng: cổng hỏi 'có tiêu MAGIC không', không hỏi rail nào cấp vốn.",
       "codes": {
         "TK-0": { "rank": 0, "label": "chưa nối hệ token", "needs": ["moc_du_kien"] },
-        "TK-1": { "rank": 1, "label": "tiêu MAGIC, dùng CARP, không đốt LAMP, không mở đường đổi MAGIC ngược ra tài sản ngoài hệ", "needs": ["con_tro"] },
+        "TK-1": { "rank": 1, "label": "tiêu MAGIC, không đốt LAMP, không mở đường đổi MAGIC ngược ra tài sản ngoài hệ", "needs": ["con_tro"] },
         "TK-2": { "rank": 2, "label": "như TK-1, và có token riêng đã qua đúng cổng (Mint-Authority Registry, hoặc điều kiện CARP instance)", "needs": ["con_tro", "con_tro_cong_phat_hanh"] },
         "TK-X": { "rank": -1, "label": "có token riêng CHƯA qua cổng phát hành", "needs": ["con_tro"], "tu_choi": true, "_doc": "Mã duy nhất là căn cứ từ chối. Không phải vì cạnh tranh — vì nó phá hệ token dùng chung mà mọi bên khác đang dựa vào." }
       }
