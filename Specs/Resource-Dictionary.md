@@ -3,8 +3,9 @@
 > Trạng thái: **v0.3**. Ngày: 2026-09-02 (v0.2: 2026-08-17).
 > Phạm vi: Registry giữ **đơn vị đo**, KHÔNG giữ **đơn giá**.
 > v0.3 rà lại các module mà v0.2 chưa chạm. **Không mã nào được cấp thêm** — và ba mã bị rút lại:
-> **10 `IDENTITY_RESOLVE` và 12 `MESSAGE_DELIVERED` thu hồi, 11 `VERIFY_PROOF` treo** (§2.2). Không
-> mã nào đang lưu hành bị đụng: chỉ mã 1 và 2 lưu hành, và cả hai giữ nguyên.
+> **10 `IDENTITY_RESOLVE` và 12 `MESSAGE_DELIVERED` thu hồi, 11 `VERIFY_PROOF` treo** (§2.2). Và
+> **sáu mã đổi SỐ, không đổi nghĩa**: `STORAGE_GIBH` · `BANDWIDTH_GIB` · bốn mã `AI_TOKEN_*` dời từ
+> 3–8 xuống **13–18**, nhường số cho các mã đã nối vào mã chạy — §2.
 >
 > Chi tiết: §2.1.1 (điều kiện mở khoá COMPUTE bị nêu **sai** ở v0.2 — đơn vị đã có sẵn, cái thiếu là
 > RD-2) · §2.2 (ba mã không đứng được trước module thật, và bài học chung của cả ba) · §3.4 (`epoch`
@@ -51,7 +52,7 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 
 | Mã | Bất biến | Vì sao — và cái gì hỏng nếu bỏ |
 |---|---|---|
-| **RD-1** | Mỗi `op_type` gắn ĐÚNG MỘT bộ ba `(lớp, đơn vị, quy ước đo)`, bất biến sau khi công bố. Và một mã đề xuất **trùng lớp + đo cùng đại lượng vật lý** với mã đang lưu hành thì **bị từ chối**, dù nó tự thân hợp mọi bất biến khác | Đổi nghĩa một mã đang lưu hành = đổi giá im lặng ở mọi platform đang dùng mã đó. Cần nghĩa mới thì cấp **mã mới**, không sửa mã cũ. Vế sau chặn hướng ngược: xin `STORAGE_GIB_DAY` cạnh `STORAGE_GIBH` (mã 3) là hợp lệ từng điều nhưng chẻ thị trường làm hai nhóm phải quy đổi qua tay — phá đúng mục tiêu "mẫu số chung" mà RD-1 sinh ra để giữ |
+| **RD-1** | Mỗi `op_type` gắn ĐÚNG MỘT bộ ba `(lớp, đơn vị, quy ước đo)`, bất biến sau khi công bố. Và một mã đề xuất **trùng lớp + đo cùng đại lượng vật lý** với mã đang lưu hành thì **bị từ chối**, dù nó tự thân hợp mọi bất biến khác | Đổi nghĩa một mã đang lưu hành = đổi giá im lặng ở mọi platform đang dùng mã đó. Cần nghĩa mới thì cấp **mã mới**, không sửa mã cũ. Vế sau chặn hướng ngược: xin `STORAGE_GIB_DAY` cạnh `STORAGE_GIBH` (mã 13) là hợp lệ từng điều nhưng chẻ thị trường làm hai nhóm phải quy đổi qua tay — phá đúng mục tiêu "mẫu số chung" mà RD-1 sinh ra để giữ |
 | **RD-2** | Đơn vị phải **đo được bởi bên thứ ba** — không phụ thuộc lời khai của bên bán | Đơn vị chỉ bên bán đo được thì giá không kiểm được, và "so giá" thành so hai lời khai |
 | **RD-3** | Đơn vị phải **cộng được**: đo 2 lần rồi cộng = đo 1 lần gộp | `required = base_price × op_count` chỉ đúng khi `op_count` cộng được. Đơn vị không cộng được (vd "một phiên") làm phép nhân vô nghĩa |
 | **RD-4** | Đơn vị phải **đơn thứ nguyên** — không gói nhiều tài nguyên vào một số | "1 task" gói CPU + RAM + thời gian + I/O. Hai task cùng đếm 1 có thể lệch chi phí 100×, nên giá per-task không nói gì về chi phí |
@@ -96,33 +97,60 @@ triển khai ≠ đã lên mạng.
 muộn hơn một nhịp — sau lần submit đầu — thì hai sổ đụng số vĩnh viễn, và triệu chứng sẽ là các
 platform tính đúng công thức trên sai đại lượng mà không cổng nào kêu.
 
-⚠ **Registry KHÔNG tự chốt ai là registrar.** Hai nhà cùng nhận giữ sổ số là việc của chủ nhân, không
-phải việc một tệp spec tự quyết. Cho tới khi có chốt: **cột "Trạng thái" dưới đây đọc là "đã vào
-script triển khai", KHÔNG đọc là "đã lên mạng"**, và **không cấp thêm số nào từ 3 tới 12** trước khi
-đối chiếu với `ConsumeMAGIC/CONTRACT.md §A`.
+🟢 **ĐÃ CHỐT — chủ nhân quyết 2026-09-02: REGISTRY giữ sổ `op_type`.** Câu *"MAGIC là registrar duy
+nhất"* ở `ConsumeMAGIC/CONTRACT.md:38` do đó **hết đúng** kể từ ngày này. Đã gửi thư báo nhà MAGIC.
+Ai đọc dòng đó trong repo MAGIC mà chưa thấy đính chính thì đối chiếu về đây.
+
+**Và giữ sổ KHÔNG có nghĩa là số của Registry thắng.** Việc của người giữ sổ là **một quyển sổ không
+đụng số**, không phải thắng một cuộc tranh. Nên luật đánh số chốt theo đúng chi phí thật:
+
+> **Số đã nối vào mã chạy thì giữ nguyên nghĩa. Định nghĩa chưa nối vào đâu thì nhường số.**
+
+Áp vào ca này: số **1–8** đã nằm trong `ConsumeMAGIC/CONTRACT.md §A`, số 3 và 4 còn có `base_price`
+thật trong `09_deploy_consume.ts:196-199` và các fixture/test bám theo. Sáu định nghĩa của v0.2 ở
+các số ấy thì **chưa một dòng mã nào dùng**. Đổi bên nào rẻ hơn là rõ ⟹ **v0.2 nhường, dời xuống
+13–18** (bảng dưới). Không mã nào mất nghĩa, chỉ đổi số, và đổi trong lúc còn 0 đồng.
+
+⚠ **Sổ KHÔNG sắp hết chỗ — `CONTRACT.md §A` ghi "Còn 8/16 dòng" là đọc nhầm trần.** Con số 16 là
+`max_op_prices` (`ConsumeMAGIC/onchain/lib/magiclamp/consume/pricing.ak:53`), và chú thích ngay trên
+nó nói rõ đó là trần **kích thước datum của MỘT bảng giá** — *"16 dòng ≈ 256 byte datum"*. Nó chặn
+**số dòng một platform khai**, không chặn **giá trị** của `op_type`: `op_type` là `Int` thường, hàm
+tra là `list.find` tuyến tính (`pricing.ak:100-101`), không đâu chặn trên. RD-6 của tệp này đã ghi
+đúng điều đó từ v0.2. Ghi lại ở đây vì tin nhầm "chỉ còn 8 ô" dẫn thẳng tới hành vi nguy hiểm nhất
+với một quyển sổ: tiết kiệm số, rồi tái dùng số.
 
 Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:27-28`.
 
-> ⚠ **Chỉ CON SỐ lưu hành, TÊN thì không.** Cột "Trạng thái = Lưu hành" nói về `op_type` là số `1`
-> và `2` đang chạy trên mạng. Hai cái tên `MEDIA_IMAGE` và `ANCHOR_CID` **không tồn tại ở đâu trong
-> repo MAGIC** — chúng do tệp này đặt lần đầu, cho hai con số vốn chỉ có chú thích tiếng Việt đứng
-> cạnh. Ghi ra vì người đọc grep tên trong MAGIC sẽ không thấy gì và dễ kết luận từ điển bịa số.
-> Ràng buộc RD-1 khoá **nghĩa** của mã, không khoá tên gọi của nó.
+> ⚠ **Chỉ CON SỐ được thống nhất, TÊN thì không.** Hai cái tên `MEDIA_IMAGE` và `ANCHOR_CID`
+> **không tồn tại ở đâu trong repo MAGIC** — ở đó chúng chỉ có chú thích tiếng Việt `ảnh` và `CID`
+> đứng cạnh con số. Ghi ra vì người đọc grep tên trong MAGIC sẽ không thấy gì và dễ kết luận từ
+> điển bịa số. RD-1 khoá **nghĩa** của mã, không khoá tên gọi.
+>
+> ⚠ **Và đọc cột "Trạng thái" cho đúng.** *"Đã vào script triển khai"* nghĩa là có mặt trong
+> `09_deploy_consume.ts` kèm giá — **không** nghĩa là đã lên mạng. Chưa mã nào lên mạng
+> (`ConsumeMAGIC/EXEC.md:218-220`). Bản v0.2 của bảng này ghi "Lưu hành" cho mã 1 và 2; đó là chỗ
+> sai đã sửa ở v0.3.
 
 | `op_type` | Tên | Lớp | Đơn vị (`op_count` đếm cái gì) | Quy ước đo — phải đo đúng thế này | Trạng thái |
 |---|---|---|---|---|---|
-| **1** | `MEDIA_IMAGE` | media | 1 ảnh đã nhận | Đếm ảnh nhận thành công tại biên dịch vụ, sau khi qua cổng kích thước. **Đây là mã tương thích ngược, vi phạm RD-4** (một ảnh 200 KB và một ảnh 20 MB cùng đếm 1) — §5.1 | Lưu hành |
-| **2** | `ANCHOR_CID` | anchor | 1 CID được neo | Đếm CID **khác nhau** ghi vào một giao dịch đã lên chuỗi. Retry cùng CID không cộng thêm | Lưu hành |
-| **3** | `STORAGE_GIBH` | storage | 1 **GiB·giờ** | `GiB = 2^30 byte` (**không** phải 10^9). Tích phân dung lượng theo thời gian, lấy mẫu ≥ 1 lần/giờ, làm tròn xuống. Đếm byte **đã lưu**, không đếm byte đã cấp phát | Mới |
-| **4** | `BANDWIDTH_GIB` | bandwidth | 1 **GiB** đã truyền | Byte rời khỏi biên dịch vụ tới bên thứ ba, đo ở tầng ứng dụng (payload), **không** tính header/retransmit | Mới |
-| **5** | `AI_TOKEN_IN` | ai | 1000 token **đầu vào mới** | `usage.input_tokens` của khung `result`. **Không** gộp cache — §3.2 | Mới |
-| **6** | `AI_TOKEN_OUT` | ai | 1000 token **đầu ra** | `usage.output_tokens` | Mới |
-| **7** | `AI_TOKEN_CACHE_W` | ai | 1000 token **ghi cache** | `usage.cache_creation_input_tokens` | Mới |
-| **8** | `AI_TOKEN_CACHE_R` | ai | 1000 token **đọc cache** | `usage.cache_read_input_tokens` | Mới |
+| **1** | `MEDIA_IMAGE` (MAGIC gọi: `ảnh`) | media | 1 ảnh đã nhận | Đếm ảnh nhận thành công tại biên dịch vụ, sau khi qua cổng kích thước. **Đây là mã tương thích ngược, vi phạm RD-4** (một ảnh 200 KB và một ảnh 20 MB cùng đếm 1) — §5.1 | Đã vào script triển khai |
+| **2** | `ANCHOR_CID` (MAGIC gọi: `CID`) | anchor | 1 CID được neo | Đếm CID **khác nhau** ghi vào một giao dịch đã lên chuỗi. Retry cùng CID không cộng thêm. Mọi bên neo bằng chứng **dùng lại mã này, KHÔNG xin mã mới** (`ConsumeMAGIC/CONTRACT.md:42`) | Đã vào script triển khai |
+| **3** | `recognition_storage_mb` | storage | 1 **MB** | ⚠ **KẾ THỪA** từ `ConsumeMAGIC/CONTRACT.md §A`, cấp cho OriLife. Có `base_price` thật ở `09_deploy_consume.ts:198`. **Chưa qua rà RD**, và có một chỗ phải biết: nó đếm MB **không kèm thời gian**, nên nó KHÔNG cùng đại lượng với mã 13 — lưu 1 MB một giờ và lưu 1 MB một năm cùng đếm 1 | Đã vào script triển khai |
+| **4** | `recognition_compute_mb` | compute | 1 **MB** tính toán | ⚠ **KẾ THỪA**, cấp cho OriLife, `base_price` ở `09_deploy_consume.ts:199`. **Chưa qua rà RD.** §2.1 giải thích vì sao "compute" toàn hệ chưa đo được — dòng này không gỡ được điều đó, nó chỉ là một đơn vị nội bộ của một app | Đã vào script triển khai |
+| **5** | `job_post` | marketplace | 1 tin việc đăng + phát tán | ⚠ **KẾ THỪA**, cấp cho AladinWork. **Chưa qua rà RD** | Chốt số, chưa nối giá |
+| **6** | `contract_settle` | marketplace | 1 hợp đồng tất toán | ⚠ **KẾ THỪA**, cấp cho AladinWork. **Chưa qua rà RD** | Chốt số, chưa nối giá |
+| **7** | `did.rotate` | identity | 1 lần xoay khoá DID | ⚠ **KẾ THỪA**, cấp cho PhoenixKey. Là **thao tác an ninh** — đặt giá cao ở đây khoá được người dùng khỏi tự bảo vệ mình, nên nó không cùng loại với các dòng thương mại | Chốt số, chưa nối |
+| **8** | `did.transfer` | identity | 1 lần chuyển DID | ⚠ **KẾ THỪA**, cấp cho PhoenixKey. Thương mại — chịu hệ số cầu là đúng | Chốt số, chưa nối |
 | **9** | `SENSING_READING` | sensing | 1 lần đọc cảm biến **đã được tiêu thụ** | Đếm ở phía **hạ nguồn** (bên đọc dữ liệu), không đếm ở phía cảm biến. Cảm biến tự đếm thì đếm bao nhiêu cũng được — vi phạm RD-2 | Mới |
 | **10** | ~~`IDENTITY_RESOLVE`~~ | identity | ~~1 lần phân giải DID~~ | ⛔ **THU HỒI v0.3** — đo được là PhoenixKey **không** thu phí phân giải; tiền nằm ở thao tác vòng đời DID. §2.2 | Thu hồi |
 | **11** | ⚠ `VERIFY_PROOF` | verify | 1 chứng minh đã kiểm — ⛔ **vi phạm RD-4, phát hiện v0.3**, phải tách theo hệ chứng minh trước khi dùng. §2.2 | Đếm lần chạy trọn phép kiểm, **kể cả khi kết quả là "không hợp lệ"** — chi phí đã tiêu rồi. Nhưng **mỗi chứng minh chỉ đếm MỘT lần**: kiểm lại cùng một chứng minh không cộng thêm, và phép kiểm do chính bên bán khởi phát (không đến từ yêu cầu bên mua) **không đếm** — cùng luật chống đếm lặp với mã 2 | Mới |
 | **12** | ~~`MESSAGE_DELIVERED`~~ | message | ~~1 tin đã giao tới người nhận~~ | ⛔ **THU HỒI v0.3** — không phải "chưa đủ chuẩn xác thực", mà **chưa có đường sống nào để đo**: đường ghi `DELIVERED` bị chú thích chết nguyên khối. §2.2 | Thu hồi |
+| **13** | `STORAGE_GIBH` | storage | 1 **GiB·giờ** | *(dời từ số 3 — §2)* `GiB = 2^30 byte` (**không** phải 10^9). Tích phân dung lượng theo thời gian, lấy mẫu ≥ 1 lần/giờ, làm tròn xuống. Đếm byte **đã lưu**, không đếm byte đã cấp phát | Mới |
+| **14** | `BANDWIDTH_GIB` | bandwidth | 1 **GiB** đã truyền | *(dời từ số 4)* Byte rời khỏi biên dịch vụ tới bên thứ ba, đo ở tầng ứng dụng (payload), **không** tính header/retransmit | Mới |
+| **15** | `AI_TOKEN_IN` | ai | 1000 token **đầu vào mới** | *(dời từ số 5)* `usage.input_tokens` của khung `result`. **Không** gộp cache — §3.2 | Mới |
+| **16** | `AI_TOKEN_OUT` | ai | 1000 token **đầu ra** | *(dời từ số 6)* `usage.output_tokens` | Mới |
+| **17** | `AI_TOKEN_CACHE_W` | ai | 1000 token **ghi cache** | *(dời từ số 7)* `usage.cache_creation_input_tokens` | Mới |
+| **18** | `AI_TOKEN_CACHE_R` | ai | 1000 token **đọc cache** | *(dời từ số 8)* `usage.cache_read_input_tokens` | Mới |
 
 Lớp (`class`) không phải để trang trí: nó là khoá của hệ số cầu per-platform per-class
 (PC-5, bản nháp cơ chế phí), nên hai `op_type` cùng lớp thì cùng chịu một hệ số cầu.
@@ -191,7 +219,8 @@ một đơn vị không tồn tại" — đúng câu RD-5 sinh ra để chặn.
 
 ### 2.2 Ba mã của v0.2 không đứng được trước module thật — thu hồi hai, treo một
 
-v0.2 cấp mười mã mới (3–12). Tám mã đầu dựng từ phép đo có thật. **Ba mã cuối — 10, 11, 12 — thì
+v0.2 cấp mười mã mới, đánh số 3–12 (sáu trong đó nay mang số 13–18 — §2). Bảy mã dựng từ phép đo có
+thật. **Ba mã còn lại — 10, 11, 12, và ba số này KHÔNG đổi — thì
 không**: chúng được suy ra từ chỗ *"hệ này chắc phải bán thứ đó"*, và lượt rà 2026-09-02 mở đúng ba
 module ấy ra thì cả ba đều không đỡ nổi định nghĩa.
 
@@ -290,14 +319,14 @@ chữ mà ra hai con số khác nghĩa.
 
 | Hệ | Tài nguyên đo **thật** trong mã | Neo | Khớp từ điển? |
 |---|---|---|---|
-| **LampNet** | storage theo byte + PoR bond | `lampnet-reward/src/metering.rs:120-159` | Khớp mã **3** sau khi chốt GiB (§3.3) |
+| **LampNet** | storage theo byte + PoR bond | `lampnet-reward/src/metering.rs:120-159` | Khớp mã **13** sau khi chốt GiB (§3.3) |
 | | compute theo `task_units` + quorum Splash | `.../metering.rs:163-178` | **Không có mã** — §2.1 |
 | | bandwidth | — | **Chưa đo được**: chỉ có đặc tả `LampNetCloud/Specs/Beam/Beam-Math.md:100-151`, không có module. Chính tài liệu kinh tế tự nhận "dung lượng neo được; lưu lượng thì không" (`Dhost/Specs/05-Economics.md:121-125`) |
 | | sensing (Probe) | — | **Chưa đo được**: có khai báo `LampNetCloud/Specs/ResourceBudget.md:46-48`, không có mã reward |
 | **OriLife** | phí theo tác vụ (9 loại, base USD) | `orilife-fee/src/tasks.ts:29-75` | Là **service**, không phải resource — phải phân rã, §4 |
 | | storage/compute/bandwidth | `orilife-fee/src/params.ts:35-40` | **Không phải metering**: là tỉ lệ chia bps cố định của tổng phí, không đo tiêu thụ từng người |
 | | anchor theo tier | `orilife-fee/src/tasks.ts` (`defaultAnchorTier`) | Khớp mã **2** |
-| **AladinWork** | token LLM, **tách 4 loại** + USD thật | `Core/budget.js:470-472` | Khớp mã **5–8** |
+| **AladinWork** | token LLM, **tách 4 loại** + USD thật | `Core/budget.js:470-472` | Khớp mã **15–18** |
 | | phí job (nullifier chống thu 2 lần) | `Core/fee-snapshot.js` | Là **service**, §4 |
 | **TigerAgent** | token LLM, **cộng gộp 4 loại thành 1** | `Runtime/crates/tiger-console/src/main.rs:1150-1153` | **Lệch** — §3.2 |
 | | số phiên chạy đồng thời | `.../main.rs:775-798` | Không phải tài nguyên tính phí: là trần bảo vệ hạ tầng |
@@ -334,7 +363,7 @@ số ghi `MAX_METERED_BYTES_NEWBIE: u64 = 10_737_418_240; // 10 GB` (`types.rs:3
 Số đúng, chữ sai. Đây là loại lệch sống sót rất lâu vì không có test nào bắt được chữ trong chú
 thích. Nó chỉ nổ khi một hệ khác đọc chữ "GB" rồi cài `10^9` — sai **7,4%** ở mọi hoá đơn.
 
-**Chốt:** mã **3** và **4** dùng **GiB = 2^30**, viết đúng chữ "GiB". Đề nghị LampNet sửa chú thích
+**Chốt:** mã **13** và **14** dùng **GiB = 2^30**, viết đúng chữ "GiB". Đề nghị LampNet sửa chú thích
 `types.rs:362` cho khớp `:348` (đề nghị, không phải yêu cầu — repo đó không thuộc quyền sửa của
 Registry).
 
@@ -401,7 +430,7 @@ là một cửa sổ 10 phút. Cộng với ca Cave ở trên, đây là **kho t
 hình đủ rõ để phát biểu thành luật: chữ này hỏng **trong phạm vi một kho**, không chỉ giữa các kho —
 nên phép rà "mỗi đội thống nhất một nghĩa" không đủ, phải rà tới từng chỗ dùng.
 
-**Chốt:** từ điển dùng **giờ**. Mã 3 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
+**Chốt:** từ điển dùng **giờ**. Mã 13 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
 giữ chữ gì là việc của LampNet; ranh giới đổi chữ nằm ở chỗ khai ra hệ.
 
 ### 3.5 Xung đột 4 — `byte·ngày` và `GiB·giờ`: cùng chiều đo, và **không quy đổi chẵn được**
@@ -430,7 +459,7 @@ hợp chỉ thấy hai đơn vị lạ và tự nhân một hệ số mình tự
 
 **Chốt:** từ điển **giữ `GiB·giờ`** (RD-8: dùng giờ; và GiB đã chốt ở §3.3). Bên nào khai ra hệ
 bằng byte·ngày thì tự quy đổi ở biên, **làm tròn xuống**, và công bố hệ số mình dùng. Registry
-không đổi mã 3 — đổi nghĩa một mã để chiều lòng một hệ chính là thứ RD-1 cấm.
+không đổi mã 13 — đổi nghĩa một mã để chiều lòng một hệ chính là thứ RD-1 cấm.
 
 **Việc còn nợ của chính Registry** (không đẩy sang ai): `util.ak:143-147` tự khai rằng mệnh đề
 "Registry và Treasury dùng cùng thang thời gian" **chưa kiểm** — `ms_per_epoch` bên Treasury là
@@ -520,9 +549,9 @@ RD-5 cấm cấp mã cho thứ chưa đo được. Dưới đây là hàng chờ
 | **COMPUTE** | Ba hệ ba nghĩa — §2.1. ⚠ **Cột này đã được sửa 2026-09-02**: bản trước ghi lý do là "không cái nào đơn thứ nguyên", sai — `TaskReceipt.NodeMetrics` có sẵn chín trường đơn thứ nguyên (`Splash/Spec/Splash/Splash-Math.md:685-693`). Lý do thật là **RD-2**: đường có chữ ký thì ký một số vô nghĩa vật lý, đường có nghĩa vật lý thì chưa ai thu thập — §2.1.1 | ~~Chốt đơn vị vCPU·giây chuẩn hoá~~ (đã có sẵn). Việc còn lại: **nối chữ ký quorum Splash vào đúng trường `gpu_seconds`/`cpu_seconds` của `TaskReceipt`** thay vì ký lên `task_units`. GPU vẫn tách mã riêng — và đặc tả đã tách sẵn |
 | **`hardware_score` của Cave** | Không phải tài nguyên: là **hệ số/tier**. Công thức `flops×0,40 + memory_bw×0,30 + network_bw×0,20 + uptime×0,10`, chuẩn hoá theo median động (`MathSpecs/Cave-Math.md:658-677`) | Không cấp. Nó gộp bốn đại lượng khác thứ nguyên vào một số — đúng ví dụ mà RD-4 dựng ra để chặn — và ra điểm **tương đối theo percentile**, nên cộng dồn không có nghĩa tiêu thụ. Ghi ở đây vì một cái tên có chữ "score" rất dễ bị lôi vào công thức phí như hệ số nhân |
 | **Đồng thuận / chạy node (Cnode)** | Chưa đo được, và spec tự nhận: `Cnode/specs/Cnode-Exec.md:50` xếp "Công thức reward, settlement (hệ token MagicLamp)" vào cột **"Cnode KHÔNG (spec khác)"** (đầu bảng ở `:45`); `:291` ghi "Nối metering đơn-vị-reward (chờ dependency ngoài)" | Chờ chính Cnode chốt đơn vị. Đây là dòng duy nhất trong danh sách hở mà bên sở hữu đã tự đánh dấu là việc treo của họ — đừng cấp mã hộ |
-| **HOSTING — site tĩnh** | ⚠ **Không cần mã mới, và đây là kết luận chứ không phải sót.** Bóc Dhost ra thì "hosting một site" = dung lượng-thời gian (đã có mã 3) + **hai khoản phẳng không đo được**: phí tên site `r(G)=r₀+r₁G` (`Dhost/Specs/05-Economics.md:153-160`) và phí "khả-đạt" gateway (`:214-221`, spec tự nói nó **không đo một byte lưu lượng nào**) | Không cấp. Hai khoản phẳng kia là **lệ phí**, không phải tiêu thụ tài nguyên — nhưng theo **RD-9** chúng vẫn phải có mặt trong vector phân rã của service, nếu không bên bán khai đúng mã 3 rẻ nhất rồi dồn chi phí thật vào hai khoản ngoài vector |
+| **HOSTING — site tĩnh** | ⚠ **Không cần mã mới, và đây là kết luận chứ không phải sót.** Bóc Dhost ra thì "hosting một site" = dung lượng-thời gian (đã có mã 13) + **hai khoản phẳng không đo được**: phí tên site `r(G)=r₀+r₁G` (`Dhost/Specs/05-Economics.md:153-160`) và phí "khả-đạt" gateway (`:214-221`, spec tự nói nó **không đo một byte lưu lượng nào**) | Không cấp. Hai khoản phẳng kia là **lệ phí**, không phải tiêu thụ tài nguyên — nhưng theo **RD-9** chúng vẫn phải có mặt trong vector phân rã của service, nếu không bên bán khai đúng mã 13 rẻ nhất rồi dồn chi phí thật vào hai khoản ngoài vector |
 | **HOSTING — thuê node (MCS)** | **Đây mới là trục thật sự mới**, không mã nào trong 12 mã chạm tới: chủ pool Cardano trả CARP để **thuê node** chạy Dolos data-node + relay (`Specs/_shared/LampNet-MCS-NodeService.md:24,27-30`). Đơn vị tự nhiên: node-instance·giờ, hoặc giây uptime | Điều kiện đã **thuận lợi bất thường** — spec tự đòi đúng RD-2: *"đo tài nguyên ĐO ĐƯỢC, có bằng chứng, per-node auth `M14-AUTH-02`; **KHÔNG theo tự-khai** (INV-MCS-12)"* (`:99-101`). Chỉ còn thiếu **mã chạy**: chưa mốc kích hoạt nào đạt. Cấp mã ngay là vi phạm RD-5 — chờ một phép đo sống |
-| **Thao tác vòng đời DID** | Thay chỗ cho mã 10 đã thu hồi (§2.2). Có tiền thật, đo được bởi chuỗi Cardano | Chốt trước: **tách theo loại thao tác hay gộp một mã**. Gộp là vi phạm RD-4 ngay — `update_guardians` 0,5 ADA so với `transfer_service` 5 ADA là lệch **10×** (`PhoenixKey-Math.md:3512-3524`). Việc của PhoenixKey chốt, không phải Registry |
+| **Thao tác vòng đời DID — phần CÒN LẠI** | Thay chỗ cho mã 10 đã thu hồi (§2.2). ⚠ **Hai thao tác đã có số rồi**: `did.rotate` = mã 7, `did.transfer` = mã 8 (§2). Phần hở là những thao tác còn lại trong bảng phí PhoenixKey — `create_non_person_did` · bốn mức `init_recovery` · `cancel_recovery` · `finalize_recovery` · `issue_vc_anchor` (`PhoenixKeyDID/PhoenixKey-Specs/PhoenixKey-Math.md:3512-3524`) | PhoenixKey chốt: **cấp mã riêng cho từng thao tác, hay gộp một mã "thao tác ghi DID"**. Gộp là vi phạm RD-4 ngay từ dòng đầu — `update_guardians` 0,5 ADA so với `transfer_service` 5 ADA đã lệch **10×**. Đường an toàn là noi theo chính mã 7/8: mỗi thao tác một số. ⚠ Riêng nhóm `recovery` phải tách khỏi nhóm thương mại, cùng lý do mã 7 đã ghi: đặt giá cao lên một thao tác an ninh là khoá người dùng khỏi tự cứu mình |
 | **Tách `VERIFY_PROOF` theo hệ chứng minh** | Mã 11 giữ số nhưng không dùng được cho tới khi tách (§2.2) | VeData chốt cách tách, theo đúng tiền lệ của chính họ ở `op_type` 2 vs 3 (lệch 53×, lý do `[I1]`, `VeData-Metering-Feat-Spec.md:104-112`). Tối thiểu phải tách chữ ký thường khỏi ZK; trong ZK còn phải cân Groth16 với PLONK/Halo2 |
 | **Giao tin nhắn** | Thay chỗ cho mã 12 đã thu hồi (§2.2) | **Hai bước, làm một bước vẫn hỏng**: (1) nối lại đường gọi `markDelivered` cho nó sống; (2) ký biên nhận bằng khoá riêng **người nhận**. Chỉ (1) thì được một ACK do hạ tầng bên bán tự sinh — vẫn vi phạm RD-2 |
 | **MEDIA theo dung lượng** | Mã **1** đếm ảnh, vi phạm RD-4 | Không sửa mã 1 (RD-1). Cấp mã mới đếm **MiB ảnh đã nhận**; mã 1 xuống trạng thái "kế thừa". ⚠ Trong lúc hai mã cùng sống, mã 1 hở về **phía bên mua**: tải toàn ảnh sát ngưỡng cổng kích thước thì rút tối đa dung lượng với giá "1 ảnh" cố định. Bên nào còn dùng mã 1 tự đặt `base_price` bù rủi ro cỡ-tối-đa — đây là việc của platform, không phải lỗ của từ điển |
