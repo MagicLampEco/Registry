@@ -2,10 +2,15 @@
 
 > Trạng thái: **v0.3**. Ngày: 2026-09-02 (v0.2: 2026-08-17).
 > Phạm vi: Registry giữ **đơn vị đo**, KHÔNG giữ **đơn giá**.
-> v0.3 rà lại các module mà v0.2 chưa chạm. **Không mã nào được cấp thêm, không mã nào đổi nghĩa** —
-> thay đổi nằm ở *lý do* của các mục đang treo, và ở một xung đột `epoch` thứ tư. Chi tiết: §2.1.1
-> (điều kiện mở khoá COMPUTE bị nêu sai ở v0.2) · §3.4 (nghĩa thứ tư, nằm trong cùng một tệp với
-> nghĩa thứ nhất) · §5 (hai dòng mới trong danh sách hở).
+> v0.3 rà lại các module mà v0.2 chưa chạm. **Không mã nào được cấp thêm** — và ba mã bị rút lại:
+> **10 `IDENTITY_RESOLVE` và 12 `MESSAGE_DELIVERED` thu hồi, 11 `VERIFY_PROOF` treo** (§2.2). Không
+> mã nào đang lưu hành bị đụng: chỉ mã 1 và 2 lưu hành, và cả hai giữ nguyên.
+>
+> Chi tiết: §2.1.1 (điều kiện mở khoá COMPUTE bị nêu **sai** ở v0.2 — đơn vị đã có sẵn, cái thiếu là
+> RD-2) · §2.2 (ba mã không đứng được trước module thật, và bài học chung của cả ba) · §3.4 (`epoch`
+> nay có **năm** nghĩa; nghĩa thứ tư nằm trong cùng một tệp với nghĩa thứ nhất, lệch 7.200 lần) ·
+> §3.5 (xung đột thứ tư: `byte·ngày` với `GiB·giờ`, không quy đổi chẵn được) · §5 (bảy dòng mới
+> trong danh sách hở, gồm cả **hosting** — thứ v0.2 không hề nhắc tới).
 > Đọc kèm: [CONTRACT §PK1](./CONTRACT.md) · [Feat-Spec §0.3](./Feat-Spec.md) · [Math-Spec §13](./Math-Spec.md)
 
 ---
@@ -78,9 +83,9 @@ trở lên do tệp này cấp lần đầu.
 | **7** | `AI_TOKEN_CACHE_W` | ai | 1000 token **ghi cache** | `usage.cache_creation_input_tokens` | Mới |
 | **8** | `AI_TOKEN_CACHE_R` | ai | 1000 token **đọc cache** | `usage.cache_read_input_tokens` | Mới |
 | **9** | `SENSING_READING` | sensing | 1 lần đọc cảm biến **đã được tiêu thụ** | Đếm ở phía **hạ nguồn** (bên đọc dữ liệu), không đếm ở phía cảm biến. Cảm biến tự đếm thì đếm bao nhiêu cũng được — vi phạm RD-2 | Mới |
-| **10** | `IDENTITY_RESOLVE` | identity | 1 lần phân giải DID | Đếm lần trả về kết quả phân giải thành công. Cache hit vẫn đếm | Mới |
-| **11** | `VERIFY_PROOF` | verify | 1 chứng minh đã kiểm | Đếm lần chạy trọn phép kiểm, **kể cả khi kết quả là "không hợp lệ"** — chi phí đã tiêu rồi. Nhưng **mỗi chứng minh chỉ đếm MỘT lần**: kiểm lại cùng một chứng minh không cộng thêm, và phép kiểm do chính bên bán khởi phát (không đến từ yêu cầu bên mua) **không đếm** — cùng luật chống đếm lặp với mã 2 | Mới |
-| **12** | `MESSAGE_DELIVERED` | message | 1 tin đã giao tới người nhận | Đếm ở đầu **nhận**, không đếm ở đầu gửi. "Đầu nhận" phải là **bên tách biệt kiểm chứng được** — biên nhận giao ký bằng khoá của người nhận, không phải ACK do hạ tầng của bên bán tự sinh. Bên bán vận hành cả hai đầu rồi tự chứng thực là vi phạm RD-2, cùng dạng với cảm biến tự đếm ở mã 9 | Mới |
+| **10** | ~~`IDENTITY_RESOLVE`~~ | identity | ~~1 lần phân giải DID~~ | ⛔ **THU HỒI v0.3** — đo được là PhoenixKey **không** thu phí phân giải; tiền nằm ở thao tác vòng đời DID. §2.2 | Thu hồi |
+| **11** | ⚠ `VERIFY_PROOF` | verify | 1 chứng minh đã kiểm — ⛔ **vi phạm RD-4, phát hiện v0.3**, phải tách theo hệ chứng minh trước khi dùng. §2.2 | Đếm lần chạy trọn phép kiểm, **kể cả khi kết quả là "không hợp lệ"** — chi phí đã tiêu rồi. Nhưng **mỗi chứng minh chỉ đếm MỘT lần**: kiểm lại cùng một chứng minh không cộng thêm, và phép kiểm do chính bên bán khởi phát (không đến từ yêu cầu bên mua) **không đếm** — cùng luật chống đếm lặp với mã 2 | Mới |
+| **12** | ~~`MESSAGE_DELIVERED`~~ | message | ~~1 tin đã giao tới người nhận~~ | ⛔ **THU HỒI v0.3** — không phải "chưa đủ chuẩn xác thực", mà **chưa có đường sống nào để đo**: đường ghi `DELIVERED` bị chú thích chết nguyên khối. §2.2 | Thu hồi |
 
 Lớp (`class`) không phải để trang trí: nó là khoá của hệ số cầu per-platform per-class
 (PC-5, bản nháp cơ chế phí), nên hai `op_type` cùng lớp thì cùng chịu một hệ số cầu.
@@ -147,9 +152,83 @@ rồi, vậy cấp mã đi."* Không. RD-5 đòi **có cách đo**, không đòi
 nghĩa đẹp trong đặc tả mà không ai thu thập được thì cấp mã cho nó chính là "cấp giấy phép định giá
 một đơn vị không tồn tại" — đúng câu RD-5 sinh ra để chặn.
 
+### 2.2 Ba mã của v0.2 không đứng được trước module thật — thu hồi hai, treo một
+
+v0.2 cấp mười mã mới (3–12). Tám mã đầu dựng từ phép đo có thật. **Ba mã cuối — 10, 11, 12 — thì
+không**: chúng được suy ra từ chỗ *"hệ này chắc phải bán thứ đó"*, và lượt rà 2026-09-02 mở đúng ba
+module ấy ra thì cả ba đều không đỡ nổi định nghĩa.
+
+Chỗ này được phép sửa, và phải nói rõ vì sao: **RD-1 khoá nghĩa của mã ĐANG LƯU HÀNH**. Chỉ mã 1 và
+2 lưu hành (`MAGIC/scripts/deploy/09_deploy_consume.ts:168-169`). Mã 3–12 chưa mã nào lên mạng, nên
+thu hồi bây giờ tốn 0 giao dịch — còn để tới sau lần deploy đầu thì vĩnh viễn không sửa được.
+
+**Mở rộng RD-1 — số đã thu hồi KHÔNG tái dùng.** Mã 10 và 12 chết vĩnh viễn ở đúng số đó. Cấp lại
+số 12 cho một tài nguyên khác thì mọi bên tích hợp còn giữ bảng cũ sẽ tính đúng công thức trên sai
+đại lượng, và **không phép đo nào kêu** — đúng thứ RD-1 sinh ra để chặn.
+
+#### Mã 10 `IDENTITY_RESOLVE` — thu hồi: đặt sai chỗ có tiền
+
+PhoenixKey **không** thu phí phân giải DID. Bảng phí đầy đủ (`PhoenixKeyDID/PhoenixKey-Specs/PhoenixKey-Math.md:3512-3524`)
+liệt mười ba thao tác chịu phí — `create_person_did` (=0, ưu đãi ra mắt) · `create_non_person_did` ·
+`rotate` · `transfer_service` · `update_guardians` · bốn mức `init_recovery` · `cancel_recovery` ·
+`finalize_recovery` · `mint_magic` · `issue_vc_anchor` — và **không dòng nào tên "resolve"**. Chú
+thích ngay trên bảng (`:3505`) xếp resolve vào nhóm đọc thuần: *"All interactions are pull-based
+(resolve) or push-based (sign)"*.
+
+⟹ mã 10 đang đo một lời gọi đọc miễn phí. Thứ có tiền là **thao tác vòng đời DID**, và mỗi thao tác
+là một giao dịch on-chain rời rạc — cùng hình dạng đo với mã 2, tức bên thứ ba xác nhận được bằng
+chính chuỗi. Ghi vào §5 làm ứng viên, **không cấp mã ngay**: cần chốt trước là tách theo loại thao
+tác hay gộp một mã, mà lệch giá giữa `update_guardians` (0,5 ADA) và `transfer_service` (5 ADA) là
+**10×** — gộp một mã là vi phạm RD-4 ngay từ dòng đầu.
+
+#### Mã 11 `VERIFY_PROOF` — treo: vi phạm RD-4, và VeData đã tự vá đúng lỗi này ở chỗ khác
+
+`VeDataIO/Specs/VeData-Metering-Feat-Spec.md:210-215` (§3.7) gộp **ba** phép kiểm khác chi phí xa
+nhau vào một giá: *"verify Merkle proof (MMR/SMT/Lazy-MMR …) + verify Mithril stake-quorum
+certificate + D9 privacy gate"*. Trong họ ZK còn lệch tiếp — Groth16 so với PLONK/Halo2 khác nhau
+nhiều bậc (`VeDataIO/Specs/Query-Math.md:1263,1357`; `Glint-Math.md:249-256`), và Glint viết thẳng
+bằng lời: *"sinh proof tốn tài nguyên tính toán hơn ký một chữ ký thường"* (`Glint-Feat.md:367`).
+
+Điều làm ca này **chắc chắn** chứ không phải suy đoán: **chính VeData đã vá đúng lớp lỗi này một
+lần rồi.** Bảng `op_type` của họ tách `2 mosaic_anchor_cid` (batched, 1.000.000 nanogic) khỏi
+`3 immediate_anchor_cid` (53.000.000 nanogic) — ghi lý do `[I1]` ngay trong bảng: *"phí L1
+~480.733 lovelace/CID = ~53× batch-100 … KHÔNG dùng giá batch cho immediate"*
+(`VeData-Metering-Feat-Spec.md:104-112`). Lệch **53 lần** thì họ tách; cùng đội, cùng bảng, phép
+verify vẫn còn gộp.
+
+⟹ mã 11 **giữ số nhưng không dùng được** cho tới khi tách theo hệ chứng minh. Registry không tự
+chốt cách tách — đó là việc của VeData, và họ đã có sẵn tiền lệ của chính mình để noi theo.
+
+#### Mã 12 `MESSAGE_DELIVERED` — thu hồi, và vì lý do nặng hơn dự đoán
+
+Dự đoán khi rà là *"chắc ProofChat chỉ có ACK hạ tầng, chưa có biên nhận ký bằng khoá người nhận"*.
+Thực tế nặng hơn: **cả đường ACK cũng chưa sống.** Hàm `markDelivered`/`markRead` có trong mã
+(`ProofChat/BE/src/modules/messages/messages.service.ts:349-421`) nhưng không route REST nào, không
+gateway nào, không consumer nào gọi tới — khối xử lý sự kiện `message.delivered` bị **chú thích chết
+nguyên khối**, kèm đúng một dòng `// TODO: Implement delivery confirmation logic`
+(`ProofChat/BE/src/modules/queue/message-processor.service.ts:190-219`).
+
+⟹ RD-5, không phải RD-2. Điều kiện mở khoá có **hai** bước, và làm mỗi bước một thì vẫn hỏng: (1)
+nối lại đường gọi `markDelivered` cho nó sống; (2) thêm chữ ký bằng khoá riêng của **người nhận**.
+Chỉ làm (1) thì được một ACK do hạ tầng bên bán tự sinh — vẫn vi phạm RD-2, cùng dạng với cảm biến
+tự đếm ở mã 9.
+
+⚠ **Bài học chung của ba ca, đắt hơn cả ba mã cộng lại.** Tám mã sống đều dựng từ *"đã thấy chỗ này
+đo cái gì"*. Ba mã chết đều dựng từ *"hệ này hẳn phải bán cái gì"*. Hai lối làm ra hai thứ trông
+giống hệt nhau trên trang giấy — cùng có tên, có lớp, có đơn vị, có quy ước đo viết rất kỹ — và
+**không phép đo hình thức nào phân biệt được**. Chỉ mở module ra mới biết. Từ v0.3, một mã đề xuất
+phải kèm neo `file:line` tới chỗ **module thật đang đếm đại lượng đó**, không phải tới chỗ nó được
+mô tả.
+
 ---
 
-## 3. Đối chiếu bốn hệ — ba xung đột đo được
+## 3. Đối chiếu các hệ — bốn xung đột đo được
+
+> v0.2 đối chiếu **bốn** hệ (LampNet · OriLife · AladinWork · TigerAgent) và tìm ra ba xung đột.
+> v0.3 rà thêm **Dhost · Cave · Cnode · Splash · PhoenixKey · VeData/Glint · ProofChat · DecenPage ·
+> Loom · CheckFarm · AffiSo**, thêm một xung đột (§3.5) và hai nghĩa `epoch` (§3.4). Bảng §3.1 dưới
+> đây vẫn là bảng của v0.2 — các hệ mới nằm ở §2.2 và §5, vì phần lớn phát hiện của lượt sau là
+> *"chưa đo được"*, không phải *"đo khác nhau"*.
 
 Bảng dưới không phải khảo sát cho vui: mỗi dòng "lệch" là một chỗ hai dịch vụ đang khai cùng một
 chữ mà ra hai con số khác nghĩa.
@@ -206,10 +285,10 @@ thích. Nó chỉ nổ khi một hệ khác đọc chữ "GB" rồi cài `10^9` 
 `types.rs:362` cho khớp `:348` (đề nghị, không phải yêu cầu — repo đó không thuộc quyền sửa của
 Registry).
 
-### 3.4 Xung đột 3 — "epoch" mang **bốn** nghĩa, và đã trả giá hai lần
+### 3.4 Xung đột 3 — "epoch" mang **năm** nghĩa, và đã trả giá hai lần
 
-Ba nghĩa dưới đây là bản v0.2; nghĩa **thứ tư** tìm được 2026-09-02, ghi ở cuối mục — nó là ca nặng
-nhất, vì hai nghĩa nằm trong cùng một tệp.
+Ba nghĩa dưới đây là bản v0.2; nghĩa **thứ tư** và **thứ năm** tìm được 2026-09-02, ghi ở cuối mục.
+Nghĩa thứ tư là ca nặng nhất, vì hai nghĩa nằm trong cùng một tệp.
 
 | Nghĩa | Độ dài | Mốc gốc | Neo |
 |---|---|---|---|
@@ -255,8 +334,43 @@ thận neo nó**, chỉ cần một dòng quên neo là đủ.
 có mâu thuẫn, và một `hardware_score` tính từ hai độ dài lệch 7.200 lần thì không so được giữa các
 node.
 
+**Nghĩa thứ NĂM — và nó không phải thời gian gì cả.** ProofChat dùng chữ này theo nghĩa MLS
+(RFC 9420): `E_i` là **thế hệ khoá nhóm**, đổi khi thành viên vào/ra, không có độ dài
+(`ProofChat/Spec/ProofChat-Math.md:323-327`). Nghĩa này *đúng chuẩn* trong địa hạt của nó, nên
+không có gì để sửa ở ProofChat — ghi ra vì nó là chỗ nguy hiểm nhất cho một phép rà tự động: bốn
+nghĩa kia đều là **thời lượng** nên còn so được với nhau, nghĩa này là một **bộ đếm**. Một công
+thức phí nhân với "số epoch" mà gặp phải nó thì cho ra một số vô nghĩa nhưng vẫn có kiểu đúng.
+
 **Chốt:** từ điển dùng **giờ**. Mã 3 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
 giữ chữ gì là việc của LampNet; ranh giới đổi chữ nằm ở chỗ khai ra hệ.
+
+### 3.5 Xung đột 4 — `byte·ngày` và `GiB·giờ`: cùng chiều đo, và **không quy đổi chẵn được**
+
+Tìm 2026-09-02. Đây **không** phải lệch nghĩa — cả hai đo đúng một đại lượng (dung lượng × thời
+gian), nên RD-1 không bị đụng. Nó là lệch **thang**, và cái đắt nằm ở chỗ ít ai kiểm.
+
+LampNet neo đơn vị lưu trữ là **byte·ngày**, và neo nó thẳng vào giá:
+`Specs/_shared/Resource-Usage-Metering.md:38` — *"lưu trữ = **byte·ngày** — khớp đơn vị neo
+1 nanogic = 1 byte·ngày"*. Mã 3 của từ điển là **GiB·giờ**.
+
+Quy đổi:
+
+```
+1 GiB·giờ = 2^30 byte × (1/24) ngày = 1.073.741.824 / 24 = 44.739.242,666… byte·ngày
+```
+
+**Không chẵn.** Hệ số là một phân số vô hạn tuần hoàn, nên mọi phép quy đổi trong số học số nguyên
+đều phải làm tròn, và **chiều làm tròn quyết định ai chịu sai số**. Quy đổi hai chiều liên tiếp
+không trả về giá trị ban đầu.
+
+Đây đúng họ với xung đột 2 (GiB hay GB, lệch 7,4% — §3.3), nhưng khó thấy hơn một bậc: ở đó hai bên
+dùng **cùng tên** với hai độ lớn, nên phép thử "GiB hay GB?" hỏi được. Ở đây hai bên dùng **hai tên
+khác nhau** cho cùng một đại lượng, nên không có phép thử nào tự nhiên đặt ra câu hỏi — người tích
+hợp chỉ thấy hai đơn vị lạ và tự nhân một hệ số mình tự tính.
+
+**Chốt:** từ điển **giữ `GiB·giờ`** (RD-8: dùng giờ; và GiB đã chốt ở §3.3). Bên nào khai ra hệ
+bằng byte·ngày thì tự quy đổi ở biên, **làm tròn xuống**, và công bố hệ số mình dùng. Registry
+không đổi mã 3 — đổi nghĩa một mã để chiều lòng một hệ chính là thứ RD-1 cấm.
 
 **Việc còn nợ của chính Registry** (không đẩy sang ai): `util.ak:143-147` tự khai rằng mệnh đề
 "Registry và Treasury dùng cùng thang thời gian" **chưa kiểm** — `ms_per_epoch` bên Treasury là
@@ -346,6 +460,11 @@ RD-5 cấm cấp mã cho thứ chưa đo được. Dưới đây là hàng chờ
 | **COMPUTE** | Ba hệ ba nghĩa — §2.1. ⚠ **Cột này đã được sửa 2026-09-02**: bản trước ghi lý do là "không cái nào đơn thứ nguyên", sai — `TaskReceipt.NodeMetrics` có sẵn chín trường đơn thứ nguyên (`Splash/Spec/Splash/Splash-Math.md:685-693`). Lý do thật là **RD-2**: đường có chữ ký thì ký một số vô nghĩa vật lý, đường có nghĩa vật lý thì chưa ai thu thập — §2.1.1 | ~~Chốt đơn vị vCPU·giây chuẩn hoá~~ (đã có sẵn). Việc còn lại: **nối chữ ký quorum Splash vào đúng trường `gpu_seconds`/`cpu_seconds` của `TaskReceipt`** thay vì ký lên `task_units`. GPU vẫn tách mã riêng — và đặc tả đã tách sẵn |
 | **`hardware_score` của Cave** | Không phải tài nguyên: là **hệ số/tier**. Công thức `flops×0,40 + memory_bw×0,30 + network_bw×0,20 + uptime×0,10`, chuẩn hoá theo median động (`MathSpecs/Cave-Math.md:658-677`) | Không cấp. Nó gộp bốn đại lượng khác thứ nguyên vào một số — đúng ví dụ mà RD-4 dựng ra để chặn — và ra điểm **tương đối theo percentile**, nên cộng dồn không có nghĩa tiêu thụ. Ghi ở đây vì một cái tên có chữ "score" rất dễ bị lôi vào công thức phí như hệ số nhân |
 | **Đồng thuận / chạy node (Cnode)** | Chưa đo được, và spec tự nhận: `Cnode/specs/Cnode-Exec.md:50` xếp "Công thức reward, settlement (hệ token MagicLamp)" vào cột **"Cnode KHÔNG (spec khác)"** (đầu bảng ở `:45`); `:291` ghi "Nối metering đơn-vị-reward (chờ dependency ngoài)" | Chờ chính Cnode chốt đơn vị. Đây là dòng duy nhất trong danh sách hở mà bên sở hữu đã tự đánh dấu là việc treo của họ — đừng cấp mã hộ |
+| **HOSTING — site tĩnh** | ⚠ **Không cần mã mới, và đây là kết luận chứ không phải sót.** Bóc Dhost ra thì "hosting một site" = dung lượng-thời gian (đã có mã 3) + **hai khoản phẳng không đo được**: phí tên site `r(G)=r₀+r₁G` (`Dhost/Specs/05-Economics.md:153-160`) và phí "khả-đạt" gateway (`:214-221`, spec tự nói nó **không đo một byte lưu lượng nào**) | Không cấp. Hai khoản phẳng kia là **lệ phí**, không phải tiêu thụ tài nguyên — nhưng theo **RD-9** chúng vẫn phải có mặt trong vector phân rã của service, nếu không bên bán khai đúng mã 3 rẻ nhất rồi dồn chi phí thật vào hai khoản ngoài vector |
+| **HOSTING — thuê node (MCS)** | **Đây mới là trục thật sự mới**, không mã nào trong 12 mã chạm tới: chủ pool Cardano trả CARP để **thuê node** chạy Dolos data-node + relay (`Specs/_shared/LampNet-MCS-NodeService.md:24,27-30`). Đơn vị tự nhiên: node-instance·giờ, hoặc giây uptime | Điều kiện đã **thuận lợi bất thường** — spec tự đòi đúng RD-2: *"đo tài nguyên ĐO ĐƯỢC, có bằng chứng, per-node auth `M14-AUTH-02`; **KHÔNG theo tự-khai** (INV-MCS-12)"* (`:99-101`). Chỉ còn thiếu **mã chạy**: chưa mốc kích hoạt nào đạt. Cấp mã ngay là vi phạm RD-5 — chờ một phép đo sống |
+| **Thao tác vòng đời DID** | Thay chỗ cho mã 10 đã thu hồi (§2.2). Có tiền thật, đo được bởi chuỗi Cardano | Chốt trước: **tách theo loại thao tác hay gộp một mã**. Gộp là vi phạm RD-4 ngay — `update_guardians` 0,5 ADA so với `transfer_service` 5 ADA là lệch **10×** (`PhoenixKey-Math.md:3512-3524`). Việc của PhoenixKey chốt, không phải Registry |
+| **Tách `VERIFY_PROOF` theo hệ chứng minh** | Mã 11 giữ số nhưng không dùng được cho tới khi tách (§2.2) | VeData chốt cách tách, theo đúng tiền lệ của chính họ ở `op_type` 2 vs 3 (lệch 53×, lý do `[I1]`, `VeData-Metering-Feat-Spec.md:104-112`). Tối thiểu phải tách chữ ký thường khỏi ZK; trong ZK còn phải cân Groth16 với PLONK/Halo2 |
+| **Giao tin nhắn** | Thay chỗ cho mã 12 đã thu hồi (§2.2) | **Hai bước, làm một bước vẫn hỏng**: (1) nối lại đường gọi `markDelivered` cho nó sống; (2) ký biên nhận bằng khoá riêng **người nhận**. Chỉ (1) thì được một ACK do hạ tầng bên bán tự sinh — vẫn vi phạm RD-2 |
 | **MEDIA theo dung lượng** | Mã **1** đếm ảnh, vi phạm RD-4 | Không sửa mã 1 (RD-1). Cấp mã mới đếm **MiB ảnh đã nhận**; mã 1 xuống trạng thái "kế thừa". ⚠ Trong lúc hai mã cùng sống, mã 1 hở về **phía bên mua**: tải toàn ảnh sát ngưỡng cổng kích thước thì rút tối đa dung lượng với giá "1 ảnh" cố định. Bên nào còn dùng mã 1 tự đặt `base_price` bù rủi ro cỡ-tối-đa — đây là việc của platform, không phải lỗ của từ điển |
 | **COORDINATION** (điều phối nhiều agent) | Không phải resource — nó là **service vector**, đã có §4 phục vụ | Không cấp. Nếu ai đòi mã riêng, hỏi họ nó đo bằng gì |
 | **Giữ chỗ / cọc** (AladinWork `holdDeposit`) | Chưa cài; spec tự đánh dấu `[PARAM]` chưa chốt (`AladinWork/Specs/Task/Task-Schedule-ExtraFee-JobTypeGov-v2.md:7,138-149`) | Cọc **không phải** tiêu thụ tài nguyên — nó là tài sản hoàn lại. Thuộc Treasury, không thuộc từ điển |
