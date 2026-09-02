@@ -91,7 +91,7 @@ Lớp (`class`) không phải để trang trí: nó là khoá của hệ số c�
 định nghĩa vật lý nào cho 1 task-unit** trong repo đó — nó là con số quorum đồng ý với nhau.
 
 `OriLife` cũng có "compute", nhưng ở đó nó là **tỉ lệ chia bps** của tổng phí
-(`OriLifeTrace/orilife-fee/src/params.ts:37`, `compute = 3500`), không phải kết quả đo.
+(`OriLifeTrace/orilife-fee/src/params.ts:38`, `compute = 3500`), không phải kết quả đo.
 
 `TigerAgent` AaaS liệt `per-compute-unit` như một `PricingSpec.unit`
 (`TigerAgent/Spec/agent-as-a-service/AaaS-3-reward-as-service.md:132`), cũng không định nghĩa.
@@ -168,7 +168,7 @@ Ba nghĩa đang cùng sống:
 | Nghĩa | Độ dài | Mốc gốc | Neo |
 |---|---|---|---|
 | Epoch **Cardano** | 5 ngày | mốc riêng của chuỗi | thứ người đọc **mặc định tưởng** khi thấy chữ này trong một repo Cardano |
-| **Ô 5 ngày kể từ mốc UNIX** — nghĩa thật của `created_epoch` | 5 ngày | `posix_ms / 432_000_000` | `onchain/lib/magiclamp/registry/util.ak:116` (`ms_per_time_bucket = 432_000_000`) |
+| **Ô 5 ngày kể từ mốc UNIX** — nghĩa thật của `created_epoch` | 5 ngày | `posix_ms / 432_000_000` | `onchain/lib/magiclamp/registry/util.ak:152` (`ms_per_time_bucket = 432_000_000`) |
 | Epoch **LampNet** | 1 giờ | — | `LampNetCloud/lampnet-hivemind/lampnet-reward/src/types.rs:13` (`EPOCH_DURATION_SECS = 3600`) |
 
 Hai nghĩa đầu **cùng độ dài nhưng khác biên ô** — loại lệch tệ nhất, vì phép thử "5 ngày đúng
@@ -188,7 +188,7 @@ chưa?" trả lời đúng trong khi biên ô vẫn lệch. Registry đã đổi
 **Chốt:** từ điển dùng **giờ**. Mã 3 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
 giữ chữ gì là việc của LampNet; ranh giới đổi chữ nằm ở chỗ khai ra hệ.
 
-**Việc còn nợ của chính Registry** (không đẩy sang ai): `util.ak:107-113` tự khai rằng mệnh đề
+**Việc còn nợ của chính Registry** (không đẩy sang ai): `util.ak:143-147` tự khai rằng mệnh đề
 "Registry và Treasury dùng cùng thang thời gian" **chưa kiểm** — `ms_per_epoch` bên Treasury là
 tham số validator (`LAMP/Treasury/onchain/validators/custody.ak:50`), giá trị `432_000_000` chỉ xuất
 hiện trong test. Mệnh đề chỉ đúng nếu bên triển khai truyền đúng số đó. Chưa có bằng chứng deploy

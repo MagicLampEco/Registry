@@ -33,7 +33,7 @@
 //             khoá: minting policy không có nhánh spend ⇒ đồng thuận hằng False.
 //             Ép trong `platform.governance_ref_distinct`, gọi từ `mutable_fields_valid`
 //             ⇒ áp CẢ BA cửa (R-WF ở đây, U-MUT và M-MUT ở registry.ak). Lý lẽ đầy đủ +
-//             phân biệt với chốt "không vá bằng mã" ở util.ak:200 — xem platform.ak.
+//             phân biệt với chốt "không vá bằng mã" ở util.ak:215 — xem platform.ak.
 //   R-CAP     len(accepted_assets) ≤ platform.max_accepted_assets (=32). Danh sách này là
 //             kênh duy nhất bên đăng ký bơm dài tuỳ ý; số đo + vì sao 32 ở platform.ak.
 //             Cùng đường ép với R-GOVDIST ⇒ cũng áp đủ ba cửa.

@@ -95,19 +95,19 @@ bộ 4 đặc tả hạ tầng L1 đã rời repo Join về LampNet (quyết đ�
 > khối này viết *"miễn phí, nhưng chỉ một lần này"* — **sai**, và nó tự chế ra một sự cấp bách không có.
 >
 > ⚠ Cái chặn hồ sơ này ở L0 **không phải cái tên** và không được đổi bởi lần đổi tên này: vẫn là hai ô
-> `governance_ref` + trục danh tính, cộng ba ô đầu mối người thật còn trống (`:29`, `:78-79`, `:158`).
+> `governance_ref` + trục danh tính, cộng ba ô đầu mối người thật còn trống (`:29`, `:78-79`, `:174`).
 >
 > ⚠ Từ đây trở đi việc đổi tên **không còn rẻ vì lý do thứ hai**, độc lập với chuyện đúc beacon: R1
 > (trùng `platform_id`) **không kiểm được bằng máy** — `REGISTRATION-STANDARD.md:99`, và
 > `tools/check-registration.mjs` chỉ kiểm ô trống, **không dedup `platform_id`**. Chừng nào chưa có
-> `CODEOWNERS` + branch protection cho `Registrations/` (`DevStatus.md:54`) thì một PR sau vẫn ghi đè
+> `CODEOWNERS` + branch protection cho `Registrations/` (`DevStatus.md:56`) thì một PR sau vẫn ghi đè
 > được tên này mà không ai phải duyệt. Khoá tên bằng văn bản không thay được khoá tên bằng quyền gộp.
 
 ## (b) Giải thích bốn mã đã chọn
 
 | Trục | Mã | Vì sao | Con trỏ kiểm được | Thiếu gì để lên mã cao hơn |
 |---|---|---|---|---|
-| **2.1** Danh tính | `ID-0` | Ý đồ đã tuyên bố và có seam, nhưng **daemon chưa ép**: nhận `subject_did` là chuỗi thô, test dùng `did:cardano:…demo` | tuyên bố `Join/Join-Feat.md:9`; seam `resolvePersonDid()` `SuperApp/src/modules/join/joinService.ts:213`; hở `lampnet-hivemind/lampnet-join/src/join.rs:45,216` | Nối resolve + verify `did:phoenix` ở daemon ⇒ `ID-2`. Lên `ID-3` cần PhoenixKey phát hành `personhood_level` (bậc `did-chain` mã đã xong, **chưa deploy**) |
+| **2.1** Danh tính | `ID-0` | Ý đồ đã tuyên bố và có seam, nhưng **daemon chưa ép**: nhận `subject_did` là chuỗi thô, test dùng `did:cardano:…demo` | tuyên bố `Join/Join-Feat.md:9`; seam `resolvePersonDid()` `SuperApp/src/modules/join/joinService.ts:491`; hở `lampnet-hivemind/lampnet-join/src/join.rs:45,216` | Nối resolve + verify `did:phoenix` ở daemon ⇒ `ID-2`. Lên `ID-3` cần PhoenixKey phát hành `personhood_level` (bậc `did-chain` mã đã xong, **chưa deploy**) |
 | **2.2** Hệ token | `TK-1` | Không mint, không giữ token, không đốt LAMP, không mở đường đổi MAGIC ra ngoài. Chỉ phát `PoUWEvidence{node_did, period, evidence_cid}` | `Join/Join-Feat.md:57`; đơn vị thưởng là CARP ở settlement MagicLamp `_shared/CARP-Reward-Payout.md:5` | **Một lỗi đơn vị tiền đang mở, đội tự khai:** đường mobile lease trả bằng **µLAMP** chứ không phải CARP — `lampnet-mirage/src/mobile_settle.rs:27,60,69,546` @2e294b3. Không phải căn cứ từ chối (không phải token mới, không qua cổng nào), nhưng phải sửa: đổi đơn vị là **đặt lại giá**, không phải đổi nhãn trường |
 | **2.3** Kho giá trị | `CU-N` | Không thu asset ở tầng này. Thưởng trả bằng CARP ở lớp settlement, không cắt phí ở Join | mục (c) | `CU-N` là hạng **cao nhất** của trục này — không thu tiền không phải thiếu sót. Nhưng vẫn **bắt buộc khai `governance_ref`** (xem dưới) |
 | **2.4** Hạ tầng ngoài | `IN-1` | Có phụ thuộc đóng **không thay thế được** cho chức năng cốt lõi — đội tự khai 2026-08-05 | bảng `danh_sach_phu_thuoc` ở khối trên | Dựng node thứ hai phục vụ `/v1/*` (gỡ điểm chết đơn) **và** có đường phân phối không qua cửa hàng ứng dụng cho phần đóng góp tài nguyên ⇒ `IN-2` |

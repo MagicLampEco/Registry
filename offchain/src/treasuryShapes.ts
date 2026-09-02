@@ -8,8 +8,8 @@
 // Ba kiểu dưới đây là hình dạng ĐỌC ĐƯỢC từ Treasury:
 //   - LedgerEntry / CustodyDatum : datum kho, để dựng đầu vào cho hàm seed được tiêm.
 //   - CollectItem                : một dòng thu phí, đầu ra của collectAdapter.
-// Cột mốc đối chiếu: /Users/ductiger/Projects/LAMP/Treasury/offchain/src/types.ts
-// (LedgerEntry dòng 8-13, CustodyDatum dòng 24-35, CollectItem dòng 39-45 — đọc 2026-08-13).
+// Cột mốc đối chiếu: LAMP/Treasury/offchain/src/types.ts
+// (LedgerEntry dòng 8-13, CustodyDatum dòng 23-33, CollectItem dòng 37-43 — đo lại 2026-09-02).
 // Treasury đổi hình dạng mà không báo ⇒ đối soát lại file trên, KHÔNG đoán.
 
 import type { AssetKey } from "./types.js";

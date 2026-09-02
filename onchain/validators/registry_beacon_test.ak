@@ -257,7 +257,7 @@ test register_output_foreign_script() fail {
 // 5a'. Output mang NFT ở BIẾN THỂ STAKE của ĐÚNG registry hash (fail — R-ADDR).
 //      Ca này lọt qua CẢ R-OUT-1 lẫn 5a: payment credential đúng là Script(reg_sh), nên
 //      `is_at_script` xanh và "script lạ" không mô tả được nó. Cái khác là địa chỉ:
-//      off-chain quét `utxosAt(<enterprise reg_sh>)` (`scripts/config.ts:124`) không
+//      off-chain quét `utxosAt(<enterprise reg_sh>)` (`scripts/config.ts:126`) không
 //      thấy ô này. Không có R-ADDR thì hồ sơ SINH RA đã tàng hình, và mọi bản vá ở
 //      registry.ak về sau chỉ giữ nguyên chỗ nó đang nằm chứ không gọi nó về được.
 test register_output_staked_variant() fail {

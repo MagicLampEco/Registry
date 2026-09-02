@@ -1,6 +1,6 @@
 // PoC ARITY — câu hỏi phải trả lời TRƯỚC hồ sơ đầu tiên lên chuỗi.
 //
-// `registry.ak:265` giải mã datum ĐÍCH của một lần di trú bằng
+// `registry.ak:297` giải mã datum ĐÍCH của một lần di trú bằng
 //     expect entry_out: PlatformEntry = od
 // tức validator phiên bản HIỆN TẠI phán xử hình dạng datum của phiên bản SAU.
 //
@@ -11,7 +11,7 @@
 //
 // Hôm nay chi phí trả lời bằng 0: chưa có gì trên bất kỳ mạng nào. Sau hồ sơ đầu tiên,
 // câu trả lời "có kiểm" sẽ tốn một lần thay validator cho MỌI platform trong sổ, và
-// `registry.ak:249-252` đòi đồng thuận quản trị của TỪNG platform — platform nào có cổng
+// `registry.ak:275-278` đòi đồng thuận quản trị của TỪNG platform — platform nào có cổng
 // quản trị chết thì entry của nó kẹt lại ở lược đồ cũ, không ai gỡ được.
 //
 // Hai bài dưới đây đo hai chiều. Chúng KHÔNG khẳng định hành vi nào là đúng — chúng ghi
@@ -121,7 +121,7 @@ test arity_khop_thi_qua() {
 /// trường thừa ở cuối **bị từ chối**. Tức phép ép kiểu mềm kiểm SỐ TRƯỜNG, không chỉ kiểm
 /// constructor tag và bóc theo vị trí.
 ///
-/// Hệ quả cho `registry.ak:265`: nhánh `MigrateEntry` KHÔNG đưa được hồ sơ sang một lược đồ
+/// Hệ quả cho `registry.ak:297`: nhánh `MigrateEntry` KHÔNG đưa được hồ sơ sang một lược đồ
 /// có thêm trường — validator hiện tại từ chối datum đích trước khi bất kỳ luật nào của
 /// nhánh đó chạy. `MigrateEntry` là đường nâng lược đồ duy nhất, nên cửa sổ thêm trường vào
 /// `PlatformEntry` đóng ở lần deploy đầu tiên chứ không đóng dần.

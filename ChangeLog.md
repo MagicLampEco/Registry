@@ -25,7 +25,7 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
   ⚠ **Đính chính (2026-09-01):** bản đầu của mục này viết đó là đường `scripts/02_*`/`03_*` "thật sự
   dùng". Sai — `utxosAt(` có **0** call site trong kho (3 dòng khớp đều là chú thích); `scripts/03_*`
-  đọc bằng `utxosByOutRef`; `config.ts:124` chỉ **dựng** địa chỉ. Bản vá vẫn đúng, nhưng bên hưởng
+  đọc bằng `utxosByOutRef`; `config.ts:126` chỉ **dựng** địa chỉ. Bản vá vẫn đúng, nhưng bên hưởng
   lợi là bên ngoài kho — và biết đúng bên hưởng lợi là điều kiện để cân cái giá (bỏ quyền uỷ thác
   của mọi ô hồ sơ, ép đích di trú phải enterprise).
 

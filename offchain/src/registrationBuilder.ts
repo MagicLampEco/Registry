@@ -105,7 +105,7 @@ export function verifyCustodyBinding(
 }
 
 // ── HÌNH DẠNG LÀ HẠNG (gương shape_custodial / shape_non_custodial) ────────
-// Nguồn: onchain/lib/magiclamp/registry/platform.ak:99-112 (đọc 2026-08-14).
+// Nguồn: onchain/lib/magiclamp/registry/platform.ak:141-157 (đọc 2026-08-14).
 //
 // Có ĐÚNG HAI hình dạng hợp lệ, và "hình dạng chính là hạng":
 //   CÓ KHO   — dịch vụ thu tiền qua một Treasury custody instance.
@@ -146,7 +146,7 @@ export function entryShapeValid(e: PlatformEntry): boolean {
 }
 
 // ── entry_well_formed (gương R-WF + R-VER + beacon_policy) ─────────────────
-// Gương `platform.entry_well_formed` (platform.ak:121-126).
+// Gương `platform.entry_well_formed` (platform.ak:209-213).
 
 export function entryWellFormed(e: PlatformEntry): boolean {
   return e.spec_version === SPEC_VERSION_V2
@@ -166,14 +166,14 @@ export function entryWellFormed(e: PlatformEntry): boolean {
 // `governance_ref` KHÔNG được là hash của chính validator registry: ô hồ sơ đang chi tiêu
 // luôn nằm ở Script(own_hash), nên `governance_consented` (quét tx.inputs tìm input ở
 // Script(governance_ref)) sẽ thành hằng True vĩnh viễn ⇒ authority một mình Retire / đổi
-// cut_bps / di trú được. Nguồn: registry_beacon.ak:114 (R-GOVSELF), registry.ak:154 (S-GOVSELF).
+// cut_bps / di trú được. Nguồn: registry_beacon.ak:133 (R-GOVSELF), registry.ak:174 (S-GOVSELF).
 
 export function governanceRefNotSelf(e: PlatformEntry, registryHash: string): boolean {
   return normHex(e.governance_ref) !== normHex(registryHash);
 }
 
 // ── ĐỒNG THUẬN QUẢN TRỊ — gương `util.governance_consented` ─────────────────
-// Nguồn: onchain/lib/magiclamp/registry/util.ak:194-206 (đọc 2026-08-14).
+// Nguồn: onchain/lib/magiclamp/registry/util.ak:204-216 (đọc 2026-08-14).
 //
 // On-chain "cổng quản trị đã đồng thuận" có ĐÚNG HAI nghĩa, không có nghĩa thứ ba: trong
 // CHÍNH tx đó,
@@ -253,7 +253,7 @@ export function identityPreserved(a: PlatformEntry, b: PlatformEntry): boolean {
 }
 
 // ── mutable_fields_valid (gương U-MUT / M-MUT) ─────────────────────────────
-// Gương `platform.mutable_fields_valid` (platform.ak:150-155).
+// Gương `platform.mutable_fields_valid` (platform.ak:242-249).
 //
 // Ép ĐÚNG 28 byte cho `governance_ref` (không chỉ "khác rỗng"): giá trị rác trỏ tới một
 // script KHÔNG TỒN TẠI làm `governance_consented` thành hằng False vĩnh viễn ⇒ hồ sơ không
@@ -332,7 +332,7 @@ export interface TimeBucketWindow {
  * đăng ký phải nằm GỌN trong MỘT ô — cả hai cận hữu hạn và cùng ô — rồi `created_epoch` phải
  * bằng đúng ô đó. Cửa sổ trải qua biên ô bị TỪ CHỐI: đặt cận dưới ở ô cũ rồi submit muộn là
  * cách "đóng băng" mốc, mà trường này bất biến nên sai một lần là sai mãi.
- * Nguồn: onchain/lib/magiclamp/registry/util.ak:138-165 (đọc 2026-08-14).
+ * Nguồn: onchain/lib/magiclamp/registry/util.ak:161-202 (đọc 2026-08-14).
  */
 export function timeBucketInWindow(bucket: bigint, w: TimeBucketWindow): boolean {
   return w.from === w.to && bucket === w.from;
@@ -360,7 +360,7 @@ export interface TxValidityWindow {
 /**
  * Dựng `validFrom`/`validTo` cho một tx phải thoả R-EPOCH.
  *
- * HỢP ĐỒNG VỚI ON-CHAIN (util.ak:135-137): ledger mã hoá `invalid_before` là biên dưới BAO
+ * HỢP ĐỒNG VỚI ON-CHAIN (util.ak:166-169): ledger mã hoá `invalid_before` là biên dưới BAO
  * GỒM và `invalid_hereafter` là biên trên LOẠI TRỪ, nên validator đọc `hi_ms = validTo - 1`.
  * Điều kiện "gọn trong ô b" vì thế là:
  *     b * 432_000_000  ≤  validFrom      và      validTo  ≤  (b + 1) * 432_000_000
@@ -416,7 +416,7 @@ export interface RegisterPlan {
   requiredSigner: string;
   /**
    * UTxO kho tx PHẢI readFrom (R-BIND). `undefined` với hồ sơ KHÔNG KHO — hạng đó không có
-   * kho để đối chiếu, và on-chain cũng bỏ R-BIND cho nó (registry_beacon.ak:161-175).
+   * kho để đối chiếu, và on-chain cũng bỏ R-BIND cho nó (registry_beacon.ak:183-197).
    */
   custodyRef?: CustodyRef;
   /** Hạng hình dạng của hồ sơ — `false` = KHÔNG KHO. */
@@ -450,11 +450,11 @@ export interface RegisterParams {
   timeBucketWindow?: TimeBucketWindow;
   /**
    * script hash của validator registry đích. Cấp vào → ép R-GOVSELF
-   * (`governance_ref != registry_hash`, registry_beacon.ak:114).
+   * (`governance_ref != registry_hash`, registry_beacon.ak:133).
    */
   registryHash?: string;
   /**
-   * R-GOVLIVE (registry_beacon.ak:117-143) — BẮT BUỘC, không phải tuỳ chọn.
+   * R-GOVLIVE (registry_beacon.ak:138-165) — BẮT BUỘC, không phải tuỳ chọn.
    *
    * Cổng quản trị của chính platform phải CHẠY THẬT ngay trong tx đăng ký: tx chi tiêu một
    * input ở `Script(governance_ref)`, HOẶC mang một withdrawal từ `Script(governance_ref)`.
@@ -548,7 +548,7 @@ export function planRegister(params: RegisterParams): RegisterPlan {
       + `Retire / đổi cut_bps / di trú được`,
     );
   }
-  // R-GOVLIVE: cổng quản trị phải CHẠY THẬT trong chính tx đăng ký (registry_beacon.ak:143).
+  // R-GOVLIVE: cổng quản trị phải CHẠY THẬT trong chính tx đăng ký (registry_beacon.ak:165).
   const govKind = governanceConsentKind(params.governanceProof, entry.governance_ref);
   if (govKind === null) {
     throw new Error(
@@ -562,7 +562,7 @@ export function planRegister(params: RegisterParams): RegisterPlan {
   }
 
   // R-BIND: CHỈ ÁP CHO HỒ SƠ CÓ KHO — hạng KHÔNG KHO có ba trường đó rỗng, không có gì để
-  // đối chiếu (gương registry_beacon.ak:161-175).
+  // đối chiếu (gương registry_beacon.ak:183-197).
   const custodial = shapeCustodial(entry);
   if (custodial) {
     if (!custodyUtxo) {
@@ -607,7 +607,7 @@ export function planRegister(params: RegisterParams): RegisterPlan {
         + `(rút 0 lovelace là đủ — withdrawal không đụng tx.mint)`,
     `R-MINT-2:      tx đăng ký chỉ được mang ĐÚNG MỘT policy mint (beacon). Cổng quản trị mà `
       + `nhánh đồng thuận CẦN mint/burn thì KHÔNG đăng ký được — đổi sang withdraw-0 hoặc một `
-      + `nhánh spend không-mint (registry_beacon.ak:125-143)`,
+      + `nhánh spend không-mint (registry_beacon.ak:147-165)`,
   ].join("\n");
 
   return {
@@ -646,7 +646,7 @@ export interface UpdateOptions {
   governanceConsent?: boolean;
   /**
    * Bằng chứng ĐẦY ĐỦ theo script hash (gương `util.governance_consented`). Bắt buộc khi tx
-   * đổi `governance_ref` — U-GOV2 (registry.ak:225-233) đòi CẢ ref cũ LẪN ref mới chạy thật
+   * đổi `governance_ref` — U-GOV2 (registry.ak:257-265) đòi CẢ ref cũ LẪN ref mới chạy thật
    * trong chính tx bàn giao. Cấp cùng `governanceConsent` cũng được: hai nguồn hợp lại cho
    * ref CŨ, còn ref MỚI chỉ nhận từ đây.
    */
@@ -657,7 +657,7 @@ export interface UpdateOptions {
   valueOut?: AssetMap;
   /**
    * script hash của CHÍNH validator registry đang giữ hồ sơ. Cấp vào → ép S-GOVSELF
-   * (`entry_in.governance_ref != own_hash`, registry.ak:154 — áp cho CẢ HAI nhánh).
+   * (`entry_in.governance_ref != own_hash`, registry.ak:174 — áp cho CẢ HAI nhánh).
    */
   ownRegistryHash?: string;
 }
@@ -681,7 +681,7 @@ export interface UpdatePlan {
    */
   governanceConsentRefs: string[];
   /**
-   * U-REVIVE (registry.ak:196-211): hồi sinh THUẦN TUÝ = Paused → Active và MỌI trường khác
+   * U-REVIVE (registry.ak:228-243): hồi sinh THUẦN TUÝ = Paused → Active và MỌI trường khác
    * y hệt. Ca duy nhất mà chữ ký `registry_authority` KHÔNG bắt buộc — đồng thuận quản trị
    * của chính platform cũng đủ, để authority không biến `Paused` thành gỡ vĩnh viễn bằng
    * cách đơn giản là không bao giờ ký lại. TRUE ⇒ `requiredSigner` là MỘT trong hai đường,
@@ -780,7 +780,7 @@ export function planUpdateEntry(
       + "cut_bps∈[0,10000]) hoặc KHÔNG KHO (accepted_assets rỗng, cut_bps=0). Nửa vời bị cấm",
     );
   }
-  // U-GOVSELF-OUT (registry.ak:185): nửa còn lại của S-GOVSELF, nay đã CÓ trên chuỗi.
+  // U-GOVSELF-OUT (registry.ak:212): nửa còn lại của S-GOVSELF, nay đã CÓ trên chuỗi.
   // `mutableFieldsValid` chỉ ép ĐỘ DÀI 28 mà own_hash dài đúng 28 ⇒ thiếu dòng này thì một tx
   // hợp lệ (authority ký + platform đồng thuận một lần) ghi được `governance_ref = own_hash`
   // và ô hồ sơ KHOÁ VĨNH VIỄN. Builder NÉM, không cảnh báo: validator từ chối thẳng.
@@ -790,10 +790,10 @@ export function planUpdateEntry(
       `UPD-GOVSELF-OUT: cập nhật này ghi entryOut.governance_ref == own_hash `
       + `(${normHex(opts.ownRegistryHash)}) — cổng đồng thuận tự thoả vĩnh viễn, và hồ sơ KẸT: `
       + `mọi lần chi tiêu SAU đều chết ở S-GOVSELF (cả Update lẫn Migrate). Validator đã chặn `
-      + `tại registry.ak:185 — đổi giá trị này trước khi ký`,
+      + `tại registry.ak:212 — đổi giá trị này trước khi ký`,
     );
   }
-  // U-SHAPE: KHÔNG đổi hạng có-kho ↔ không-kho (registry.ak:187). Đổi hạng = đổi bản chất
+  // U-SHAPE: KHÔNG đổi hạng có-kho ↔ không-kho (registry.ak:218). Đổi hạng = đổi bản chất
   // dịch vụ ⇒ phải đăng ký mới. (U-ID đã khoá ba trường custody nên chỉ còn đường đổi qua
   // accepted_assets/cut_bps — U-MUT bắt phần lớn, dòng này khoá phần còn lại và nói rõ lý do.)
   if (shapeCustodial(entryIn) !== shapeCustodial(entryOut)) {
@@ -814,7 +814,7 @@ export function planUpdateEntry(
       + "authority chỉ đủ cho Active ↔ Paused (gỡ niêm yết — đảo ngược được)",
     );
   }
-  // U-GOV2 (registry.ak:225-233): ĐỔI governance_ref = BÀN GIAO HAI CHIỀU. Ref CŨ đã bị U-GOV
+  // U-GOV2 (registry.ak:257-265): ĐỔI governance_ref = BÀN GIAO HAI CHIỀU. Ref CŨ đã bị U-GOV
   // đòi ở trên; dòng này đòi thêm ref MỚI phải CHẠY ĐƯỢC ngay trong chính tx bàn giao. Không
   // có nó, "đồng thuận quản trị" của MỌI việc sau đó treo vào một hash chưa ai chứng minh là
   // script sống — ép 28 byte là guard cú pháp, không phải bằng chứng tồn tại.
@@ -909,7 +909,7 @@ export interface MigrateParams {
   /**
    * ĐỔI `governance_ref` NGAY TRONG TX DI TRÚ. Bỏ trống = giữ nguyên ref cũ.
    *
-   * Vì sao có trường này: `M-ID` KHÔNG gồm `governance_ref` (platform.ak:131-133) ⇒ on-chain CHO
+   * Vì sao có trường này: `M-ID` KHÔNG gồm `governance_ref` (platform.ak:218-220) ⇒ on-chain CHO
    * PHÉP đổi ref khi di trú. Bản trước off-chain chép cứng ref cũ nên không dựng được tx bàn
    * giao hợp lệ — một đường đi thật mà SDK không nói được. Đổi ref thì M-GOV2 đòi thêm ref
    * MỚI chạy trong chính tx này.
@@ -917,7 +917,7 @@ export interface MigrateParams {
   newGovernanceRef?: string;
   /**
    * Bằng chứng theo script hash (gương `util.governance_consented`). Bắt buộc khi
-   * `newGovernanceRef` khác ref cũ — M-GOV2 (registry.ak:278-286).
+   * `newGovernanceRef` khác ref cũ — M-GOV2 (registry.ak:316-323).
    */
   governanceProof?: GovernanceProof;
   /** value ô hồ sơ vào/ra — cấp cả hai để ép M-VALUE. */
@@ -959,7 +959,7 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
   const ownHash = normHex(ownRegistryHash);
   const newHash = normHex(newRegistryHash);
 
-  // S-GOVSELF: cổng đồng thuận không được là chính registry đang giữ hồ sơ (registry.ak:154 —
+  // S-GOVSELF: cổng đồng thuận không được là chính registry đang giữ hồ sơ (registry.ak:174 —
   // ép TRƯỚC khi rẽ nhánh, nên áp cả ở đường di trú).
   if (!governanceRefNotSelf(entryIn, ownHash)) {
     throw new Error(
@@ -969,7 +969,7 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
   }
   // M-DEST: đích phải là SCRIPT HASH THẬT (ĐÚNG 28 byte) và KHÁC chính mình. Thiếu ràng buộc
   // 28 byte thì di trú tới #"00" là "hợp lệ" ⇒ beacon NFT + min-ADA bay tới một địa chỉ script
-  // KHÔNG TỒN TẠI và KHÔNG THỂ tồn tại ⇒ mất beacon vĩnh viễn (registry.ak:251).
+  // KHÔNG TỒN TẠI và KHÔNG THỂ tồn tại ⇒ mất beacon vĩnh viễn (registry.ak:270).
   if (!isScriptHash28(newHash)) {
     throw new Error(
       `MIG-DEST: new_registry_hash (${newHash || "(rỗng)"}) không phải script hash 28 byte — `
@@ -1015,7 +1015,7 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
   if (!identityPreserved(entryIn, entryOut)) {
     throw new Error("MIG-ID: sáu trường định danh bị đổi khi di trú — cấm");
   }
-  // M-MUT: datum ĐÍCH vẫn hợp lệ (registry.ak:270). Thiếu dòng này, nhánh CỨU tự ghi ra hồ sơ
+  // M-MUT: datum ĐÍCH vẫn hợp lệ (registry.ak:306). Thiếu dòng này, nhánh CỨU tự ghi ra hồ sơ
   // khoá chết ở registry mới (governance_ref rác / cut_bps ngoài dải / hình dạng nửa vời) —
   // tức nhánh cứu tạo lại đúng cái nó sinh ra để cứu.
   if (!mutableFieldsValid(entryOut)) {
@@ -1024,7 +1024,7 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
       + "ĐÚNG MỘT hạng hình dạng — CÓ KHO hoặc KHÔNG KHO, không nửa vời)",
     );
   }
-  // M-GOVSELF-OUT (registry.ak:276-277) — hai biến thể, nay đã CÓ trên chuỗi, builder NÉM.
+  // M-GOVSELF-OUT (registry.ak:314-315) — hai biến thể, nay đã CÓ trên chuỗi, builder NÉM.
   //  · == new_registry_hash ⇒ hồ sơ BRICK NGAY khi tới registry mới (validator mới mang cùng
   //    ràng buộc S-GOVSELF trên datum VÀO).
   //  · == own_hash ⇒ không brick, nhưng "đồng thuận" về sau chỉ còn nghĩa "có ai đó tiêu một
@@ -1033,17 +1033,17 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
     throw new Error(
       `MIG-GOVSELF-DEST: entryOut.governance_ref == registry hash ĐÍCH (${newHash}) — ở registry `
       + `mới, S-GOVSELF từ chối MỌI lần chi tiêu ⇒ beacon kẹt vĩnh viễn. Validator đã chặn tại `
-      + `registry.ak:276 — đổi governance_ref trước khi di trú`,
+      + `registry.ak:314 — đổi governance_ref trước khi di trú`,
     );
   }
   if (normHex(entryOut.governance_ref) === ownHash) {
     throw new Error(
       `MIG-GOVSELF-OWN: entryOut.governance_ref == registry hash CŨ (${ownHash}) — không brick, `
       + `nhưng "đồng thuận quản trị" của hồ sơ về sau chỉ còn nghĩa "có ai đó tiêu một ô hồ sơ `
-      + `bất kỳ ở registry cũ", tức thủ tục rỗng. Validator đã chặn tại registry.ak:277`,
+      + `bất kỳ ở registry cũ", tức thủ tục rỗng. Validator đã chặn tại registry.ak:315`,
     );
   }
-  // M-GOV2 (registry.ak:278-286): đổi governance_ref khi di trú = BÀN GIAO HAI CHIỀU, cùng
+  // M-GOV2 (registry.ak:316-323): đổi governance_ref khi di trú = BÀN GIAO HAI CHIỀU, cùng
   // luật với U-GOV2. M-GOV trên kia đã đòi ref CŨ; đây đòi thêm ref MỚI chạy được ngay trong
   // tx di trú. Thiếu nó, Migrate là cửa sau đi vòng qua đúng U-GOV2.
   const governanceHandover =
@@ -1058,7 +1058,7 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
       + `thêm — bỏ trống newGovernanceRef`,
     );
   }
-  // M-SHAPE: không đổi hạng có-kho ↔ không-kho (registry.ak:287).
+  // M-SHAPE: không đổi hạng có-kho ↔ không-kho (registry.ak:324).
   if (shapeCustodial(entryIn) !== shapeCustodial(entryOut)) {
     throw new Error("MIG-SHAPE: di trú đổi hạng hình dạng — cấm");
   }

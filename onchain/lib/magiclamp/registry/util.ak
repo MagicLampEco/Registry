@@ -52,7 +52,7 @@ pub fn is_at_script(addr: Address, script_hash: ByteArray) -> Bool {
 /// đây trông như đang trả cho một bên hưởng lợi trong kho.
 ///   command grep -rn "utxosAt("     offchain/src scripts/*.ts tests/  → 3 dòng, CẢ BA là chú thích
 ///   command grep -rn "utxosByOutRef" scripts/*.ts                     → 03_register_platform.ts:228,341,354
-/// Kho này KHÔNG có call site `utxosAt` nào. `scripts/config.ts:124` chỉ DỰNG địa chỉ,
+/// Kho này KHÔNG có call site `utxosAt` nào. `scripts/config.ts:126` chỉ DỰNG địa chỉ,
 /// không ĐỌC theo nó. Bên hưởng lợi thật là bên tích hợp NGOÀI kho — SDK riêng, dịch vụ
 /// định tuyến phí, bảng theo dõi. Vẫn đáng đóng, nhưng phải biết đang trả cho ai.
 ///
@@ -136,7 +136,7 @@ pub fn output_with_token(
 // trùng biên epoch.
 //
 // CHÉP NGUYÊN NGỮ NGHĨA + HẰNG SỐ từ
-//   /Users/ductiger/Projects/LAMP/Treasury/onchain/lib/magiclamp/treasury/util.ak:105
+//   LAMP/Treasury/onchain/lib/magiclamp/treasury/util.ak:105
 //   (`get_epoch_bounded`; bản Treasury lại mirror `Distribution util.get_epoch`)
 // cộng một sửa lỗi fail-closed quá tay (`is_inclusive`, xem dưới).
 //

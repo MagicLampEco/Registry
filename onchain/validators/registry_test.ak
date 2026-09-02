@@ -1289,7 +1289,7 @@ test migrate_gov_ref_unchanged_no_extra_consent() {
 //     U-SINGLE / M-DEST đếm theo PAYMENT hash (cố ý, chống double-satisfaction), nên
 //     một ô ra ở biến thể stake CÙNG payment hash vẫn được đếm là "đúng 1 ô" và vẫn
 //     mang beacon NFT — hợp lệ mọi đường, mà `utxosAt(<địa chỉ enterprise>)` mà
-//     off-chain dựng (`scripts/config.ts:124`) KHÔNG thấy.
+//     off-chain dựng (`scripts/config.ts:126`) KHÔNG thấy.
 //
 //     Hai ca dưới là phép đo cho chính bản vá: bỏ dòng `has_no_stake_part` ra thì cả
 //     hai chuyển sang PASS, tức chúng không xanh nhờ một ràng buộc nào khác.

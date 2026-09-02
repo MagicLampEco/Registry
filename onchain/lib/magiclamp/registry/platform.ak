@@ -22,7 +22,7 @@
 //     hiện ra khi quét sổ theo policy.
 //     ⛔ ĐÍNH CHÍNH 2026-08-15 — bản trước của khối này còn viết thêm "muốn chi tiêu nó
 //     vẫn phải có chữ ký authority (U-SIG/M-SIG)". Câu đó SAI, và audit đối kháng
-//     (lĩnh vực cardano) đã dựng PoC PASS. Đường đi: `validators/registry.ak:205-211`
+//     (lĩnh vực cardano) đã dựng PoC PASS. Đường đi: `validators/registry.ak:237-243`
 //     cho U-SIG một NGOẠI LỆ — `pure_revive && governance_consented(entry_in.
 //     governance_ref)`. Trong ô TỰ DỰNG thì kẻ dựng khai CẢ BA lời: `beacon_policy`
 //     (qua U-NFT bằng policy hắn tự đúc), `governance_ref` (trỏ script hắn kiểm soát),
@@ -162,28 +162,28 @@ pub fn shape_non_custodial(e: PlatformEntry) -> Bool {
 ///  · `== custody_hash` — CỬA GIẢ MẠO ĐỒNG THUẬN, đã dựng lại bằng thực thi. Kho Treasury
 ///    của platform (`LAMP/Treasury/onchain/validators/custody.ak`) có nhánh `Collect`
 ///    PERMISSIONLESS — đo 2026-09-01: `command grep -c "extra_signatories" custody.ak` →
-///    **0**, tức không nhánh nào của kho đòi chữ ký. `governance_consented` (util.ak:215)
+///    **0**, tức không nhánh nào của kho đòi chữ ký. `governance_consented` (util.ak:230)
 ///    chỉ hỏi "có input nào ở `Script(governance_ref)` bị chi tiêu không", nên ai cũng
 ///    ghép được một input kho vào tx. Hệ quả: `registry_authority` MỘT MÌNH dựng được tx
 ///    {ô hồ sơ + một input kho redeemer `Collect`} và đặt `status = Retired` — U-GOV qua,
-///    U-TERMINAL (`registry.ak:185`) khoá luôn ⇒ gỡ niêm yết VĨNH VIỄN bằng một chữ ký.
+///    U-TERMINAL (`registry.ak:202`) khoá luôn ⇒ gỡ niêm yết VĨNH VIỄN bằng một chữ ký.
 ///    Cùng đường đó đổi được `cut_bps`, `accepted_assets`, hoặc di trú hồ sơ đi. Mà khai
 ///    `governance_ref = custody_hash` là nhầm lẫn RẤT tự nhiên ("kho của tôi gác luật của
 ///    tôi"), không cần ác ý ai cũng khai được.
 ///  · `== seed_policy` / `== beacon_policy` — CỬA TỰ KHOÁ. Hai giá trị đó là minting
-///    policy: `registry_beacon` có `else(_) { fail }` (registry_beacon.ak:189) nên MỌI
+///    policy: `registry_beacon` có `else(_) { fail }` (registry_beacon.ak:202) nên MỌI
 ///    input đặt ở `Script(beacon_policy)` làm hỏng tx, và `custody_seed` cùng hình dạng.
 ///    Không input nào ở đó chi tiêu được ⇒ `governance_consented` là hằng False vĩnh viễn
 ///    ⇒ hồ sơ không Retire, không di trú, không đổi ba trường quản trị được nữa. Cùng họ
-///    với PoC `newF` (di trú tới một script chỉ có `mint`, ghi ở registry.ak:83-90).
+///    với PoC `newF` (di trú tới một script chỉ có `mint`, ghi ở registry.ak:93-104).
 ///
-/// ⚠ ĐỪNG NHẦM VỚI CHỐT Ở `util.ak:200-210` ("KHÔNG vá bằng mã ở v2"). Chốt ấy nói về ca
+/// ⚠ ĐỪNG NHẦM VỚI CHỐT Ở `util.ak:215-221` ("KHÔNG vá bằng mã ở v2"). Chốt ấy nói về ca
 /// TỔNG QUÁT — "cổng quản trị của platform có một nhánh permissionless" — thứ validator
 /// KHÔNG kiểm được on-chain (nó không đọc được mã của script lạ) và đã chuyển sang chuẩn
 /// đăng ký. Đây là ca RIÊNG và KIỂM ĐƯỢC: `governance_ref` trùng ĐÚNG MỘT giá trị khác
 /// nằm trong CHÍNH datum này — so hai trường với nhau, không cần biết gì về script bên
-/// ngoài. Cùng họ với `R-GOVSELF` (registry_beacon.ak:123) và `entry_out.governance_ref
-/// != own_hash` (registry.ak:198), hai cổng đã có sẵn. Ai định xoá dòng này: đọc lại đoạn
+/// ngoài. Cùng họ với `R-GOVSELF` (registry_beacon.ak:133) và `entry_out.governance_ref
+/// != own_hash` (registry.ak:217), hai cổng đã có sẵn. Ai định xoá dòng này: đọc lại đoạn
 /// trên, đó là ca có PoC.
 pub fn governance_ref_distinct(e: PlatformEntry) -> Bool {
   e.governance_ref != e.custody_hash && e.governance_ref != e.seed_policy && e.governance_ref != e.beacon_policy
@@ -193,7 +193,7 @@ pub fn governance_ref_distinct(e: PlatformEntry) -> Bool {
 /// Active, CỘNG toàn bộ điều kiện của `mutable_fields_valid`.
 ///
 /// ⚠ VÌ SAO GỌI `mutable_fields_valid` THAY VÌ CHÉP LẠI ĐIỀU KIỆN. Registry đã ăn đúng
-/// lỗi này một lần (M-GOV2, xem registry.ak:107-115): một ràng buộc dựng ở cửa này, cửa
+/// lỗi này một lần (M-GOV2, xem registry.ak:124-132): một ràng buộc dựng ở cửa này, cửa
 /// anh em ghi được cùng trường mà không mang cùng ràng buộc ⇒ mới vá nửa lỗ. Hai hàm này
 /// gác CÙNG một datum ở hai thời điểm — đăng ký (cửa đúc) và sau cập nhật/di trú (hai cửa
 /// spend). Ràng thành quan hệ BAO HÀM thì "vá nửa đường" không biểu diễn được nữa: mọi
@@ -236,7 +236,7 @@ pub fn identity_preserved(a: PlatformEntry, b: PlatformEntry) -> Bool {
 /// shape_custodial(out)`), vì hai hàm này chỉ nói về một entry đơn lẻ.
 ///
 /// ⚠ HÀM NÀY LÀ ĐÁY CHUNG CỦA CẢ BA CỬA. `entry_well_formed` gọi nó ⇒ cửa đúc
-/// (registry_beacon.ak:118, R-WF) áp; `registry.ak:192` (U-MUT) và `:225` (M-MUT) gọi
+/// (registry_beacon.ak:131, R-WF) áp; `registry.ak:211` (U-MUT) và `:308` (M-MUT) gọi
 /// thẳng ⇒ hai cửa spend áp. Thêm điều kiện ở đây là thêm cho cả ba; đừng thêm ở một chỗ
 /// khác rồi tưởng đã đủ.
 pub fn mutable_fields_valid(e: PlatformEntry) -> Bool {

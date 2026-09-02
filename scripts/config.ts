@@ -51,7 +51,7 @@ export const WALLET_SEED =
 // Mainnet 432_000_000. Sai hai lần:
 //
 //  1. Trên chuỗi đây là HẰNG cho MỌI mạng, không phải bảng theo mạng.
-//     Nguồn: onchain/lib/magiclamp/registry/util.ak:116 (đọc 2026-08-14)
+//     Nguồn: onchain/lib/magiclamp/registry/util.ak:152 (đọc 2026-08-14)
 //       `pub const ms_per_time_bucket: Int = 432_000_000`
 //     Chạy Preview với 86_400_000 thì ô off-chain tính ra lệch 5 lần so với ô validator tính
 //     ⇒ R-EPOCH trượt. Mà `created_epoch` BẤT BIẾN, nên khai sai một lần là sai vĩnh viễn
@@ -137,7 +137,7 @@ export function scriptHash(script: Validator): string {
  * R-GOVLIVE nhận hai đường: tx chi tiêu một input ở Script(governance_ref), HOẶC tx rút từ
  * Script(governance_ref). Đường rút-0 không đụng `tx.mint` nên không vướng R-MINT-2 (tx đăng
  * ký chỉ được mang đúng policy beacon) — đó là đường khuyên dùng, và nó cần đúng địa chỉ này.
- * Nguồn: onchain/lib/magiclamp/registry/util.ak:194-206 (đọc 2026-08-14).
+ * Nguồn: onchain/lib/magiclamp/registry/util.ak:204-216 (đọc 2026-08-14).
  */
 export function scriptRewardAddress(scriptHashHex: string): string {
   const h = scriptHashHex.trim().toLowerCase();
@@ -231,7 +231,7 @@ export function resolveSeedPolicy(): { value: string; source: "env" | "placehold
 // ── R-GOVLIVE: cấu hình để cổng quản trị CHẠY THẬT trong tx đăng ký ──────────
 // Validator đòi VÔ ĐIỀU KIỆN một trong hai vế: chi tiêu một input ở Script(governance_ref),
 // hoặc rút (0 lovelace vẫn tính) từ Script(governance_ref). Không có vế nào ⇒ tx bị từ chối
-// 100%. Nguồn: onchain/validators/registry_beacon.ak:117-143 + util.ak:194-206 (đọc 2026-08-14).
+// 100%. Nguồn: onchain/validators/registry_beacon.ak:138-165 + util.ak:204-216 (đọc 2026-08-14).
 
 export interface GovernanceConsent {
   kind: GovernanceConsentKind;
