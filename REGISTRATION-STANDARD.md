@@ -252,14 +252,40 @@ phải là thiếu sót. `CU-N` vẫn **bắt buộc khai `governance_ref`**, v�
 xem §6, chuyển sang `Retired` đòi đồng thuận của chính platform, nên hồ sơ không có `governance_ref`
 là hồ sơ mà quyền đăng ký một mình xoá vĩnh viễn được. Ô đó bảo vệ bên đăng ký.
 
-#### Muốn NHẬN THƯỞNG từ hệ thì phải ở hạng CÓ KHO
+#### Muốn NHẬN THƯỞNG từ hệ thì phải NIÊM YẾT ĐƯỢC — hạng `L1`, **và** có kho
 
 Điều khoản này thay cho một trường `payee_did` đã được cân rồi bác (`Specs/Math-Spec.md` §D8).
 
-**Dịch vụ muốn nhận phần thưởng nào do hệ chi trả phải khai `CU-1`** — tức có Treasury custody
-instance on-chain. Hạng `CU-0` (kế toán trong cơ sở dữ liệu riêng) và `CU-N` (không thu asset) vẫn
-niêm yết được bình thường, vẫn dùng hệ token bình thường; chúng chỉ không có đích nhận thưởng mà hệ
-trả tới được.
+**Dịch vụ muốn nhận phần thưởng nào do hệ chi trả phải đạt hạng `L1` VÀ khai `CU-1`.**
+
+Hai vế, và bỏ vế nào cũng hỏng:
+
+- **`CU-1`** — có Treasury custody instance on-chain, tức **có đích để trả tới**. Một mình `L1`
+  không đủ: `L1` chỉ đòi `custody ≥ 2`, mà `CU-N` (không thu asset ở tầng này) cũng mang rank `2`
+  (`Registrations/codes.json` → `axes.custody.codes`). Hồ sơ `CU-N` không có kho, nên một điều
+  khoản chỉ dựa vào hạng sẽ hứa trả vào chỗ không tồn tại.
+- **`L1`** — `token ≥ 1` · `identity ≥ 1` · `custody ≥ 2` · `infra ≥ 1` (§3). Một mình `CU-1` không
+  đủ: nó nói dịch vụ có **chỗ nhận**, không nói dịch vụ có **ở trong hệ**.
+
+**Vế `L1` là chỗ hai điều kiện nền của hệ được ép — mà không phải mở thêm cửa từ chối nào:**
+
+| Ngưỡng của `L1` | Mã thấp nhất thoả | Nó bắt buộc điều gì |
+|---|---|---|
+| `token ≥ 1` | `TK-1` | **tiêu MAGIC** (§2.2) |
+| `identity ≥ 1` | `ID-1` | **nối một hệ danh tính ĐÃ đăng ký trong sổ**, và khai `platform_id_he_danh_tinh` (§2.1) |
+
+⟹ dịch vụ không tiêu MAGIC, hoặc không nối hệ danh tính nào, thì **vẫn được tiếp nhận, vẫn ở `L0`,
+vẫn dùng hệ token bình thường** — nó chỉ không có đường nhận thưởng. Đây là ép **bằng lợi ích**,
+không phải bằng cửa từ chối: tập từ chối ở §5 vẫn **đóng ở ba mã**, và cam kết "ba điều kiện tiếp
+nhận" ở whitepaper §10 không bị đụng tới. Trục `ownership` đã đi đúng đường này trước (§2.5: khai
+được **trả bằng hạng `L3`**), nên đây không phải một cơ chế mới, chỉ là cơ chế cũ dùng đúng chỗ.
+
+⚠ **Vì sao viết lại điều khoản này.** Bản trước chỉ đòi `CU-1`, nên hạng `L1` **không gắn với lợi
+ích nào cả**. Đo được: chuỗi `L1` và `tier` xuất hiện **0 lần** trong `onchain/lib`,
+`onchain/validators` và `offchain/src` — ba lần khớp duy nhất của `tier` nằm ở
+`onchain/build/packages/aiken-lang-stdlib/lib/cardano/governance/protocol_parameters.ak:251-254`,
+thư viện ngoài, không liên quan. Một hạng không ai muốn lên là một hạng không ai leo, và cả bậc
+thang chấm điểm khi ấy chỉ còn là trang trí.
 
 Vì sao là một dòng luật chứ không phải một trường trong hồ sơ:
 
@@ -273,9 +299,17 @@ Vì sao là một dòng luật chứ không phải một trường trong hồ s�
 - Người nhận thưởng khi ấy được gác bằng cổng quản trị của chính họ, chặt hơn một chuỗi ký tự nằm
   trong datum mà một chữ ký quyền đăng ký sửa được.
 
-⚠ Giới hạn phải nói ra: điều khoản này là **luật văn bản**, người duyệt áp — không có ràng buộc mã
-nào ép. Máy đọc được hạng `custody` trong hồ sơ, nhưng máy không biết một khoản chi ở nơi khác có
-phải "phần thưởng của hệ" hay không.
+⚠ Giới hạn phải nói ra, và nó nằm ở **một nửa** của điều khoản chứ không phải cả hai:
+
+- Vế **"ai đủ tư cách"** thì máy chấm được trọn vẹn — `node tools/check-registration.mjs` tính ra
+  hạng niêm yết và hạng từng trục từ chính hồ sơ, không do người duyệt chấm
+  (`Registrations/codes.json` → `listing_tiers._doc`). Bên chi trả gọi bộ chấm là biết.
+- Vế **"khoản chi này có phải phần thưởng của hệ không"** thì máy **không** chấm được. Registry
+  không giữ tiền và không thấy dòng tiền của ai (bất biến PK1). Chỗ này vẫn là luật văn bản, do bên
+  chi trả tự áp.
+
+⟹ điều khoản chỉ ràng được nếu **bên chi trả chịu gọi bộ chấm trước khi trả**. Registry không ép
+được bước đó, và nói thẳng ở đây để không ai đọc nhầm thành "đã có cổng máy chặn".
 
 #### Bốn tính chất bắt buộc của `governance_ref` — đọc trước khi chọn script
 
@@ -505,7 +539,16 @@ lập được, nên nó chưa phải chứng cứ — nó là một lời hứa
 ⚠ `L3` là hạng **duy nhất** đòi trục tuỳ chọn `ownership`, và chỉ vì `L3` là hạng cấp **uy tín và
 quyền biểu quyết** — hai thứ mà một chủ chẻ hồ sơ nhân lên được. `L0`–`L2` không đòi, nên niêm yết
 bình thường không cần khai chủ. Đo ngày đặt luật này: **không hồ sơ nào trong `Registrations/` bị
-tụt hạng** vì nó (`node tools/check-registration.mjs` — cả bốn hồ sơ đang ở `L0`).
+tụt hạng** vì nó.
+
+⚠ **Đính chính con số đi kèm phép đo trên.** Bản trước viết *"cả bốn hồ sơ đang ở `L0`"*. Sai:
+`Registrations/` có **bốn tệp**, nhưng chỉ **một** hồ sơ đã nộp. Đo lại bằng
+`node tools/check-registration.mjs`, dòng tổng kết:
+*"4 tệp · 0 hợp lệ về hình dạng · 0 thiếu dữ kiện · 1 chờ người duyệt (R2 vế 1) · 0 sai hình dạng ·
+**3 chưa nộp**"* — `trace.md` · `work.md` · `chat.md` chưa có khối ```` ```json registration ````,
+nên chúng **không có hạng nào cả**, chứ không phải đang ở `L0`. Kết luận "không hồ sơ nào bị tụt
+hạng" vẫn đứng, nhưng nó đứng trên **n = 1**, không phải n = 4 — và một luật đo trên một mẫu thì
+chưa nói được gì về những hồ sơ sẽ nộp sau.
 
 Chuẩn này dùng `L0`–`L3` ở nhiều chỗ mà chưa nói ở đâu chúng là gì, nên người đọc chuẩn không tra
 được hạng của mình đòi gì. Bảng dưới chép điều kiện từ `Registrations/codes.json` mục
@@ -515,7 +558,7 @@ Chuẩn này dùng `L0`–`L3` ở nhiều chỗ mà chưa nói ở đâu chúng
 | Hạng | Nhãn | Điều kiện |
 |---|---|---|
 | `L0` | đã tiếp nhận — **chưa** đủ điều kiện niêm yết | trục `token` đã khai và không phải `TK-X`. Mọi hồ sơ khai đúng sự thật đều đạt, kể cả khi mọi trục đều ở mã 0 — nhưng **bỏ trống** trục `token` thì không đạt, vì không khai gì không phải là "không phải `TK-X`". |
-| `L1` | đã niêm yết | `token` ≥ 1 · `identity` ≥ 1 · `custody` ≥ 2 · `infra` ≥ 1 |
+| `L1` | đã niêm yết | `token` ≥ 1 · `identity` ≥ 1 · `custody` ≥ 2 · `infra` ≥ 1.<br>⟹ đây là **sàn để nhận thưởng do hệ chi trả** — `L1` kèm `CU-1`, §2.3. Hai ngưỡng đầu của hàng này chính là hai điều kiện nền (tiêu MAGIC · nối một hệ danh tính đã trong sổ), nên chúng được ép ở đây bằng lợi ích, không bằng cửa từ chối. |
 | `L2` | niêm yết đủ điều kiện | `token` ≥ 1 · `identity` ≥ 2 · `custody` ≥ 2 · `infra` ≥ 2 |
 | `L3` | đủ điều kiện cấp uy tín và quyền biểu quyết ở tầng hệ | như `L2`, thêm `identity` ≥ 3, `ownership` ≥ 1 (§2.5) và `evidence_min` ≥ 1 — tức **mọi** lời khẳng định đều từ `EV-1` trở lên, **và** hồ sơ phải có ít nhất một lời khẳng định. Không khai dòng nào thì không đạt, dù đọc theo chữ thì "không dòng nào còn ở `EV-0`" là đúng. |
 
