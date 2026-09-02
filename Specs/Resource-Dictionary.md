@@ -11,6 +11,10 @@
 > nay có **năm** nghĩa; nghĩa thứ tư nằm trong cùng một tệp với nghĩa thứ nhất, lệch 7.200 lần) ·
 > §3.5 (xung đột thứ tư: `byte·ngày` với `GiB·giờ`, không quy đổi chẵn được) · §5 (bảy dòng mới
 > trong danh sách hở, gồm cả **hosting** — thứ v0.2 không hề nhắc tới).
+>
+> 🔴 **Nặng nhất, đọc trước hết: khối cảnh báo đầu §2.** MAGIC đã có sổ `op_type` riêng chốt trước
+> v0.2 và cấp sẵn số 3–8 với nghĩa khác; neo bằng chứng của v0.2 trỏ nhầm dòng; và **chưa mã nào
+> lên mạng thật**, kể cả 1 và 2. Việc đánh số của tệp này đang chờ chủ nhân chốt ai giữ sổ.
 > Đọc kèm: [CONTRACT §PK1](./CONTRACT.md) · [Feat-Spec §0.3](./Feat-Spec.md) · [Math-Spec §13](./Math-Spec.md)
 
 ---
@@ -61,10 +65,43 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 
 ## 2. Từ điển canonical
 
-Mã `1` và `2` **đã lưu hành** — chúng có mặt trong script triển khai thật
-(`MAGIC/scripts/deploy/09_deploy_consume.ts:168-169`, kiểm chéo
-`MAGIC/ConsumeMAGIC/tests/codec.test.ts:27-28`), nên nghĩa của chúng bị RD-1 khoá. Mã từ `3`
-trở lên do tệp này cấp lần đầu.
+🔴 **ĐỌC KHỐI NÀY TRƯỚC BẢNG. Tiền đề đánh số của v0.2 SAI, và sai theo cách tự nó không kêu.**
+Tìm 2026-09-02. Ba việc rời nhau, cộng lại thì bảng dưới đây **đụng số với một sổ đã chốt trước
+nó**:
+
+**(1) MAGIC đã có sổ `op_type` riêng, chốt TRƯỚC ngày v0.2 ra đời, và tự xưng là sổ duy nhất.**
+`MAGIC/ConsumeMAGIC/CONTRACT.md:38-49` — tiêu đề nguyên văn: *"Sổ op_type chuẩn (CHỐT — **MAGIC là
+registrar duy nhất**; base_price là governance param, DAO chốt)"*, cấp sẵn tám số, còn *"8/16
+dòng"*. Đối chiếu với bảng dưới:
+
+| Số | v0.2 của tệp này cấp | MAGIC đã chốt cùng số | Mức độ |
+|---|---|---|---|
+| 3 | `STORAGE_GIBH` — GiB·**giờ**, tích phân theo thời gian | `recognition_storage_mb` — 1 **MB**, sự kiện rời rạc | cùng lớp `storage`, **khác đại lượng** |
+| 4 | `BANDWIDTH_GIB` — lớp `bandwidth` | `recognition_compute_mb` — tính toán | **khác cả lớp** |
+| 5–8 | `AI_TOKEN_IN/OUT/CACHE_W/CACHE_R` | `job_post` · `contract_settle` · `did.rotate` · `did.transfer` | khác hoàn toàn |
+
+**(2) Neo bằng chứng của chính v0.2 trỏ nhầm dòng.** v0.2 viết *"mã 1 và 2 đã lưu hành — chúng có
+mặt trong script triển khai thật (`09_deploy_consume.ts:168-169`)"*. Mở ra: dòng `:166-171` là
+`priceNftPolicy` · `burnBatchConstr` · `msPerEpoch` — **không có `op_type` nào**. Bảng giá thật ở
+`:196-199`, và nó có **BỐN** dòng, không phải hai: `op_type` 1, 2, **3 (lưu trữ /MB)**, **4 (tính
+toán/MB)**, kèm chú thích ngay trên: *"Giá lấy từ sổ op_type chuẩn ở ConsumeMAGIC/CONTRACT.md §A"*.
+⟹ đúng cái tệp được viện dẫn để chứng minh "3 trở lên còn trống" lại là tệp **đang dùng 3 và 4**.
+
+**(3) Và không mã nào đang lưu hành thật — kể cả 1 và 2.** `MAGIC/ConsumeMAGIC/EXEC.md:218-220` ghi
+thẳng: *"e2e Preview chưa chạy live … **chưa submit tx thật lên Preview**"*. Có trong script
+triển khai ≠ đã lên mạng.
+
+**Hệ quả, và nó cứu chứ không giết:** RD-1 khoá **mã đang lưu hành**, mà chưa mã nào lưu hành ⟹
+**RD-1 chưa kích hoạt cho bất kỳ số nào**, nên bảng này còn sửa được với chi phí 0. Nếu phát hiện
+muộn hơn một nhịp — sau lần submit đầu — thì hai sổ đụng số vĩnh viễn, và triệu chứng sẽ là các
+platform tính đúng công thức trên sai đại lượng mà không cổng nào kêu.
+
+⚠ **Registry KHÔNG tự chốt ai là registrar.** Hai nhà cùng nhận giữ sổ số là việc của chủ nhân, không
+phải việc một tệp spec tự quyết. Cho tới khi có chốt: **cột "Trạng thái" dưới đây đọc là "đã vào
+script triển khai", KHÔNG đọc là "đã lên mạng"**, và **không cấp thêm số nào từ 3 tới 12** trước khi
+đối chiếu với `ConsumeMAGIC/CONTRACT.md §A`.
+
+Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:27-28`.
 
 > ⚠ **Chỉ CON SỐ lưu hành, TÊN thì không.** Cột "Trạng thái = Lưu hành" nói về `op_type` là số `1`
 > và `2` đang chạy trên mạng. Hai cái tên `MEDIA_IMAGE` và `ANCHOR_CID` **không tồn tại ở đâu trong
@@ -158,9 +195,10 @@ v0.2 cấp mười mã mới (3–12). Tám mã đầu dựng từ phép đo có
 không**: chúng được suy ra từ chỗ *"hệ này chắc phải bán thứ đó"*, và lượt rà 2026-09-02 mở đúng ba
 module ấy ra thì cả ba đều không đỡ nổi định nghĩa.
 
-Chỗ này được phép sửa, và phải nói rõ vì sao: **RD-1 khoá nghĩa của mã ĐANG LƯU HÀNH**. Chỉ mã 1 và
-2 lưu hành (`MAGIC/scripts/deploy/09_deploy_consume.ts:168-169`). Mã 3–12 chưa mã nào lên mạng, nên
-thu hồi bây giờ tốn 0 giao dịch — còn để tới sau lần deploy đầu thì vĩnh viễn không sửa được.
+Chỗ này được phép sửa, và phải nói rõ vì sao: **RD-1 khoá nghĩa của mã ĐANG LƯU HÀNH**, mà theo
+khối 🔴 ở đầu §2 thì **chưa mã nào lưu hành** — `MAGIC/ConsumeMAGIC/EXEC.md:218-220` xác nhận chưa
+có giao dịch Consume nào submit thật. Thu hồi bây giờ tốn 0 giao dịch; để tới sau lần submit đầu
+thì vĩnh viễn không sửa được.
 
 **Mở rộng RD-1 — số đã thu hồi KHÔNG tái dùng.** Mã 10 và 12 chết vĩnh viễn ở đúng số đó. Cấp lại
 số 12 cho một tài nguyên khác thì mọi bên tích hợp còn giữ bảng cũ sẽ tính đúng công thức trên sai
@@ -184,10 +222,17 @@ tác hay gộp một mã, mà lệch giá giữa `update_guardians` (0,5 ADA) v�
 #### Mã 11 `VERIFY_PROOF` — treo: vi phạm RD-4, và VeData đã tự vá đúng lỗi này ở chỗ khác
 
 `VeDataIO/Specs/VeData-Metering-Feat-Spec.md:210-215` (§3.7) gộp **ba** phép kiểm khác chi phí xa
-nhau vào một giá: *"verify Merkle proof (MMR/SMT/Lazy-MMR …) + verify Mithril stake-quorum
-certificate + D9 privacy gate"*. Trong họ ZK còn lệch tiếp — Groth16 so với PLONK/Halo2 khác nhau
-nhiều bậc (`VeDataIO/Specs/Query-Math.md:1263,1357`; `Glint-Math.md:249-256`), và Glint viết thẳng
-bằng lời: *"sinh proof tốn tài nguyên tính toán hơn ký một chữ ký thường"* (`Glint-Feat.md:367`).
+nhau vào một giá `query_resolve` = 100.000 nanogic: *"verify Merkle proof (MMR/SMT/Lazy-MMR …) +
+verify Mithril stake-quorum certificate + D9 privacy gate"*.
+
+Và phạm vi gộp còn rộng hơn ba thứ đó — chính VeData nói ra ở dòng kế bên, khi giải thích vì sao
+`zk_proof` được tách thành một mã riêng (`:219-222`):
+
+> *"chi phí verify nằm trong `query_resolve`, chi phí **sinh** tách riêng ở đây."*
+
+⟹ ranh giới VeData đang cắt là **sinh** proof so với **kiểm** proof, chứ không phải nặng so với nhẹ.
+Mọi phép kiểm — từ một chữ ký Merkle tới một chứng minh zero-knowledge — cùng nằm trong đúng một
+dòng giá. Đó chính xác là điều mã 11 sẽ chép lại nếu giữ nguyên "1 chứng minh đã kiểm".
 
 Điều làm ca này **chắc chắn** chứ không phải suy đoán: **chính VeData đã vá đúng lớp lỗi này một
 lần rồi.** Bảng `op_type` của họ tách `2 mosaic_anchor_cid` (batched, 1.000.000 nanogic) khỏi
@@ -202,11 +247,19 @@ chốt cách tách — đó là việc của VeData, và họ đã có sẵn ti�
 #### Mã 12 `MESSAGE_DELIVERED` — thu hồi, và vì lý do nặng hơn dự đoán
 
 Dự đoán khi rà là *"chắc ProofChat chỉ có ACK hạ tầng, chưa có biên nhận ký bằng khoá người nhận"*.
-Thực tế nặng hơn: **cả đường ACK cũng chưa sống.** Hàm `markDelivered`/`markRead` có trong mã
-(`ProofChat/BE/src/modules/messages/messages.service.ts:349-421`) nhưng không route REST nào, không
-gateway nào, không consumer nào gọi tới — khối xử lý sự kiện `message.delivered` bị **chú thích chết
-nguyên khối**, kèm đúng một dòng `// TODO: Implement delivery confirmation logic`
-(`ProofChat/BE/src/modules/queue/message-processor.service.ts:190-219`).
+Thực tế nặng hơn: **cả đường ACK cũng chưa sống.** Hai phép đo, cùng chiều:
+
+1. `command grep -rn "markDelivered" --include="*.ts" BE/src/ | grep -v "\.spec\."` trả về đúng
+   **một** dòng — `BE/src/modules/messages/messages.service.ts:361`, tức **chính định nghĩa hàm**.
+   Không nơi nào gọi nó.
+2. Khối xử lý sự kiện `message.delivered` bị **chú thích chết nguyên khối**, kèm đúng một dòng
+   `// TODO: Implement delivery confirmation logic`
+   (`ProofChat/BE/src/modules/queue/message-processor.service.ts:190-219`).
+
+⚠ Ghi lại vì nó suýt lọt: một lượt rà đọc thấy bảng `message_delivery_status` có thật trong lược đồ
+và có mã ghi vào nó, rồi kết luận đường này **đang chạy**. Cả hai vế đều đúng — bảng có thật, hàm
+ghi có thật — nhưng **không ai gọi hàm đó**. "Có mã làm việc X" và "X có xảy ra" là hai mệnh đề khác
+nhau, và phép grep phân biệt được chúng chỉ khi đếm **nơi gọi**, không đếm nơi định nghĩa.
 
 ⟹ RD-5, không phải RD-2. Điều kiện mở khoá có **hai** bước, và làm mỗi bước một thì vẫn hỏng: (1)
 nối lại đường gọi `markDelivered` cho nó sống; (2) thêm chữ ký bằng khoá riêng của **người nhận**.
@@ -285,10 +338,10 @@ thích. Nó chỉ nổ khi một hệ khác đọc chữ "GB" rồi cài `10^9` 
 `types.rs:362` cho khớp `:348` (đề nghị, không phải yêu cầu — repo đó không thuộc quyền sửa của
 Registry).
 
-### 3.4 Xung đột 3 — "epoch" mang **năm** nghĩa, và đã trả giá hai lần
+### 3.4 Xung đột 3 — "epoch" mang **sáu** nghĩa, và đã trả giá hai lần
 
-Ba nghĩa dưới đây là bản v0.2; nghĩa **thứ tư** và **thứ năm** tìm được 2026-09-02, ghi ở cuối mục.
-Nghĩa thứ tư là ca nặng nhất, vì hai nghĩa nằm trong cùng một tệp.
+Ba nghĩa dưới đây là bản v0.2; **ba nghĩa nữa** tìm được 2026-09-02, ghi ở cuối mục. Nghĩa thứ tư
+là ca nặng nhất, vì hai nghĩa nằm trong cùng một tệp.
 
 | Nghĩa | Độ dài | Mốc gốc | Neo |
 |---|---|---|---|
@@ -340,6 +393,13 @@ node.
 không có gì để sửa ở ProofChat — ghi ra vì nó là chỗ nguy hiểm nhất cho một phép rà tự động: bốn
 nghĩa kia đều là **thời lượng** nên còn so được với nhau, nghĩa này là một **bộ đếm**. Một công
 thức phí nhân với "số epoch" mà gặp phải nó thì cho ra một số vô nghĩa nhưng vẫn có kiểu đúng.
+
+**Nghĩa thứ SÁU — và nó ở cùng kho với nghĩa thứ năm.** Cũng ProofChat: cửa sổ gộp lô của Strata là
+**600 giây** — `ProofChat/Spec/ProofChat-Feat.md:195`, *"Batch profile Strata (`epoch 600s,
+max_entries 4096`)"*. Tức trong **một kho**, chữ này vừa là bộ đếm thế hệ khoá không có độ dài, vừa
+là một cửa sổ 10 phút. Cộng với ca Cave ở trên, đây là **kho thứ hai** mang hai nghĩa nội bộ. Mẫu
+hình đủ rõ để phát biểu thành luật: chữ này hỏng **trong phạm vi một kho**, không chỉ giữa các kho —
+nên phép rà "mỗi đội thống nhất một nghĩa" không đủ, phải rà tới từng chỗ dùng.
 
 **Chốt:** từ điển dùng **giờ**. Mã 3 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
 giữ chữ gì là việc của LampNet; ranh giới đổi chữ nằm ở chỗ khai ra hệ.
