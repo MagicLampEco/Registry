@@ -52,6 +52,16 @@ jobs:
       - name: Bộ kiểm khẳng định tài liệu
         run: bash tools/test-check.sh
 
+      # Soát neo `tệp:dòng`. Vì sao đáng một bước CI riêng: 2026-09-02 đo được **259** neo đã trôi
+      # cùng lúc, do chính mấy PR của kho này chèn hàm vào bốn tệp on-chain. Không phép đo nào cũ
+      # kêu lên — neo trôi vẫn trỏ vào một dòng CÓ THẬT, nên mọi vòng rà bằng mắt và mọi phép kiểm
+      # "dòng có tồn tại không" đều xanh. Đây là lớp lỗi chỉ máy bắt được, và chỉ bắt được nếu
+      # phép kiểm soát NỘI DUNG chứ không soát sự tồn tại.
+      # ⚠ Đọc đúng phạm vi: bước này chỉ phủ neo TRONG kho, và chỉ phủ neo có tên ký hiệu cạnh bên
+      # (18/223 lúc thêm vào). "Xanh" KHÔNG có nghĩa mọi neo đều đúng — xem khối chú thích đầu tệp.
+      - name: Soát neo tệp:dòng
+        run: node tools/check-anchors.mjs
+
       - name: Bộ kiểm off-chain
         run: npm test
 
