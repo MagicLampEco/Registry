@@ -606,9 +606,9 @@ không có nền để bác, và bên khai thường tin nó thật.
 > trong bảo đảm của proof.
 
 Câu này do nhà Glint cấp và tự nêu giới hạn của chính mình: *"ZK ≠ unlinkability; nhiều proof +
-nullifier **có thể cùng lộ**"* (`VeDataIO/Specs/Glint-Math.md:384`, Định lý G.2), và chống-liên-kết
-cần pseudorandomness + key-hiding chứ collision-resistance **không đủ**
-(`VeDataIO/Specs/Glint-Math.md:198`).
+nullifier **có thể cùng lộ**"* (`VeDataIO/Glint/Spec/Glint-Math.md:395`, Định lý G.2), và
+chống-liên-kết cần pseudorandomness + key-hiding chứ collision-resistance **không đủ**
+(`VeDataIO/Glint/Spec/Glint-Math.md:198`).
 
 ⚠ **Hai neo trên vừa được sửa vì chúng đã TRÔI** (đo 2026-09-01). Bản trước ghi `:348` và `:162`;
 `Glint-Math.md` được sửa ở kho khác và hai dòng ấy nay nói chuyện khác hẳn (`:348` nói về
@@ -616,15 +616,24 @@ cần pseudorandomness + key-hiding chứ collision-resistance **không đủ**
 một tệp ở kho khác thì không cổng nào ở đây gác được nó.
 
 ⚠ **Và tên tệp trần KHÔNG phân giải được: có HAI bản `Glint-Math.md`, đã lệch nhau** (đo
-2026-09-02). `VeDataIO/Specs/Glint-Math.md` — 435 dòng, G.2 ở `:384`; `VeDataIO/Glint/Spec/Glint-Math.md`
-— 447 dòng, G.2 ở `:395`. Cùng sửa một ngày, đã phân kỳ. Nên phải ghi ĐƯỜNG ĐẦY ĐỦ, không ghi tên
-trần — và nếp "trích theo nội dung" ở dưới **cũng không cứu được** chỗ này: `grep` một câu sẽ trả
-về hai kết quả ở hai tệp khác nhau, mỗi tệp một số dòng. Bản dùng ở đây là bản `Specs/`, vì đó là
-bản nhà Glint tự dẫn khi trao đổi. Đã hỏi Glint xác nhận bản nào là bản thật.
+2026-09-02). `VeDataIO/Glint/Spec/Glint-Math.md` — **v0.4.4**, 447 dòng, G.2 ở `:395`;
+`VeDataIO/Specs/Glint-Math.md` — **v0.4.3**, 435 dòng, G.2 ở `:384`. Nên phải ghi ĐƯỜNG ĐẦY ĐỦ,
+không ghi tên trần — và nếp "trích theo nội dung" ở dưới **cũng không cứu được** chỗ này: `grep`
+một câu trả về hai kết quả ở hai tệp, mỗi tệp một số dòng.
+
+🔴 **Bản CANONICAL là bản trong kho Glint**, không phải bản `VeDataIO/Specs/`. Kho Glint tự tuyên
+bố ở `VeDataIO/Glint/README.md:45`: *"Spec nằm **trong kho này**, ở `Spec/` — không phải ở kho
+khác"*, và frontmatter cho số hiệu: `Spec/` = `version: 0.4.4`, `Specs/` = `version: 0.4.3`.
+
+⚠ Bản trước của khối này chốt NGƯỢC — chọn bản `Specs/` vì thư trao đổi của nhà Glint dẫn số dòng
+khớp bản đó. Suy luận ấy sai ở chỗ nó lấy **thói quen trích của người viết** làm bằng chứng về
+**bản nào là bản thật**; hai thứ đó không cùng một câu hỏi. Và số đo cho thấy vì sao nó sai theo
+chiều xấu: chính nhà Glint đang trích bản CŨ của mình. Phép phân giải đúng là hỏi **kho sở hữu**
+(README + số hiệu phiên bản), không hỏi ai đang trích gì.
 **Đo lại bằng** (chạy khi trích lại, đừng nhớ mòn — chú ý đường đầy đủ):
 ```
-command grep -n "ZK ≠ unlinkability" VeDataIO/Specs/Glint-Math.md
-command grep -n "key-hiding"          VeDataIO/Specs/Glint-Math.md
+command grep -n "ZK ≠ unlinkability" VeDataIO/Glint/Spec/Glint-Math.md
+command grep -n "key-hiding"          VeDataIO/Glint/Spec/Glint-Math.md
 ```
 Trích theo **nội dung** rồi lấy số dòng, không trích theo số dòng đã nhớ.
 
