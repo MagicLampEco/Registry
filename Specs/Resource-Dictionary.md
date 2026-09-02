@@ -1,7 +1,11 @@
 # Từ điển tài nguyên — mẫu số chung để so giá giữa các dịch vụ
 
-> Trạng thái: **v0.2**. Ngày: 2026-08-17.
+> Trạng thái: **v0.3**. Ngày: 2026-09-02 (v0.2: 2026-08-17).
 > Phạm vi: Registry giữ **đơn vị đo**, KHÔNG giữ **đơn giá**.
+> v0.3 rà lại các module mà v0.2 chưa chạm. **Không mã nào được cấp thêm, không mã nào đổi nghĩa** —
+> thay đổi nằm ở *lý do* của các mục đang treo, và ở một xung đột `epoch` thứ tư. Chi tiết: §2.1.1
+> (điều kiện mở khoá COMPUTE bị nêu sai ở v0.2) · §3.4 (nghĩa thứ tư, nằm trong cùng một tệp với
+> nghĩa thứ nhất) · §5 (hai dòng mới trong danh sách hở).
 > Đọc kèm: [CONTRACT §PK1](./CONTRACT.md) · [Feat-Spec §0.3](./Feat-Spec.md) · [Math-Spec §13](./Math-Spec.md)
 
 ---
@@ -99,8 +103,49 @@ Lớp (`class`) không phải để trang trí: nó là khoá của hệ số c�
 Ba hệ, ba nghĩa, **không so được với nhau**. Cấp một mã `COMPUTE` chung lúc này chỉ tạo ảo giác so
 được: hai platform khai cùng mã, người mua tưởng cùng thứ, thực ra không. Vi phạm RD-4 và RD-5.
 
-Việc phải làm trước khi cấp mã: chốt một đơn vị đơn thứ nguyên đo được — ứng viên là **vCPU·giây ở
-tần số chuẩn hoá**, và GPU tách riêng thành mã khác (GPU không quy về CPU được). Ghi ở §5.
+#### 2.1.1 Rà lại 2026-09-02 — kết luận giữ nguyên, **lý do thì sai**
+
+Bản v0.2 viết: *"Việc phải làm trước khi cấp mã: chốt một đơn vị đơn thứ nguyên đo được — ứng viên
+là vCPU·giây ở tần số chuẩn hoá, và GPU tách riêng thành mã khác."*
+
+**Việc đó đã xong rồi, từ trước khi tệp này được viết.** `TaskReceipt.NodeMetrics` của Splash định
+nghĩa sẵn chín trường, đơn thứ nguyên và cộng được (`Splash/Spec/Splash/Splash-Math.md:685-693`),
+kèm bảng đơn vị ở `:1767-1775`:
+
+| Trường | Đơn vị | Nghĩa |
+|---|---|---|
+| `gpu_seconds` | GPU·s | wall-clock GPU active |
+| `cpu_seconds` | CPU·s | wall-clock CPU active |
+| `vram_gb_seconds` · `ram_gb_seconds` | GB·s | tích phân dung lượng cấp phát theo thời gian |
+| `flops_fp16` · `flops_fp8` | TFLOP · TOP | phép tính theo độ chính xác, **đã tách sẵn** |
+| `energy_wh` | Wh | năng lượng tiêu thụ |
+
+Đây đúng là thứ §2.1 đang chờ, và nó tách GPU khỏi CPU sẵn. Nên **cái thiếu không phải tên đơn
+vị.**
+
+**Cái thiếu là RD-2 trên chính con số đó** — và trong mã thật, hai đường đang mỗi đường giữ một
+nửa, chưa đường nào giữ cả hai:
+
+| Đường | Có gì | Thiếu gì |
+|---|---|---|
+| `task_units` (đường đang tính thưởng thật) | Chữ ký quorum Ed25519 **thật**, verify **fail-closed**: thiếu khoá thì compute reward về 0, không phải bỏ qua (`lampnet-hivemind/lampnet-reward/src/metering.rs:163-180`; `lampnet-hivemind/lampnet-splash/src/quorum.rs:38-48`) | Con số được ký **không có định nghĩa vật lý nào**. Đo: `command grep -rn "task_unit" Splash/ Splash-MathFormal/` → **0 dòng**. Tức nhánh đặc tả sinh ra `TaskReceipt` chưa bao giờ nhắc tới đơn vị mà nhánh tính thưởng đang dùng |
+| `gpu_seconds` / `cpu_seconds` | Nghĩa vật lý rõ, đơn thứ nguyên, cộng được | **Chưa có mã nào thu thập**. Đo: `command grep -rn "gpu_seconds\|cpu_seconds" --include="*.rs" Splash/` → **0 dòng** |
+| Cave `actual_gpu_cycles` | Đọc bộ đếm phần cứng thật (`MathSpecs/Cave-Math.md:483-491`) | Đọc **trên chính node thực thi** — bên bán tự đo mình. Cơ chế đối chứng `k_ref` kiểm **kết quả đúng/sai**, không đo lại chu kỳ GPU |
+
+Chính mã của LampNet nói ra loại lỗi này gọn hơn tệp này nói được —
+`lampnet-hivemind/lampnet-join/src/attestation.rs:28-33`, về bốn trường phần cứng đã được ký kín:
+
+> *"ký kín 4 trường `hw_*` chỉ chặn NGƯỜI KHÁC sửa trên đường truyền. Nó **không** chặn chính thiết
+> bị tự khai số giả — chữ ký chỉ chứng minh "ai nói", không chứng minh "nói thật"."*
+
+⟹ **Điều kiện mở khoá được viết lại**: không phải "chốt đơn vị" (đã chốt), mà là **nối chữ ký quorum
+đang chạy thật vào đúng các trường vật lý đã có sẵn trong `TaskReceipt`**, thay vì ký lên
+`task_units` mù. Đó là việc nối dây giữa hai thứ đều đã tồn tại — không phải phát minh đơn vị mới.
+
+⚠ Và nói trước một lập luận nghe rất hợp lý nhưng sai, vì nó sẽ được nêu ra: *"đơn vị đã định nghĩa
+rồi, vậy cấp mã đi."* Không. RD-5 đòi **có cách đo**, không đòi **có tên gọi**. Một đơn vị định
+nghĩa đẹp trong đặc tả mà không ai thu thập được thì cấp mã cho nó chính là "cấp giấy phép định giá
+một đơn vị không tồn tại" — đúng câu RD-5 sinh ra để chặn.
 
 ---
 
@@ -161,9 +206,10 @@ thích. Nó chỉ nổ khi một hệ khác đọc chữ "GB" rồi cài `10^9` 
 `types.rs:362` cho khớp `:348` (đề nghị, không phải yêu cầu — repo đó không thuộc quyền sửa của
 Registry).
 
-### 3.4 Xung đột 3 — "epoch" mang ba nghĩa, và đã trả giá hai lần
+### 3.4 Xung đột 3 — "epoch" mang **bốn** nghĩa, và đã trả giá hai lần
 
-Ba nghĩa đang cùng sống:
+Ba nghĩa dưới đây là bản v0.2; nghĩa **thứ tư** tìm được 2026-09-02, ghi ở cuối mục — nó là ca nặng
+nhất, vì hai nghĩa nằm trong cùng một tệp.
 
 | Nghĩa | Độ dài | Mốc gốc | Neo |
 |---|---|---|---|
@@ -184,6 +230,30 @@ chưa?" trả lời đúng trong khi biên ô vẫn lệch. Registry đã đổi
    được.
 2. Cùng họ lỗi vừa xảy ra ở LAMP: `Utils/src/index.ts` `MS_PER_EPOCH` Preprod sai 5 lần, **chưa vá**
    tại thời điểm viết (nguồn: thư `LAMP → Registry` 2026-08-16, mục 5).
+
+**Nghĩa thứ TƯ, tìm được 2026-09-02 — và nó nằm trong CÙNG MỘT TỆP với nghĩa thứ nhất.**
+`MathSpecs/Cave-Math.md` neo chữ này rất tử tế ở hai chỗ:
+
+> `:46` — `epoch_slots = 432,000 (= 5 ngày)`
+> `:677` — *"Recalculation: once per epoch (432,000 slots = 5 days)"*
+
+Rồi ở dòng `:672` — **cách dòng `:677` đúng năm dòng, trong cùng một khối `Measurement`** — nó viết:
+
+> *"flops_fp16: standardized benchmark task (FP16 matmul, **1 epoch, ~60 slots**)"*
+
+432.000 slot và ~60 slot, **lệch 7.200 lần**, cùng một chữ, cùng một tệp, cùng một mục. Và con số
+này không nằm ở chỗ vô hại: nó là độ dài phép đo chuẩn sinh ra `flops_fp16_measured`, thành phần
+nặng nhất (0,40) của `hardware_score` (`:658-667`).
+
+Vì sao ca này nguy hơn ba ca trên: ba ca kia là **hai tệp khác nhau, hai đội khác nhau** — còn có
+ranh giới để nghi ngờ. Ca này ở trong tầm mắt một người đọc, nên người đọc **không nghi ngờ gì cả**;
+họ thấy `:677` neo chặt rồi mặc định `:672` cũng thế. Không phép đo tự động nào kêu, vì cả hai dòng
+đều hợp lệ về hình thức. Đây là bằng chứng rõ nhất cho RD-8: chữ này hỏng **kể cả khi tác giả đã cẩn
+thận neo nó**, chỉ cần một dòng quên neo là đủ.
+
+⚠ Registry **không** kết luận dòng nào đúng — đó là việc của đội Cave. Từ điển chỉ ghi nhận là ở đó
+có mâu thuẫn, và một `hardware_score` tính từ hai độ dài lệch 7.200 lần thì không so được giữa các
+node.
 
 **Chốt:** từ điển dùng **giờ**. Mã 3 là `GIBH` (GiB·giờ), không phải "GiB·epoch". Bên trong LampNet
 giữ chữ gì là việc của LampNet; ranh giới đổi chữ nằm ở chỗ khai ra hệ.
@@ -273,7 +343,9 @@ RD-5 cấm cấp mã cho thứ chưa đo được. Dưới đây là hàng chờ
 
 | Thứ | Vì sao chưa cấp | Điều kiện để cấp mã |
 |---|---|---|
-| **COMPUTE** | Ba hệ ba nghĩa, không cái nào đơn thứ nguyên — §2.1 | Chốt đơn vị vCPU·giây chuẩn hoá; GPU tách mã riêng. Cần một phép đo bên thứ ba xác nhận được |
+| **COMPUTE** | Ba hệ ba nghĩa — §2.1. ⚠ **Cột này đã được sửa 2026-09-02**: bản trước ghi lý do là "không cái nào đơn thứ nguyên", sai — `TaskReceipt.NodeMetrics` có sẵn chín trường đơn thứ nguyên (`Splash/Spec/Splash/Splash-Math.md:685-693`). Lý do thật là **RD-2**: đường có chữ ký thì ký một số vô nghĩa vật lý, đường có nghĩa vật lý thì chưa ai thu thập — §2.1.1 | ~~Chốt đơn vị vCPU·giây chuẩn hoá~~ (đã có sẵn). Việc còn lại: **nối chữ ký quorum Splash vào đúng trường `gpu_seconds`/`cpu_seconds` của `TaskReceipt`** thay vì ký lên `task_units`. GPU vẫn tách mã riêng — và đặc tả đã tách sẵn |
+| **`hardware_score` của Cave** | Không phải tài nguyên: là **hệ số/tier**. Công thức `flops×0,40 + memory_bw×0,30 + network_bw×0,20 + uptime×0,10`, chuẩn hoá theo median động (`MathSpecs/Cave-Math.md:658-677`) | Không cấp. Nó gộp bốn đại lượng khác thứ nguyên vào một số — đúng ví dụ mà RD-4 dựng ra để chặn — và ra điểm **tương đối theo percentile**, nên cộng dồn không có nghĩa tiêu thụ. Ghi ở đây vì một cái tên có chữ "score" rất dễ bị lôi vào công thức phí như hệ số nhân |
+| **Đồng thuận / chạy node (Cnode)** | Chưa đo được, và spec tự nhận: `Cnode/specs/Cnode-Exec.md:50` xếp "Công thức reward, settlement (hệ token MagicLamp)" vào cột **"Cnode KHÔNG (spec khác)"** (đầu bảng ở `:45`); `:291` ghi "Nối metering đơn-vị-reward (chờ dependency ngoài)" | Chờ chính Cnode chốt đơn vị. Đây là dòng duy nhất trong danh sách hở mà bên sở hữu đã tự đánh dấu là việc treo của họ — đừng cấp mã hộ |
 | **MEDIA theo dung lượng** | Mã **1** đếm ảnh, vi phạm RD-4 | Không sửa mã 1 (RD-1). Cấp mã mới đếm **MiB ảnh đã nhận**; mã 1 xuống trạng thái "kế thừa". ⚠ Trong lúc hai mã cùng sống, mã 1 hở về **phía bên mua**: tải toàn ảnh sát ngưỡng cổng kích thước thì rút tối đa dung lượng với giá "1 ảnh" cố định. Bên nào còn dùng mã 1 tự đặt `base_price` bù rủi ro cỡ-tối-đa — đây là việc của platform, không phải lỗ của từ điển |
 | **COORDINATION** (điều phối nhiều agent) | Không phải resource — nó là **service vector**, đã có §4 phục vụ | Không cấp. Nếu ai đòi mã riêng, hỏi họ nó đo bằng gì |
 | **Giữ chỗ / cọc** (AladinWork `holdDeposit`) | Chưa cài; spec tự đánh dấu `[PARAM]` chưa chốt (`AladinWork/Specs/Task/Task-Schedule-ExtraFee-JobTypeGov-v2.md:7,138-149`) | Cọc **không phải** tiêu thụ tài nguyên — nó là tài sản hoàn lại. Thuộc Treasury, không thuộc từ điển |
