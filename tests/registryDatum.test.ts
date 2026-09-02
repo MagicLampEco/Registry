@@ -31,6 +31,10 @@ const sampleEntry = (): PlatformEntry => ({
   cut_bps:       500n,
   created_epoch: 42n,
   status:        "Active",
+  // KHÔNG dùng 15n (đủ bốn nền): mẫu phải là ca THƯỜNG, và ca thường là khai thiếu.
+  // Lấy 15n làm mẫu thì mọi bài vòng-tròn chạy trên một giá trị mà bit nào cũng bật —
+  // hoán vị bit sai vẫn cho cùng kết quả.
+  substrate_flags: 5n,   // bit 0 (PhoenixKey) + bit 2 (LampNet)
 });
 
 describe("PlatformEntry v2 — mã hoá/giải mã", () => {
@@ -40,11 +44,15 @@ describe("PlatformEntry v2 — mã hoá/giải mã", () => {
     expect(back).toEqual(e);
   });
 
-  it("là Constr(0) đúng 11 trường, ĐÚNG THỨ TỰ (spec_version đầu, beacon_policy sau seed_policy)", () => {
+  // Vì sao ghim con số bằng CHỮ bên cạnh một hằng đã có: `toBe(PLATFORM_ENTRY_FIELDS)` một
+  // mình luôn xanh — nó so hằng với chính nó. Số viết tay là nửa thứ hai của phép kiểm kép,
+  // và nó buộc mỗi lần đổi arity phải là một lần SỬA CÓ Ý THỨC. Đã làm đúng việc của nó
+  // 2026-09-02: đổi 11 → 12 (`substrate_flags`) và bài này đỏ ngay, một mình.
+  it("là Constr(0) đúng 12 trường, ĐÚNG THỨ TỰ (spec_version đầu, beacon_policy sau seed_policy)", () => {
     const c = encodePlatformEntry(sampleEntry());
     expect(c.index).toBe(0);
     expect(c.fields.length).toBe(PLATFORM_ENTRY_FIELDS);
-    expect(PLATFORM_ENTRY_FIELDS).toBe(11);
+    expect(PLATFORM_ENTRY_FIELDS).toBe(12);
     expect(c.fields[0]).toBe(2n);                          // spec_version
     expect(c.fields[1]).toBe(asciiToHex("PhoenixKey"));    // platform_id
     expect(c.fields[2]).toBe(asciiToHex("phoenixkey-custody-v1"));
@@ -56,6 +64,7 @@ describe("PlatformEntry v2 — mã hoá/giải mã", () => {
     expect(c.fields[8]).toBe(500n);                        // cut_bps
     expect(c.fields[9]).toBe(42n);                         // created_epoch
     expect(c.fields[10]).toBeInstanceOf(Constr);           // status
+    expect(c.fields[11]).toBe(5n);                         // substrate_flags — CUỐI đuôi
   });
 
   it("giải mã lấy đúng trường theo vị trí (không lẫn seed_policy với beacon_policy)", () => {

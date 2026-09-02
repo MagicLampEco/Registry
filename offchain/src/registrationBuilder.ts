@@ -500,6 +500,7 @@ export function planRegister(params: RegisterParams): RegisterPlan {
     cut_bps:         config.cutBps,
     created_epoch:   createdEpoch,
     status:          "Active",
+    substrate_flags: config.substrateFlags ?? 0n,
   };
 
   // R-NAME: entry.platform_id == NFT name.
@@ -635,6 +636,9 @@ export interface EntryChanges {
   governance_ref?:  string;       // hex
   accepted_assets?: AssetKey[];
   cut_bps?:         bigint;
+  /** Lời khai nền. Nằm trong `governed_fields_changed` ⇒ đổi nó đòi authority ký VÀ đồng
+   *  thuận quản trị của chính platform, y như `cut_bps`/`governance_ref`. */
+  substrate_flags?: bigint;
 }
 
 export interface UpdateOptions {
@@ -759,6 +763,7 @@ export function planUpdateEntry(
     accepted_assets: (changes.accepted_assets ?? entryIn.accepted_assets).map(normAssetKey),
     cut_bps:         changes.cut_bps ?? entryIn.cut_bps,
     status:          changes.status ?? entryIn.status,
+    substrate_flags: changes.substrate_flags ?? entryIn.substrate_flags,
   };
 
   // U-ID: định danh bất biến giữa vào & ra.

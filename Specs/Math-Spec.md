@@ -939,7 +939,7 @@ tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ 
 **Ba dữ kiện dẫn tới chốt, mỗi cái tự đứng được:**
 
 1. **Thứ `payee_did` định mua thì hồ sơ đã có, rẻ hơn.** Đích trả tiền nằm sẵn ở `custody_hash` +
-   `instance_id` + `seed_policy` (`platform.ak:107-109`), và chi tiêu chỗ đó đã bị `governance_ref`
+   `instance_id` + `seed_policy` (`platform.ak:126-128`), và chi tiêu chỗ đó đã bị `governance_ref`
    của chính platform gác. `payee_did` **không khép được vòng**: DID không phải payment credential,
    vẫn phải phân giải DID → địa chỉ ở ngoài chuỗi. Nó đổi một trường bất biến lấy thêm một chặng
    tin cậy — đúng biến thể L9 của cửa phân giải.

@@ -89,6 +89,25 @@ pub const spec_version_v2: Int = 2
 /// phải di trú từng hồ sơ, mà di trú lại cần đúng cái đồng thuận đang kẹt. Chốt bây giờ.
 pub const max_accepted_assets: Int = 32
 
+/// TRẦN của `substrate_flags` — 16 bit, tức bit 0..15 dùng được, bit 16 trở lên bị cấm.
+///
+/// Ý NGHĨA TỪNG BIT (hợp đồng với off-chain, đừng đánh số lại):
+///   bit 0 (1)  = PhoenixKey — danh tính
+///   bit 1 (2)  = MAGIC      — tiêu thụ
+///   bit 2 (4)  = LampNet    — dữ liệu phân tán
+///   bit 3 (8)  = VeData     — xác thực
+///   bit 4..15  = ĐỂ TRỐNG CÓ CHỦ Ý, dành cho nền thứ năm trở đi.
+///
+/// VÌ SAO 65535 CHỨ KHÔNG 15. Chặn `<= 15` là chặn đúng tập nền HÔM NAY, và đúng theo
+/// nghĩa hẹp nhất. Nhưng hằng này nằm trong MÃ, không trong datum: thêm nền thứ năm sau
+/// khi triển khai buộc phải đổi hằng ⇒ đổi script hash ⇒ phải di trú TOÀN BỘ hồ sơ, mà
+/// di trú lại đòi đồng thuận quản trị của TỪNG platform (M-GOV) — platform nào có cổng
+/// quản trị chết là hồ sơ kẹt lại vĩnh viễn. Để sẵn 16 bit là mua quyền mở rộng với giá
+/// 0: bit chưa dùng không mang nghĩa gì, bên đọc chỉ nhìn bit nó biết. Cái giá duy nhất
+/// là một hồ sơ khai `substrate_flags = 4096` (bit 12) hôm nay hợp lệ mà chưa có nghĩa —
+/// thứ vô hại, vì validator chỉ GHI NHẬN lời khai chứ không phán xử nó.
+pub const substrate_flags_max: Int = 65535
+
 /// Vòng đời một platform trong registry. Constr index theo thứ tự khai báo (khớp offchain).
 pub type PlatformStatus {
   Active
@@ -118,6 +137,22 @@ pub type PlatformEntry {
   // (epoch = 1 ngày) sai số là 5×. Xem `util.get_time_bucket_bounded`.
   created_epoch   : Int,              // ô-thời-gian đăng ký (ép == ô của chính tx đăng ký)
   status          : PlatformStatus,
+  // LỜI KHAI "platform này dùng những NỀN nào của hệ" — cờ bit, ý nghĩa từng bit ở
+  // `substrate_flags_max`. Nối vào ĐUÔI (Plutus Data đọc theo vị trí ⇒ chèn giữa phá mọi
+  // bên đọc); đây là trường thứ 12 và cửa sổ thêm trường đóng ở lần deploy ĐẦU
+  // (`validators/arity_poc_test.ak` đo: soft-cast của Aiken kiểm KHỚP ĐÚNG ARITY).
+  //
+  // VÌ SAO MỘT `Int` CHỨ KHÔNG BỐN `Bool`. Bốn `Bool` tiêu bốn ô arity và hết đường mở
+  // rộng VĨNH VIỄN sau deploy — nền thứ năm sẽ không có chỗ đặt, vì `MigrateEntry` (đường
+  // nâng lược đồ duy nhất) không đưa được hồ sơ sang lược đồ khác số trường. Một `Int`
+  // tiêu MỘT ô arity, và thêm nền sau này chỉ tốn một bit: không đụng arity, không đổi
+  // script hash, không phải di trú hồ sơ nào. Người sau sẽ hỏi — câu trả lời nằm ở đây.
+  //
+  // ⚠ ĐỌC ĐÚNG SỨC MẠNH: validator chỉ ép HÌNH DẠNG (không có bit lạ — xem
+  // `mutable_fields_valid`). Nó KHÔNG kiểm "đã khai đủ bốn nền", cũng KHÔNG kiểm lời khai
+  // có đúng sự thật không. Bắt buộc bốn nền là SÀN HẠNG ở tầng off-chain (chuẩn đăng ký),
+  // không phải việc của validator. Đừng thêm `== 15` hay `>= 15` ở bất kỳ đâu.
+  substrate_flags : Int,
 }
 
 /// Redeemer minting policy registry_beacon.
@@ -239,20 +274,38 @@ pub fn identity_preserved(a: PlatformEntry, b: PlatformEntry) -> Bool {
 /// (registry_beacon.ak:131, R-WF) áp; `registry.ak:211` (U-MUT) và `:308` (M-MUT) gọi
 /// thẳng ⇒ hai cửa spend áp. Thêm điều kiện ở đây là thêm cho cả ba; đừng thêm ở một chỗ
 /// khác rồi tưởng đã đủ.
+///
+/// SUB-FLAGS `0 <= substrate_flags <= substrate_flags_max` đặt ĐÚNG Ở ĐÂY, không ở
+/// `entry_well_formed`: hàm kia GỌI hàm này ở dòng cuối, còn hai nhánh spend gọi THẲNG
+/// hàm này ⇒ một dòng phủ cả ba cửa (R-WF, U-MUT, M-MUT). Đặt ở `entry_well_formed` chỉ
+/// phủ cửa đúc, và KHÔNG có lỗi biên dịch nào báo cho biết hai cửa spend đang hở — đúng
+/// lớp lỗi "vá nửa đường" mà M-GOV2 đã ăn một lần (registry.ak:124).
+/// Vế `>= 0` KHÔNG thừa: `Int` của Aiken là số nguyên có dấu, nên `-1` (mọi bit bật trong
+/// biểu diễn hai-bù) qua được vế trên nếu chỉ chặn một chiều — và một lời khai âm không
+/// có nghĩa nào trong hệ cờ bit.
 pub fn mutable_fields_valid(e: PlatformEntry) -> Bool {
   bytearray.length(e.governance_ref) == script_hash_len && governance_ref_distinct(e) && list.length(
     e.accepted_assets,
-  ) <= max_accepted_assets && or {
+  ) <= max_accepted_assets && e.substrate_flags >= 0 && e.substrate_flags <= substrate_flags_max && or {
     shape_custodial(e),
     shape_non_custodial(e),
   }
 }
 
 /// Có đổi field nào thuộc nhóm "cần đồng thuận quản trị" không?
-/// Ba field này quyết định TIỀN đi đâu và ai gác chi của platform — đổi mà platform
+/// Ba field đầu quyết định TIỀN đi đâu và ai gác chi của platform — đổi mà platform
 /// không biết là tước quyền, nên không cho một mình authority quyết.
+///
+/// `substrate_flags` vào nhóm này vì cùng một lý do, chỉ khác loại thiệt hại: nó là lời
+/// khai mà BÊN NGOÀI dựa vào để tin platform (cổng MAGIC đọc bit 1 để biết dịch vụ có
+/// tiêu MAGIC không). Để ngoài nhóm thì MỘT chữ ký authority sửa được lời khai của người
+/// khác — bật bit platform không dùng, hoặc tắt bit nó đang dùng và làm mọi validator
+/// đọc theo nó xử sai. Nhóm này đòi authority ký VÀ đồng thuận quản trị của chính
+/// platform, đúng mức cho một việc bên thứ ba dựa vào.
+/// ⚠ Trường này KHÔNG nằm trong `identity_preserved` — đổi được, có đồng thuận. Platform
+/// hôm nay chưa dùng VeData sang năm dùng thêm là tiến hoá hợp lệ, không phải platform khác.
 pub fn governed_fields_changed(a: PlatformEntry, b: PlatformEntry) -> Bool {
-  a.governance_ref != b.governance_ref || a.accepted_assets != b.accepted_assets || a.cut_bps != b.cut_bps
+  a.governance_ref != b.governance_ref || a.accepted_assets != b.accepted_assets || a.cut_bps != b.cut_bps || a.substrate_flags != b.substrate_flags
 }
 
 /// Có đúng 1 token (policy, name) trong value (beacon NFT hiện diện).

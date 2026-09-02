@@ -35,8 +35,11 @@
 //             gỡ KHÓ (ngưỡng cao hơn nhiều) — để không ai vũ-khí-hoá bước gỡ nhắm đối
 //             thủ". Chiều `Active → Paused` GIỮ NGUYÊN chỉ-authority: cần van dừng nhanh.
 //             "Mọi trường khác y hệt" ép CHẶT (identity 6 field + spec_version +
-//             governance_ref + accepted_assets + cut_bps); lỏng một trường là platform
-//             tự mở lại KÈM đổi cut_bps — đi vòng qua đúng ràng buộc vừa dựng.
+//             governance_ref + accepted_assets + cut_bps + substrate_flags); lỏng một
+//             trường là platform tự mở lại KÈM đổi cut_bps — đi vòng qua đúng ràng buộc
+//             vừa dựng. `substrate_flags` vào danh sách này 2026-09-02, SAU khi một bài
+//             PoC cho thấy thiếu nó thì hồi sinh thành cửa sau để khai lại nền mà không
+//             cần authority — xem 30i trong registry_test.ak.
 //   U-SINGLE  ĐÚNG 1 entry input + 1 entry output theo SCRIPT HASH (chống double-sat).
 //             ⚠ GIỚI HẠN ĐÃ BIẾT, CỐ Ý KHÔNG VÁ: đếm theo PAYMENT credential, KHÔNG so
 //             stake credential. Đó là chủ ý (đếm theo payment-hash là cách chống
@@ -228,8 +231,19 @@ validator registry(registry_authority: ByteArray) {
         // U-REVIVE: hồi sinh THUẦN TUÝ = Paused → Active và MỌI trường khác y hệt.
         // Ép chặt từng trường khả biến, không chỉ identity: lỏng một trường là platform
         // tự mở lại KÈM đổi cut_bps/governance_ref, đi vòng qua U-GOV.
+        //
+        // ⚠ DANH SÁCH NÀY LIỆT KÊ BẰNG TAY ⇒ nó là chỗ thứ tư phải quét mỗi lần thêm một
+        // trường khả biến vào `PlatformEntry`. Ba chỗ kia (`mutable_fields_valid`,
+        // `governed_fields_changed`, `identity_preserved`) đều nhận trường mới qua một
+        // phép so trên cả bản ghi; chỗ này thì KHÔNG, và trình biên dịch không kêu — thiếu
+        // một trường ở đây chỉ hiện ra dưới dạng một đường đi hợp lệ mà không ai định mở.
+        // Đã xảy ra thật: `substrate_flags` thêm vào 2026-09-02, `governed_fields_changed`
+        // đòi authority cho nó, còn dòng này thì bỏ sót ⇒ platform tự khai lại nền của
+        // chính nó khi hồi sinh, chỉ bằng đồng thuận quản trị của chính nó. Cùng một
+        // trường, hai đường đi, hai luật — vá bằng cách cho đường hồi sinh khớp đường
+        // cập nhật, vì bên thứ ba (cổng MAGIC) đọc lời khai này để quyết mức tin.
         let pure_revive =
-          entry_in.status == Paused && entry_out.status == Active && entry_out.spec_version == entry_in.spec_version && entry_out.governance_ref == entry_in.governance_ref && entry_out.accepted_assets == entry_in.accepted_assets && entry_out.cut_bps == entry_in.cut_bps
+          entry_in.status == Paused && entry_out.status == Active && entry_out.spec_version == entry_in.spec_version && entry_out.governance_ref == entry_in.governance_ref && entry_out.accepted_assets == entry_in.accepted_assets && entry_out.cut_bps == entry_in.cut_bps && entry_out.substrate_flags == entry_in.substrate_flags
 
         // U-SIG: authority ký. NGOẠI LỆ DUY NHẤT — hồi sinh thuần tuý cũng chấp nhận
         // đồng thuận quản trị của chính platform, để authority không biến `Paused` thành

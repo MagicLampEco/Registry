@@ -68,7 +68,7 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 > | Định danh bất biến | 5 trường | **6** — thêm `beacon_policy` (`platform.ak:218-220`) |
 > | Redeemer spend | chỉ `UpdateEntry` | thêm **`MigrateEntry`** (constr 1 — `platform.ak:136`) |
 > | `→ Retired` / đổi `cut_bps`… | một chữ ký authority là đủ | đòi **thêm** đồng thuận quản trị (U-GOV — `registry.ak:247-255`) |
-> | Hạng hình dạng hồ sơ | chỉ một hạng (mọi hồ sơ phải có kho) | **hai** hạng loại trừ nhau: `shape_custodial` / `shape_non_custodial` (`platform.ak:144-157`) |
+> | Hạng hình dạng hồ sơ | chỉ một hạng (mọi hồ sơ phải có kho) | **hai** hạng loại trừ nhau: `shape_custodial` / `shape_non_custodial` (`platform.ak:179-190`) |
 > | `governance_ref` | `≠ ""` | **`len == 28`** (ĐÚNG một script hash) — ép trong `mutable_fields_valid` (`platform.ak:242`), phủ cả R-WF lẫn U-MUT/M-MUT vì `entry_well_formed` (`:209`) gọi nó |
 > | Ràng buộc mới | — | **đúc:** R-POLICY, R-VER, R-VALUE, R-EPOCH, R-GOVSELF, R-GOVLIVE · **chung hai nhánh spend:** S-GOVSELF · **Update:** U-VER, U-VALUE, U-GOV, U-REVIVE, U-GOVSELF-OUT, U-GOV2, U-SHAPE · **Migrate:** toàn bộ 13 mã M-SIG, M-GOV, M-DEST, M-MINT-0, M-ID, M-STATUS, M-VER, M-MUT, M-GOVSELF-OUT, M-GOV2, M-SHAPE, M-NFT, M-VALUE |
 >
@@ -750,7 +750,7 @@ ES modules, Lucid Evolution (gương `Treasury/offchain`). Bốn nhóm hàm:
 order §2 (**11 trường**, status enum 0/1/2 — `offchain/src/registryDatum.ts:127-137, 152-162`). Lệch thứ
 tự phá decode (cùng quy tắc Treasury datum). Redeemer spend cũng đã có nhánh
 `MigrateEntry = Constr(1, [bytes, int])` (`offchain/src/registryDatum.ts:192`) và hàm dựng tương ứng
-`planMigrateEntry` (`offchain/src/registrationBuilder.ts:893`).
+`planMigrateEntry` (`offchain/src/registrationBuilder.ts:959`).
 
 ---
 
