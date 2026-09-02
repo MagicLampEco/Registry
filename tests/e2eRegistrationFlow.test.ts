@@ -190,7 +190,7 @@ describe("E2E · trục tuỳ chọn `ownership` KHÔNG phải điều kiện v�
  * CHẶNG 6b — đường đọc THỨ HAI: `utxosAt(<địa chỉ>)`.
  *
  * Đây là đường mà `scripts/02_*` và `scripts/03_*` thật sự dùng — địa chỉ dựng ở
- * `scripts/config.ts:124` bằng `credentialToAddress`, tức ENTERPRISE, không phần stake. Mô hình
+ * `scripts/config.ts:126` bằng `credentialToAddress`, tức ENTERPRISE, không phần stake. Mô hình
  * hoá nó ở đây vì hai đường đọc sổ này KHÔNG tương đương, và chỗ chúng lệch nhau là chỗ một hồ
  * sơ hợp lệ biến mất mà không phép đo nào đỏ.
  */

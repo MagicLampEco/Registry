@@ -3,19 +3,19 @@
 // Vì sao có file này: ba lệch dưới đây làm CẢ HAI suite xanh mà sản phẩm chết — mỗi bên tự
 // nhất quán với chính mình.
 //
-//  1. R-GOVLIVE (registry_beacon.ak:143) đòi VÔ ĐIỀU KIỆN cổng quản trị CHẠY THẬT trong chính
+//  1. R-GOVLIVE (registry_beacon.ak:165) đòi VÔ ĐIỀU KIỆN cổng quản trị CHẠY THẬT trong chính
 //     tx đăng ký. Off-chain trước bản này không có trường nào biểu diễn được điều đó ⇒ MỌI tx
 //     đăng ký do SDK dựng đều bị từ chối: cổng đăng ký không đăng ký được ai.
-//  2. U-GOV2 / M-GOV2 (registry.ak:225-233, 278-286) đòi ĐỔI `governance_ref` = BÀN GIAO HAI
+//  2. U-GOV2 / M-GOV2 (registry.ak:257-265, 316-323) đòi ĐỔI `governance_ref` = BÀN GIAO HAI
 //     CHIỀU (cả ref cũ lẫn ref mới cùng chạy). Một cờ boolean không nói được "ref nào chạy".
-//  3. U-GOVSELF-OUT / M-GOVSELF-OUT (registry.ak:185, 276-277) nay CÓ trên chuỗi. Off-chain
+//  3. U-GOVSELF-OUT / M-GOVSELF-OUT (registry.ak:212, 314-315) nay CÓ trên chuỗi. Off-chain
 //     từng chỉ CẢNH BÁO và khai "on-chain chưa chặn ca này" — lời khai đó nay sai.
 //
 // Nguồn on-chain đối chiếu (đọc 2026-08-14):
-//   onchain/lib/magiclamp/registry/util.ak:194-206   governance_consented (spend HOẶC withdraw)
-//   onchain/validators/registry_beacon.ak:117-143    R-GOVLIVE + xung đột R-MINT-2
-//   onchain/validators/registry.ak:185, 225-233      U-GOVSELF-OUT, U-GOV2
-//   onchain/validators/registry.ak:276-286           M-GOVSELF-OUT, M-GOV2
+//   onchain/lib/magiclamp/registry/util.ak:204-216   governance_consented (spend HOẶC withdraw)
+//   onchain/validators/registry_beacon.ak:138-165    R-GOVLIVE + xung đột R-MINT-2
+//   onchain/validators/registry.ak:212, 257-265      U-GOVSELF-OUT, U-GOV2
+//   onchain/validators/registry.ak:309-323           M-GOVSELF-OUT, M-GOV2
 
 import { describe, it, expect } from "vitest";
 import {

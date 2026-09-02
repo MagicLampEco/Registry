@@ -9,7 +9,7 @@
 // địa chỉ này có thể bịa. Hồ sơ bịa đó không mang beacon NFT thật nên không hiện ra khi
 // quét sổ theo policy — và ĐÓ LÀ THỨ DUY NHẤT đỡ nó.
 // ⛔ ĐÍNH CHÍNH 2026-08-15: bản trước viết tiếp "và muốn chi tiêu nó vẫn phải có chữ ký
-// authority ⇒ trơ". SAI — PoC audit đối kháng PASS. Ngoại lệ U-SIG ở `:205-211` nhận
+// authority ⇒ trơ". SAI — PoC audit đối kháng PASS. Ngoại lệ U-SIG ở `:237-243` nhận
 // `pure_revive && governance_consented(entry_in.governance_ref)`; trong ô tự dựng thì
 // `governance_ref` CŨNG do kẻ dựng khai ⇒ spend `Paused → Active` với
 // `extra_signatories: []` là ĐI QUA. Xem khối đính chính đầy đủ ở
@@ -63,7 +63,7 @@
 //                luôn ⇒ gỡ niêm yết vĩnh viễn bằng một chữ ký. PoC đã dựng, validator
 //                NHẬN tx đó trước bản vá. Hai ca kia là cửa TỰ KHOÁ (minting policy không
 //                có nhánh spend ⇒ đồng thuận hằng False). Lý lẽ + phân biệt với chốt
-//                "KHÔNG vá bằng mã" ở util.ak:200 — xem `platform.governance_ref_distinct`.
+//                "KHÔNG vá bằng mã" ở util.ak:215 — xem `platform.governance_ref_distinct`.
 //              · CAP `len(accepted_assets) ≤ platform.max_accepted_assets` (=32). Số đo và
 //                vì sao 32 ở platform.ak.
 //   U-GOVSELF-OUT `entry_out.governance_ref != own_hash`. ĐÂY LÀ NỬA CÒN LẠI của

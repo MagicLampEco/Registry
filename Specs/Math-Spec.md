@@ -132,7 +132,7 @@ R-BIND     ∃ r ∈ tx.reference_inputs : quantity(val(r), e.seed_policy, e.ins
                                        ∧ r.address = Script(e.custody_hash)
 ```
 
-Mọi mục đích khác (kể cả **đốt**) → `fail` (`registry_beacon.ak:109-111`).
+Mọi mục đích khác (kể cả **đốt**) → `fail` (`registry_beacon.ak:202-204`).
 
 ### 5.2 `UpdateEntry` (chi tiêu — `registry(A)`, constr 0)
 
@@ -196,7 +196,7 @@ M-VALUE    như U-VALUE
    `findDuplicatePlatformIds` trước khi tin (§14 L1).
 2. **Đối soát kho thật** — `verifyEntryAgainstCustody(entry, custodyUtxo)`. R-BIND **không** thay
    được việc này: cả ba giá trị R-BIND kiểm đều lấy từ chính datum người đăng ký khai
-   (`registry_beacon.ak:92-95`), nên một kho **tự dựng hoàn toàn** (policy riêng + script riêng)
+   (`registry_beacon.ak:77-82`), nên một kho **tự dựng hoàn toàn** (policy riêng + script riêng)
    vẫn qua R-BIND. Đã kiểm bằng thực thi 2026-08-04.
 3. **Kiểm dạng của A** — nếu `registry_authority` còn là một key-hash đơn thì **chưa đủ cho
    mainnet** (§8 T5, §14 L2).
@@ -215,7 +215,7 @@ Ba việc trên là **van SDK**, validator không ép được. Bỏ qua = đị
 > `val_nat(u) = { (P_b, pid) ↦ 1 }`.
 
 *Chứng minh.* Trường hợp cơ sở: R-VALUE ép đúng đẳng thức này tại `Register`
-(`registry_beacon.ak:77-81`). Bước quy nạp: U-VALUE và M-VALUE ép `val_nat(out) = val_nat(in)`.
+(`registry_beacon.ak:169-173`). Bước quy nạp: U-VALUE và M-VALUE ép `val_nat(out) = val_nat(in)`.
 Vậy đẳng thức được bảo toàn qua mọi phép chuyển. ∎
 
 **Giới hạn của T-CUSTODY:** nó chỉ phủ các UTxO **đi qua validator**. Theo A-LEDGER, không validator
@@ -264,7 +264,7 @@ nhánh Migrate (M-VER).
 
 *Chứng minh.* Đốt đòi `tx.mint` âm ở policy `P_b` ⇒ chạy `registry_beacon`. Nhánh duy nhất được
 định nghĩa là `Mint` với `RegisterPlatform`, và R-MINT-1 ép `tokens(tx.mint, P_b) = { pid ↦ 1 }`
-(lượng dương). Mọi mục đích khác rơi vào `else(_) { fail }` (`registry_beacon.ak:109-111`). Thêm
+(lượng dương). Mọi mục đích khác rơi vào `else(_) { fail }` (`registry_beacon.ak:202-204`). Thêm
 nữa U-MINT-0 và M-MINT-0 cấm mint/đốt trong lúc chi tiêu. Vậy không có đường giảm cung. ∎
 
 *Hệ quả:* dấu vết kiểm toán không đứt; một `pid` đã cấp không bao giờ trống chỗ để cấp lại.
@@ -292,7 +292,7 @@ bước 2, không phải điều được bảo đảm.
 > **Mệnh đề (yếu, có chủ ý).** `Register` chỉ qua được nếu **tồn tại** một UTxO mang đúng 1 NFT
 > `(e.seed_policy, e.instance_id)` ở `Script(e.custody_hash)` **tại thời điểm giao dịch**.
 
-*Chứng minh.* R-BIND (`registry_beacon.ak:96-104`). ∎
+*Chứng minh.* R-BIND (`registry_beacon.ak:194-197`). ∎
 
 > ⚠ **Đây KHÔNG phải phép xác thực "kho là Treasury thật".** Cả ba giá trị đều do người đăng ký tự
 > khai trong datum. Một kho tự dựng hoàn toàn vẫn qua — kiểm bằng thực thi 2026-08-04. Thứ R-BIND
@@ -303,12 +303,12 @@ bước 2, không phải điều được bảo đảm.
 
 > **T-TERMINAL-U.** Không giao dịch `UpdateEntry` nào chi tiêu được một entry có `σ(e_in) = Retired`.
 
-*Chứng minh.* U-TERMINAL (`registry.ak:88`). ∎
+*Chứng minh.* U-TERMINAL (`registry.ak:204`). ∎
 
 > **T-MIGRATE.** `MigrateEntry` **được** chi tiêu entry `Retired`, và với mọi giao dịch di trú qua
 > được: `Id(e_out) = Id(e_in)` ∧ `σ(e_out) = σ(e_in)` ∧ `v(e_out) > v(e_in)` ∧ đích ≠ `H_reg`.
 
-*Chứng minh.* Nhánh Migrate không gọi U-TERMINAL (`registry.ak:37-39`). Ba đẳng thức là M-ID,
+*Chứng minh.* Nhánh Migrate không gọi U-TERMINAL (`registry.ak:135-137`). Ba đẳng thức là M-ID,
 M-STATUS, M-VER; đích khác là M-DEST. ∎
 
 **Vì sao M-STATUS bắt buộc.** Không có nó, di trú thành một đường `Retire` trá hình bỏ qua U-GOV.
@@ -345,7 +345,7 @@ giữa. Tiêu chí mà bản thi công receipt phải thoả: [§13](#13-biên-n
 > **T-CONSENT.** Mọi phép chuyển **không đảo ngược được** đều đòi **cả** `A` **và** `G`:
 > (a) `σ → Retired`; (b) đổi `governance_ref` / `accepted_assets` / `cut_bps`; (c) di trú.
 
-*Chứng minh.* (a) và (b): U-GOV (`registry.ak:104-114`) cộng U-SIG. (c): M-GOV cộng M-SIG. ∎
+*Chứng minh.* (a) và (b): U-GOV (`registry.ak:245-255`) cộng U-SIG. (c): M-GOV cộng M-SIG. ∎
 
 > **Nguyên tắc cắt quyền.** Việc **đảo ngược được** thì một bên quyết; việc **không đảo ngược
 > được** thì hai bên cùng ký. Vì vậy `Active ↔ Paused` để `A` tự quyết: đó chính là quyền gỡ niêm
@@ -390,7 +390,7 @@ hợp lệ mọi đường. Cái khác là ĐỊA CHỈ, và bên nào đọc s�
 thấy nó.
 
 ⚠ **Bên đọc ấy ở NGOÀI kho** (đo 2026-09-01): `command grep -rn "utxosAt(" offchain/src scripts/*.ts
-tests/` → 3 dòng, cả ba là chú thích; `scripts/03_*` đọc bằng `utxosByOutRef`. `config.ts:124` chỉ
+tests/` → 3 dòng, cả ba là chú thích; `scripts/03_*` đọc bằng `utxosByOutRef`. `config.ts:126` chỉ
 DỰNG địa chỉ, không ĐỌC theo nó. Bản trước của dòng này viết như thể có một call site trong kho —
 sai, và sai theo chiều làm cái giá của R-ADDR/U-ADDR/M-ADDR (bỏ quyền uỷ thác của mọi ô) trông như
 đang trả cho một bên hưởng lợi ở đây.
@@ -720,15 +720,15 @@ trên bàn trước khi quyết.
 
 Bản trước của mục này nghiêng về máy-sinh với lý do: va chạm **tên hiển thị** sửa được, còn một
 `pid` bất biến bị chiếm thì không. Phản biện của ProofChat (thư 2026-08-18, hai agent soát độc lập)
-đo ba van định tuyến phí ở `offchain/src/registryQuery.ts:238-252` với một kẻ **đăng ký hợp lệ**:
+đo ba van định tuyến phí ở `offchain/src/registryQuery.ts:275-295` với một kẻ **đăng ký hợp lệ**:
 
 | Van | Hôm nay (pid chữ) | Sau máy-sinh |
 |---|---|---|
-| #2 trùng khít pid (`:155-163`) | `duplicate=true` ⇒ `safeToRouteFees` từ chối (`:243`) | pid duy nhất **theo cấu tạo** ⇒ `duplicate` vĩnh viễn `false` — van thành **hằng đúng** |
-| #1 `verifyEntryAgainstCustody` (`:197-231`) | PASS — chỉ kiểm hồ sơ tự nhất quán với kho bên gọi đưa vào | PASS, y hệt |
+| #2 trùng khít pid (`:192-200`) | `duplicate=true` ⇒ `safeToRouteFees` từ chối (`:280`) | pid duy nhất **theo cấu tạo** ⇒ `duplicate` vĩnh viễn `false` — van thành **hằng đúng** |
+| #1 `verifyEntryAgainstCustody` (`:234-268`) | PASS — chỉ kiểm hồ sơ tự nhất quán với kho bên gọi đưa vào | PASS, y hệt |
 | #3 `foreignScript`/`policyMismatch` | PASS | PASS, y hệt |
 
-Van #1 PASS với **kho tự dựng hoàn toàn** — chính `onchain/validators/registry_beacon.ak:164-167`
+Van #1 PASS với **kho tự dựng hoàn toàn** — chính `onchain/validators/registry_beacon.ak:186-189`
 ghi điều đó bằng thực thi. ⇒ sau máy-sinh, hồ sơ mang tên hiển thị của người khác nhận
 `{ ok: true, reasons: [] }` và **phí chảy vào kho kẻ chiếm**. Tiền đã chảy thì không lùi. Nên phép
 đánh đổi thật là: đổi một hỏng hóc **thẩm mỹ, không lùi được** lấy một hỏng hóc **mất tiền, im
@@ -738,7 +738,7 @@ lặng**. Hệ quả thứ hai: R1 trùng-khít là căn cứ từ chối **duy 
 
 #### D2 — bộ chấm sẽ chết CÂM, đo được hôm nay
 
-`KHUON_PID` (`tools/check-registration-core.mjs:36`) là `^[a-z][a-z0-9-]{1,30}[a-z0-9]$` — tối đa
+`KHUON_PID` (`tools/check-registration-core.mjs:47`) là `^[a-z][a-z0-9-]{1,30}[a-z0-9]$` — tối đa
 **32** ký tự, phải bắt đầu bằng chữ thường. Một pid blake2b-224 hex dài **56** ký tự. Đo:
 
 ```
@@ -793,7 +793,7 @@ kẻ nó nhắm, vì kẻ đó điều khiển cả hai đầu câu hỏi. Chỉ
 
 Thêm `display_name` là thêm một trường vào `PlatformEntry`. Đo 2026-08-27
 (`onchain/validators/arity_poc_test.ak`): phép ép kiểu mềm của Aiken **kiểm khớp đúng arity**, nên
-`registry.ak:265` từ chối mọi datum đích có số trường khác hiện tại ⇒ `MigrateEntry` — đường nâng
+`registry.ak:297` từ chối mọi datum đích có số trường khác hiện tại ⇒ `MigrateEntry` — đường nâng
 lược đồ duy nhất — **không thêm trường được**. Xem `DevStatus.md` mục "Thứ tự trường `PlatformEntry`".
 
 ⇒ `display_name` phải có mặt **trước lần deploy đầu tiên** hoặc không bao giờ. Nên câu hỏi
@@ -813,7 +813,7 @@ phải nằm trên chuỗi** — và điều kiện ấy chưa ai chứng minh. 
 **Trả lời: KHÔNG có lý do buộc `display_name` lên chuỗi.** Ba dữ kiện.
 
 *Thứ nhất — không mã nào đọc nó.* Định tuyến phí đi qua `platform_id` và đối soát `custody_hash`
-(`offchain/src/registryQuery.ts:238-252`); `grep -rn 'display_name\|displayName' offchain/src/` trả
+(`offchain/src/registryQuery.ts:275-295`); `grep -rn 'display_name\|displayName' offchain/src/` trả
 **rỗng**. Tên hiển thị chưa tồn tại trong bất kỳ đường quyết định nào của máy — nó là thứ cho **mắt
 người**.
 
@@ -892,10 +892,10 @@ Ba ứng viên độc lập về mục đích nhưng **dùng chung đúng một 
 nay là mất nó vĩnh viễn, không phải hoãn nó.
 
 **Và hai ứng viên sau còn vướng một chỗ thứ hai mà D4 không nói tới.** `governed_fields_changed`
-(`onchain/lib/magiclamp/registry/platform.ak:172-174`) chỉ khoá **ba** trường — `governance_ref`,
+(`onchain/lib/magiclamp/registry/platform.ak:254-256`) chỉ khoá **ba** trường — `governance_ref`,
 `accepted_assets`, `cut_bps`. Một trường mới **mặc định KHÔNG nằm trong nhóm ấy**, nghĩa là nó đổi được
 bằng **một chữ ký `registry_authority`**, không cần đồng thuận của chính platform (nhánh U-SIG,
-`onchain/validators/registry.ak:211-217`). Cộng với L2 — authority hôm nay là **một khoá đơn** — thì
+`onchain/validators/registry.ak:237-243`). Cộng với L2 — authority hôm nay là **một khoá đơn** — thì
 một trường quyết định *tiền đi về đâu* mà nằm ngoài nhóm quản trị là một đường O(1): chiếm khoá là
 viết lại toàn bộ hướng chi trong một giao dịch, và LAMP không đốt nên phần đã phát không thu về được.
 
@@ -939,7 +939,7 @@ tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ 
 **Ba dữ kiện dẫn tới chốt, mỗi cái tự đứng được:**
 
 1. **Thứ `payee_did` định mua thì hồ sơ đã có, rẻ hơn.** Đích trả tiền nằm sẵn ở `custody_hash` +
-   `instance_id` + `seed_policy` (`platform.ak:74-76`), và chi tiêu chỗ đó đã bị `governance_ref`
+   `instance_id` + `seed_policy` (`platform.ak:107-109`), và chi tiêu chỗ đó đã bị `governance_ref`
    của chính platform gác. `payee_did` **không khép được vòng**: DID không phải payment credential,
    vẫn phải phân giải DID → địa chỉ ở ngoài chuỗi. Nó đổi một trường bất biến lấy thêm một chặng
    tin cậy — đúng biến thể L9 của cửa phân giải.
@@ -949,7 +949,7 @@ tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ 
    **không hưởng lợi** ký, thách thức có phát hiện thật, cổng danh tính cho node. Không thứ nào
    trong ba là một trường datum. Bản đồ do chính bên hưởng lợi khai, đặt lên chuỗi, chỉ làm **lời
    khai sai thành bất biến** — và tốn ADA vĩnh viễn: ở N=100 cặp, min-ADA ô hồ sơ ước lượng ~29 ADA
-   so với ~1,5–2 ADA hôm nay, khoá cứng vì `value_not_drained` (`util.ak:227-231`) chỉ cho lovelace
+   so với ~1,5–2 ADA hôm nay, khoá cứng vì `value_not_drained` (`util.ak:263-267`) chỉ cho lovelace
    **tăng**. Thêm thread từng cái một là O(N²) ExUnit, và vượt trần kích thước tx thì hồ sơ **không
    spend được nữa** — gạch chết mang theo beacon, phá thẳng PK5.
 3. **Không validator nào ở LAMP đọc entry này để quyết đích chi** (đo 2026-08-30):
@@ -968,8 +968,8 @@ tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ 
   không ở datum — đúng khuôn D5 đã dùng khi bác `display_name`.
 
 **Cái mà chốt này giữ được, và chưa tài liệu nào ghi:** 11 trường hôm nay chia hết thành 1
-`spec_version` (đóng băng ở Update, `registry.ak:183`) + 6 trường định danh (`identity_preserved`,
-`platform.ak:144`) + 3 trường quản trị + `status`. **Không trường nào để một khoá đơn ghi byte do nó
+`spec_version` (đóng băng ở Update, `registry.ak:209`) + 6 trường định danh (`identity_preserved`,
+`platform.ak:219`) + 3 trường quản trị + `status`. **Không trường nào để một khoá đơn ghi byte do nó
 tự chọn.** Đó là tính chất mạnh nhất của lược đồ hiện tại; cả `payee_did` lẫn bản đồ đều phá nó.
 
 **Giá phải trả, nói trước:** mất tính chống-chối-bỏ *liên tục* của đích trả và của quy gán — chỉ còn
@@ -978,7 +978,7 @@ neo tại mốc ký — và phải giữ sống một nguồn ngoài chuỗi. Đ
 ##### D8-b — điều kiện của D6 kê THIẾU một chỗ
 
 D6 chốt: trường mới phải vào `governed_fields_changed` ngay trong cùng lần chốt lược đồ. Đúng, nhưng
-**chưa đủ**. `pure_revive` (`registry.ak:204-206`) liệt kê **từng trường khả biến** phải y hệt:
+**chưa đủ**. `pure_revive` (`registry.ak:231-232`) liệt kê **từng trường khả biến** phải y hệt:
 
 ```
 entry_in.status == Paused && entry_out.status == Active
@@ -989,8 +989,8 @@ entry_in.status == Paused && entry_out.status == Active
 ```
 
 Một trường mới không có trong danh sách này ⇒ đường **Paused → Active** thành cửa đổi trường mới mà
-**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy (`registry.ak:213-216`).
-Chính khối chú thích ở `:201-203` đã cảnh báo đúng hình dạng lỗi này cho `cut_bps`.
+**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy (`registry.ak:239-242`).
+Chính khối chú thích ở `:228-230` đã cảnh báo đúng hình dạng lỗi này cho `cut_bps`.
 
 ⇒ Điều kiện đúng, nếu về sau có ai mở lại cửa sổ lược đồ: **trường mới phải vào CẢ
 `governed_fields_changed` LẪN `pure_revive`, trong cùng một lần chốt.** Một trong hai là chưa đóng.
@@ -999,8 +999,8 @@ Chính khối chú thích ở `:201-203` đã cảnh báo đúng hình dạng l�
 
 R1 của chuẩn đăng ký từ chối hồ sơ trùng `platform_id`, và nó **kiểm được bằng máy** — nhưng máy đó
 là bộ quét thư mục `Registrations/` chạy ngoài chuỗi (`REGISTRATION-STANDARD.md` §R1). Trên chuỗi,
-`onchain/validators/registry_beacon.ak` ép: mint đúng một token của policy này (R-MINT-1, `:79-82`),
-tên token khớp `entry.platform_id` (R-NAME, `:98-99`), và authority ký (R-SIG, `:76`). **Không bước
+`onchain/validators/registry_beacon.ak` ép: mint đúng một token của policy này (R-MINT-1, `:92-95`),
+tên token khớp `entry.platform_id` (R-NAME, `:120-121`), và authority ký (R-SIG, `:89`). **Không bước
 nào so tên vừa mint với các beacon đã mint trước đó** — không có phép đo nào làm được việc ấy trong
 một validator, vì nó cần biết trạng thái toàn sổ.
 
@@ -1018,7 +1018,7 @@ hợp lệ. Bên đọc sổ theo tên sẽ thấy hai hồ sơ chính danh, kh�
 1. **Nó độc lập với hình dạng hồ sơ.** Chọn thêm trường hay không thêm trường đều không chạm tới lỗ
    này — nó nằm ở tầng mint. Đừng tính nó vào bảng so sánh D6 như một điểm trừ của phương án nào.
 2. **Nó cộng hưởng với L2.** Khoá authority là khoá đơn, và cùng khoá đó vừa gác tính duy nhất vừa
-   là đường cứu duy nhất: `registry.ak:122-126` ghi thẳng — *"MẤT KHOÁ AUTHORITY ⇒ TOÀN SỔ ĐÔNG CỨNG.
+   là đường cứu duy nhất: `registry.ak:139-143` ghi thẳng — *"MẤT KHOÁ AUTHORITY ⇒ TOÀN SỔ ĐÔNG CỨNG.
    U-SIG và M-SIG đều đòi ĐÚNG `registry_authority`, kể cả nhánh cứu MigrateEntry"*. Nên hỏng ở đây
    không có đường lùi trên chuỗi: phải triển khai registry mới với policy beacon mới và onboard lại
    từ đầu.
@@ -1062,10 +1062,10 @@ PK11. Mọi lời hứa về uy tín dựa trên `app_id` hiện **không có n�
 
 ### L9 — cổng nhận ĐẦU-BÊN-KIA làm đối số: `verifyEntryAgainstCustody`
 
-`verifyEntryAgainstCustody(entry, custodyUtxo)` (`offchain/src/registryQuery.ts:197-231`) mang tên
+`verifyEntryAgainstCustody(entry, custodyUtxo)` (`offchain/src/registryQuery.ts:234-268`) mang tên
 "đối soát với kho", nhưng nó chỉ kiểm hồ sơ **tự nhất quán** với một UTxO mà **bên gọi tự đưa vào**.
 Kẻ gọi chọn luôn thứ mình sẽ bị đối chiếu với. Bảng ở §14 L1 D1 đã ghi hệ quả đo được: van này PASS
-với một kho **tự dựng hoàn toàn** (`onchain/validators/registry_beacon.ak:164-167`).
+với một kho **tự dựng hoàn toàn** (`onchain/validators/registry_beacon.ak:186-189`).
 
 Đây không phải "cổng thiếu", cũng không phải "cổng sai" — nó là một lớp riêng, và lớp đó cần một câu
 hỏi riêng để bắt. Ba câu vẫn dùng để soi một cổng là: *(1) đầu bên kia có tồn tại không · (2) cổng

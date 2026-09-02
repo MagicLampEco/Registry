@@ -188,7 +188,7 @@ phải "phần thưởng của hệ" hay không.
 
 | | Yêu cầu | Vi phạm thì sao |
 |---|---|---|
-| **G1** | Phải là một script hash **28 byte**, và phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Độ dài 28 byte bị validator ép cứng ở hai chỗ — `onchain/lib/magiclamp/registry/platform.ak:134` (`entry_well_formed`, lúc đăng ký) và `:163` (`mutable_fields_valid`, lúc cập nhật hoặc di trú); hằng `script_hash_len` ở `:52`. Sai độ dài thì giao dịch đăng ký hỏng ngay tại cổng. |
+| **G1** | Phải là một script hash **28 byte**, và phải là script **chạy được**. Giao dịch đăng ký buộc phải chứng minh — chi tiêu một input ở `Script(governance_ref)`, hoặc mang một withdrawal từ đó. | Khai một hash chết thì đăng ký xong là **không bao giờ** Retire, đổi tham số hay di trú được nữa. Đổi chính `governance_ref` cũng cần đồng thuận từ chính nó. Độ dài 28 byte bị ép cứng ở ĐÚNG MỘT chỗ — `mutable_fields_valid` (`onchain/lib/magiclamp/registry/platform.ak:242`), và nó phủ cả ba cổng vì `entry_well_formed` (`:209`, lúc đăng ký) GỌI nó ở dòng cuối thân hàm, còn hai nhánh spend gọi thẳng nó. Hằng `script_hash_len` ở `:53`. Sai độ dài thì giao dịch đăng ký hỏng ngay tại cổng. |
 | **G2** | **Không** được là hash của chính validator registry. | Cổng đồng thuận tự thoả vĩnh viễn ⇒ quyền đăng ký một mình xoá được hồ sơ. Validator chặn ở cả bốn chỗ: cửa đúc, datum vào, datum ra, đích di trú. |
 | **G3** | **Không** nên có nhánh permissionless (thu bụi, huỷ đề xuất hết hạn). | Registry chỉ ép được *"script đó **chạy** trong giao dịch"*, **không** ép được *"script đó **phê duyệt đúng** thay đổi này"*. Nhánh nào ai cũng kích được là nhánh chế ra đồng thuận. **Đây là giả định load-bearing: an toàn của cổng đồng thuận bằng đúng an toàn của script mà chính bên đăng ký khai.** |
 | **G4** | Nếu nhánh đồng thuận cần **mint/burn** token — mẫu phổ thông là đốt NFT đề xuất khi thực thi — thì nó xung đột với ràng buộc least-authority của cổng đúc: giao dịch đăng ký không được gánh policy mint ngoài. | Hồ sơ **không đăng ký được**. Hai đường vòng hợp lệ: dùng **withdrawal-0**, hoặc một **nhánh spend không mint**. |
@@ -606,17 +606,25 @@ không có nền để bác, và bên khai thường tin nó thật.
 > trong bảo đảm của proof.
 
 Câu này do nhà Glint cấp và tự nêu giới hạn của chính mình: *"ZK ≠ unlinkability; nhiều proof +
-nullifier **có thể cùng lộ**"* (`Glint-Math.md:384`, Định lý G.2), và chống-liên-kết cần
-pseudorandomness + key-hiding chứ collision-resistance **không đủ** (`Glint-Math.md:198`).
+nullifier **có thể cùng lộ**"* (`VeDataIO/Specs/Glint-Math.md:384`, Định lý G.2), và chống-liên-kết
+cần pseudorandomness + key-hiding chứ collision-resistance **không đủ**
+(`VeDataIO/Specs/Glint-Math.md:198`).
 
 ⚠ **Hai neo trên vừa được sửa vì chúng đã TRÔI** (đo 2026-09-01). Bản trước ghi `:348` và `:162`;
 `Glint-Math.md` được sửa ở kho khác và hai dòng ấy nay nói chuyện khác hẳn (`:348` nói về
 `proof_system`, `:162` là §2.2 P2 Range proof). Không phép đo nào của kho này kêu lên — neo trỏ vào
 một tệp ở kho khác thì không cổng nào ở đây gác được nó.
-**Đo lại bằng** (chạy khi trích lại, đừng nhớ mòn):
+
+⚠ **Và tên tệp trần KHÔNG phân giải được: có HAI bản `Glint-Math.md`, đã lệch nhau** (đo
+2026-09-02). `VeDataIO/Specs/Glint-Math.md` — 435 dòng, G.2 ở `:384`; `VeDataIO/Glint/Spec/Glint-Math.md`
+— 447 dòng, G.2 ở `:395`. Cùng sửa một ngày, đã phân kỳ. Nên phải ghi ĐƯỜNG ĐẦY ĐỦ, không ghi tên
+trần — và nếp "trích theo nội dung" ở dưới **cũng không cứu được** chỗ này: `grep` một câu sẽ trả
+về hai kết quả ở hai tệp khác nhau, mỗi tệp một số dòng. Bản dùng ở đây là bản `Specs/`, vì đó là
+bản nhà Glint tự dẫn khi trao đổi. Đã hỏi Glint xác nhận bản nào là bản thật.
+**Đo lại bằng** (chạy khi trích lại, đừng nhớ mòn — chú ý đường đầy đủ):
 ```
-command grep -n "ZK ≠ unlinkability" /Users/ductiger/Projects/VeDataIO/Specs/Glint-Math.md
-command grep -n "key-hiding"          /Users/ductiger/Projects/VeDataIO/Specs/Glint-Math.md
+command grep -n "ZK ≠ unlinkability" VeDataIO/Specs/Glint-Math.md
+command grep -n "key-hiding"          VeDataIO/Specs/Glint-Math.md
 ```
 Trích theo **nội dung** rồi lấy số dòng, không trích theo số dòng đã nhớ.
 

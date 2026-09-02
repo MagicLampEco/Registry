@@ -28,7 +28,7 @@ export const SPEC_VERSION_V2 = 2n;
 
 /**
  * Độ dài MỌI script hash / policy id Cardano: 28 byte (blake2b-224) = 56 ký tự hex.
- * Gương `platform.script_hash_len` (onchain/lib/magiclamp/registry/platform.ak:40, đọc 2026-08-14).
+ * Gương `platform.script_hash_len` (onchain/lib/magiclamp/registry/platform.ak:53, đọc 2026-08-14).
  * Off-chain giữ bytes dưới dạng HEX nên độ dài đối chiếu là 56 ký tự.
  */
 export const SCRIPT_HASH_BYTES = 28;
@@ -38,7 +38,7 @@ export const SCRIPT_HASH_HEX_LEN = 56;
  * Độ dài MỘT Ô THỜI GIAN của quy ước Registry = 5 ngày = 432_000_000 ms.
  *
  * ⚠ ĐÂY KHÔNG PHẢI ĐỘ DÀI EPOCH CARDANO, và KHÔNG phụ thuộc mạng. On-chain nó là HẰNG
- * (`util.ms_per_time_bucket`, onchain/lib/magiclamp/registry/util.ak:116, đọc 2026-08-14),
+ * (`util.ms_per_time_bucket`, onchain/lib/magiclamp/registry/util.ak:152, đọc 2026-08-14),
  * không phải tham số validator. `posix_ms / 432_000_000` là chỉ số "ô 5 ngày kể từ mốc Unix":
  * tại mốc Shelley hàm trả 3694, biên ô lật sớm hơn biên epoch thật ~251.091 s ≈ 2,9 ngày;
  * trên Preview (epoch 1 ngày) sai số là 5×.

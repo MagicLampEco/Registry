@@ -95,7 +95,7 @@ Kiểm: `grep -n 'pub type PlatformEntry' -A14 onchain/lib/magiclamp/registry/pl
 
 🔴 **Nối vào cuối cũng KHÔNG mở được — đo 2026-08-27, và đây là cửa sổ đóng một lần.** Bản trước của
 mục này viết "trường mới **chỉ được nối vào cuối**, kèm tăng `spec_version` cộng một đường di trú".
-Vế sau không chạy được. `registry.ak:265` giải mã datum **đích** của di trú bằng
+Vế sau không chạy được. `registry.ak:297` giải mã datum **đích** của di trú bằng
 `expect entry_out: PlatformEntry = od` — validator phiên bản hiện tại phán xử hình dạng datum của
 phiên bản sau. Đo bằng bài thực thi (`onchain/validators/arity_poc_test.ak`, `aiken v1.1.21`):
 
@@ -111,7 +111,7 @@ vào `PlatformEntry` đóng ở lần deploy đầu tiên, không đóng dần.*
 
 Hôm nay chi phí đổi vẫn bằng 0 — chưa có gì trên mạng nào (`find . -iname '*LIVE_DEPLOY*'` rỗng).
 Sau hồ sơ đầu tiên, thêm một trường đòi thay validator cho **mọi** platform trong sổ, mà
-`registry.ak:249-252` đòi đồng thuận quản trị của **từng** platform — platform nào có cổng quản trị
+`registry.ak:275-278` đòi đồng thuận quản trị của **từng** platform — platform nào có cổng quản trị
 chết thì entry của nó kẹt vĩnh viễn ở lược đồ cũ, không ai gỡ được. Nguồn câu hỏi: thư ProofChat
 2026-08-18 §6; ProofChat nêu và nói rõ họ **chưa** kiểm, nhà này kiểm.
 

@@ -75,7 +75,7 @@ Sửa: cộng vế gian tới `t = W+1 .. horizon+W`.
 |---|---|
 | `α* = 0,25` | Cột thặng dư in **82,69 ở CẢ `α=0,25` lẫn `α=0,30`**. `max()` trả phần tử đầu ⇒ 0,25 thắng **bằng thứ tự danh sách**, không bằng số. Cả dải `α ∈ [0,20; 0,35]` nằm trong 0,3 % của đỉnh ⇒ argmax vô định ±0,10 |
 | Toàn bộ đường cong `α` | Sống nhờ một **quy tắc chia việc chưa hề được phát biểu** (đơn vị biên chỉ phục vụ ở đỉnh). Dưới quy tắc chia **tỉ lệ** nhất quán thì `earn_i = ω·k_i` — **α biến mất hoàn toàn, trung tính tuyệt đối**. Nói `α* = 0,25` mà không nói quy tắc chia việc là nói không có nội dung |
-| Quan hệ `ρ ↔ α` | `model_c_alpha.py:245` neo `C = cr·ρ·p`. Chi phí thật (điện, đĩa) là **ngoại sinh**, không co khi thuế chống farm tăng. Bằng chứng nội tại: cột phục vụ ở `α=0` **giống hệt 0,7402 ở cả bốn mức ρ**. Quan hệ "ρ=0,35 ⇒ α*=0,45" sinh từ chỗ neo này, **không phải từ cơ chế** |
+| Quan hệ `ρ ↔ α` | `model_c_alpha.py:246` neo `C = cr·ρ·p`. Chi phí thật (điện, đĩa) là **ngoại sinh**, không co khi thuế chống farm tăng. Bằng chứng nội tại: cột phục vụ ở `α=0` **giống hệt 0,7402 ở cả bốn mức ρ**. Quan hệ "ρ=0,35 ⇒ α*=0,45" sinh từ chỗ neo này, **không phải từ cơ chế** |
 
 ## 5. Năm chỗ động cơ mà mô hình đơn giản không bắt
 

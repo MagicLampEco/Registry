@@ -12,11 +12,11 @@
 //     phải nằm gọn trong MỘT ô thời gian (5 ngày kể từ mốc Unix, KHÔNG phải epoch Cardano).
 //
 // Nguồn on-chain đối chiếu (đọc 2026-08-14, SAU bản vá U-GOV2/M-GOV2):
-//   onchain/lib/magiclamp/registry/platform.ak:99-155   shape_* / entry_well_formed / mutable_fields_valid
-//   onchain/lib/magiclamp/registry/util.ak:116, 138-165 ms_per_time_bucket / get_time_bucket_bounded
-//   onchain/validators/registry_beacon.ak:114, 161-175  R-GOVSELF / R-BIND chỉ áp hạng CÓ KHO
-//   onchain/validators/registry.ak:154, 187, 251, 270   S-GOVSELF / U-SHAPE / M-DEST / M-MUT
-//   onchain/validators/registry.ak:185, 276-277         U-GOVSELF-OUT / M-GOVSELF-OUT (nay NÉM)
+//   onchain/lib/magiclamp/registry/platform.ak:139-249  shape_* / entry_well_formed / mutable_fields_valid
+//   onchain/lib/magiclamp/registry/util.ak:152, 161-202 ms_per_time_bucket / get_time_bucket_bounded
+//   onchain/validators/registry_beacon.ak:133, 183-197  R-GOVSELF / R-BIND chỉ áp hạng CÓ KHO
+//   onchain/validators/registry.ak:174, 218, 280, 306   S-GOVSELF / U-SHAPE / M-DEST / M-MUT
+//   onchain/validators/registry.ak:212, 314-315         U-GOVSELF-OUT / M-GOVSELF-OUT (nay NÉM)
 
 import { describe, it, expect } from "vitest";
 import {
@@ -39,7 +39,7 @@ const AUTHORITY     = "ab".repeat(28);
 const GOV_REF       = "cc".repeat(28);
 const REGISTRY_HASH = "77".repeat(28);
 
-/** R-GOVLIVE: mọi tx đăng ký hợp lệ phải làm cổng quản trị chạy thật (util.ak:194-206). */
+/** R-GOVLIVE: mọi tx đăng ký hợp lệ phải làm cổng quản trị chạy thật (util.ak:204-216). */
 const GOV_PROOF = { spends: [{ scriptHash: GOV_REF }] };
 
 // ── Hồ sơ CÓ KHO (đối chứng) ───────────────────────────────────────────────
@@ -340,7 +340,7 @@ describe("LỆCH 2 · governance_ref != hash của chính registry (R-GOVSELF / 
   it("cập nhật ghi governance_ref = own_hash → UPD-GOVSELF-OUT (nay NÉM, không còn cảnh báo)", () => {
     // ⚠ CA NÀY ĐÃ LẬT. Bản trước off-chain chỉ CẢNH BÁO, với lý do "on-chain chưa chặn ca này
     // (S-GOVSELF chỉ soi entry_in)". Lời khai đó nay SAI: validator có U-GOVSELF-OUT
-    // (`expect entry_out.governance_ref != own_hash`, registry.ak:185). Trả plan kèm cảnh báo
+    // (`expect entry_out.governance_ref != own_hash`, registry.ak:217). Trả plan kèm cảnh báo
     // là trả một tx chắc chắn bị từ chối cho người gọi nào bỏ qua chuỗi cảnh báo.
     expect(() => planUpdateEntry(
       custodialEntry(), { governance_ref: REGISTRY_HASH }, BEACON_POLICY, AUTHORITY,
@@ -359,7 +359,7 @@ describe("LỆCH 2 · governance_ref != hash của chính registry (R-GOVSELF / 
 
   it("di trú tới registry đích == governance_ref → MIG-GOVSELF-DEST (nay NÉM)", () => {
     // ⚠ CA NÀY ĐÃ LẬT, cùng lý do với ca trên: validator có M-GOVSELF-OUT
-    // (`entry_out.governance_ref != new_registry_hash`, registry.ak:276).
+    // (`entry_out.governance_ref != new_registry_hash`, registry.ak:314).
     expect(() => planMigrateEntry({
       entryIn: custodialEntry(), ownRegistryHash: REGISTRY_HASH, newRegistryHash: GOV_REF,
       newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
@@ -375,7 +375,7 @@ describe("LỆCH 3 · ô thời gian là ô 5 NGÀY kể từ mốc Unix, KHÔNG
   });
 
   it("mốc Shelley (epoch 208, 1596059091 s) rơi vào ô 3694 — không phải 208", () => {
-    // Con số này chép từ chú thích util.ak:93-96. Nó ở đây để ai đổi hằng số làm test đỏ.
+    // Con số này chép từ chú thích util.ak:129-132. Nó ở đây để ai đổi hằng số làm test đỏ.
     expect(timeBucketOf(1_596_059_091_000n)).toBe(3694n);
   });
 
