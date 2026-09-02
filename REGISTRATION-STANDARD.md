@@ -76,30 +76,116 @@ Nguồn: whitepaper §8 bước 2 (*"định danh qua PhoenixKey (hoặc danh t�
 - Khoá riêng thuộc về người dùng. Dịch vụ giữ hộ khoá của người dùng là **mã `ID-1`**, không phải
   một cửa từ chối — nhưng nó chặn hạng niêm yết ở `L1`.
 
-> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (whitepaper §10) — nhưng nó phải
-> tự đăng ký như một thành phần, và bên dùng nó khai mã `ID-A` kèm `platform_id` của hệ đó. Một
-> dịch vụ **thường** thì dùng PhoenixKey, không tự dựng hệ danh tính riêng.
+> Hệ danh tính khác PhoenixKey vẫn được phép cạnh tranh trong hệ (whitepaper §10) — nó **tự đăng ký
+> như một thành phần**, và bên dùng nó khai `platform_id` của hệ đó vào ô
+> `platform_id_he_danh_tinh`, **cùng ba mã `ID-1`/`ID-2`/`ID-3` như mọi bên khác**. Không có mã
+> riêng, không có hạng riêng, không có đường vòng: hạng đo tính chất của dịch vụ, không đo tên hệ.
+>
+> Ranh giới thật nằm ở dòng 75 phía trên, không nằm ở tên nhà cung cấp: **dùng hệ danh tính nào
+> cũng được, miễn hệ đó tự vào sổ và tự chịu hạng.** Cái bị cấm là **tự phát hành danh tính riêng
+> trong nhà mình rồi khai là đã có danh tính** — vì khi đó không ai kiểm được nó, và lời khai
+> `ID-2` ("khoá riêng ở thiết bị người dùng") trở thành lời tự chứng.
+>
+> Đó là ràng buộc **chặt hơn** "phải dùng PhoenixKey" ở chỗ nó không dựng độc quyền, và **lỏng hơn**
+> ở đúng chỗ whitepaper đã hứa lỏng (`:120`, `:201`). Một dịch vụ **thường** thì dùng PhoenixKey vì
+> nó là đường rẻ nhất, không phải vì luật bắt.
 
-**Năm mã của trục này.** Hạng ở cột giữa là thứ bảng niêm yết §3 so ngưỡng — `L2` đòi
+**Bốn mã của trục này.** Hạng ở cột giữa là thứ bảng niêm yết §3 so ngưỡng — `L2` đòi
 `identity ≥ 2`, `L3` đòi `≥ 3`. Nguồn máy đọc: `Registrations/codes.json` → `axes.identity.codes`.
 
 | Mã | Hạng | Nghĩa | Con trỏ bắt buộc |
 |---|---|---|---|
-| `ID-0` | 0 | chưa nối danh tính hệ | `moc_du_kien` — mốc dự kiến nối |
-| `ID-1` | 1 | dùng PhoenixKey DID, **nhưng dịch vụ còn giữ khoá riêng của người dùng** | `con_tro` + `moc_du_kien` |
-| `ID-2` | 2 | dùng PhoenixKey DID, **khoá riêng nằm ở thiết bị người dùng** | `con_tro` |
-| `ID-3` | 3 | như `ID-2`, **và** dịch vụ đọc `personhood_level` khi cấp uy tín hoặc quyền biểu quyết | `con_tro` |
-| `ID-A` | *lấy theo hệ kia* | dùng một hệ danh tính khác **đã đăng ký** trong hệ | `platform_id_he_danh_tinh` |
+| `ID-0` | 0 | chưa nối hệ danh tính nào của hệ | `moc_du_kien` — mốc dự kiến nối |
+| `ID-1` | 1 | dùng một hệ danh tính **đã đăng ký trong sổ**, nhưng dịch vụ còn **giữ khoá riêng của người dùng** | `con_tro` + `moc_du_kien` + `platform_id_he_danh_tinh` |
+| `ID-2` | 2 | như `ID-1`, và **khoá riêng nằm ở thiết bị người dùng** — dịch vụ không giữ hộ | `con_tro` + `platform_id_he_danh_tinh` |
+| `ID-3` | 3 | như `ID-2`, **và** dịch vụ **đọc tập chứng thực** của hệ danh tính khi cấp uy tín hoặc quyền biểu quyết | `con_tro` + `platform_id_he_danh_tinh` |
 
-Đường lên đọc từ dưới lên: `ID-0` → `ID-1` là nối được DID; `ID-1` → `ID-2` là **thôi giữ hộ khoá**,
-chuyển khoá riêng về thiết bị người dùng — đây là bậc nhảy đắt nhất và là bậc duy nhất mở được `L2`;
-`ID-2` → `ID-3` là dùng `personhood_level` ở chỗ cấp uy tín/biểu quyết. ⚠ `ID-3` **không** làm cho
-`personhood_level` đáng tin hơn: nó vẫn là cờ nhị phân bị gán cứng `true` ở một chỗ đo được
-(`Specs/Resource-Dictionary.md` §5). `ID-3` chỉ khai rằng dịch vụ có ĐỌC nó, không khai rằng nó đúng.
+Đường lên đọc từ dưới lên: `ID-0` → `ID-1` là nối được một hệ danh tính đã đăng ký; `ID-1` → `ID-2`
+là **thôi giữ hộ khoá**, chuyển khoá riêng về thiết bị người dùng — bậc nhảy đắt nhất, và là bậc duy
+nhất mở được `L2`; `ID-2` → `ID-3` là đọc tập chứng thực ở chỗ cấp uy tín/biểu quyết.
 
-`ID-A` là mã có hạng **rỗng cho tới khi tra được**: hạng lấy theo hạng của hệ danh tính được trỏ tới,
-nên trỏ vào một `platform_id` chưa đăng ký thì trục này không có hạng, và hồ sơ trượt mọi ngưỡng
-`L1`–`L3` — trượt vì *chưa tra được*, không phải vì *bị chấm thấp*.
+**Ba mã trên KHÔNG gọi tên nhà cung cấp nào, và đó là ràng buộc chứ không phải phong cách.**
+Whitepaper §10 đóng tập độc quyền có chủ đích ở **HAI** — phát hành CARP và cổng đăng ký —
+và danh tính **không** nằm trong đó:
+
+> `Whitepaper-MagicLamp-Ecosystem-(Vi).md:241` — *"Không thành phần 'gốc' nào được đặc quyền độc
+> quyền — **trừ hai ngoại lệ có chủ đích** đã nêu ở §7 (phát hành CARP + cổng đăng ký)."*
+> `:120` — *"`did:tiger`, `did:elephant` do đội khác dựng vẫn vào hệ được, đấu sòng phẳng với
+> PhoenixKey. **Hệ không khoá người dùng vào một nhà cung cấp.**"*
+> `:201` — *"định danh qua PhoenixKey (**hoặc danh tính tương đương**)"*
+
+Nên sàn ở đây đo **tính chất của chính dịch vụ** — ai giữ khoá riêng, có đọc chứng thực không —
+chứ không đo **tên hệ** nó dùng. Một sàn mà PhoenixKey đạt còn `did:tiger` không bao giờ đạt thì
+chữ "hạng" chỉ là vỏ của chữ "từ chối". PhoenixKey là **đường mặc định**, không phải điều kiện.
+
+Đổi lại, ô `platform_id_he_danh_tinh` thành **bắt buộc từ `ID-1`**: không mã nào còn nói tên hệ, nên
+hồ sơ phải nói ra, và người đọc sổ tự tra. ⚠ Bộ chấm **chỉ kiểm hình dạng** ô đó — nó không kiểm
+`platform_id` ấy có thật trong sổ, không kiểm hệ đó còn `Active`, không kiểm dịch vụ thật sự gọi nó.
+
+<details><summary>Lịch sử — mã <code>ID-A</code> và vì sao bỏ nó thay vì vá</summary>
+
+Tới 2026-09-02 ba mã trên ghim cứng chữ "PhoenixKey", và mọi hệ danh tính khác bị đẩy sang một mã
+thoát `ID-A` mang `rank: null`, nhãn *"hạng lấy theo hạng của hệ đó"*. Bản chuẩn cũ mô tả nó là
+*"rỗng cho tới khi tra được"* — nghe như tạm thời.
+
+Đo trên mã thì nó **vĩnh viễn**: `rankOf` trả `null`, và `tinhHang` có
+`if (ranks[axis] === null || … || ranks[axis] < v) return false` ⟹ `null` trượt **mọi** ngưỡng
+`identity_min`. `L0` là hạng duy nhất không đòi ngưỡng đó. **Hồ sơ khai `ID-A` kẹt `L0` mãi mãi,
+kể cả khi hệ được trỏ tới đạt `ID-3`.** Không ai từng "tra" — không có dòng mã nào đọc
+`platform_id_he_danh_tinh` để tra.
+
+⟹ Câu ở §5 *"cạnh tranh trực tiếp **không** phải căn cứ từ chối"* đã **rỗng trên mã** trước khi
+bất kỳ đề xuất nào được bàn tới. Và rỗng lặng lẽ: bộ chấm vẫn xanh, chỉ in ra một cảnh báo nghe
+như đang chờ một bước thủ công mà không ai được giao.
+
+Đường vá hiển nhiên là cho `rankOf` tra bắc cầu. Nó đòi chốt bốn ca: hệ trỏ tới đang `ID-0` thì
+thừa kế ra gì · chuỗi `ID-A → ID-A` · vòng · hệ kia tụt hạng hoặc `Retired` thì ai phát hiện. Bỏ
+tên nhà cung cấp khỏi ba mã kia làm `ID-A` **hết việc** — hạng tính từ tính chất của chính dịch
+vụ, không thừa kế, nên **không ca nào trong bốn ca đó phát sinh**. 0 hồ sơ đang khai `ID-A` lúc bỏ.
+
+Bài học: một cửa thoát có hạng rỗng là một cửa **đóng** đội lốt cửa mở. Chỗ phải sửa là lý do sinh
+ra cửa thoát, không phải cửa thoát.
+</details>
+
+**⚠ `ID-3` nói "tập chứng thực", không nói `personhood_level`.** Bản trước dùng cái tên đó; đo được
+là nó **không tồn tại**: `personhood` xuất hiện 21 lần trong kho `PhoenixKeyDID`, **tất cả** trong
+`_Agents/` (thư giữa các nhà), **0 lần** trong `PhoenixKey-Specs/` · `PhoenixKey-Database/src` ·
+`PhoenixKey-SDK`. Giao diện đã chốt là một **tập mệnh đề** —
+`personhood(did) → { attestations, as_of }` với
+`Attestation ∈ { did-chain, hardware-rooted-key, person-in-jurisdiction(<mã pháp quyền>) }` — kèm
+câu *"trả một số là sai kiểu"*. Một tập mã công khai trỏ vào một cái tên không có thật thì bên tích
+hợp sẽ đi tìm rồi tự bịa, khả năng cao là bịa thành một con số: đúng cái đã bị cảnh báo.
+
+`ID-3` chỉ khai rằng dịch vụ **có đọc** tập đó, **không** khai rằng nội dung nó đúng — đọc §7 trước
+khi đặt bất kỳ trọng lượng an toàn nào lên nó.
+
+#### 2.1.1 Cái giá về quyền riêng tư — đọc trước khi tích hợp, không phải sau
+
+Dùng chung một hệ danh tính trên nhiều dịch vụ **mua tiện lợi bằng khả năng bị ghép hồ sơ**, và với
+một hệ neo trên chuỗi công khai thì cái giá đó **không thu hồi được**. Nói ra ở đây vì nó là thứ
+người tích hợp sẽ không tự phát hiện cho tới khi muộn.
+
+Đặc tả của `did:phoenix` tự ra lệnh cho người triển khai phải hiểu như vậy:
+
+> `PhoenixKeyDID/PhoenixKey-Specs/PhoenixKey-DIDMethod-W3C.md:176` — *"anyone holding a DID string
+> can obtain the corresponding on-chain address, and from it the **complete public transaction
+> history** of that address. Implementers and deployers **must treat 'publishing a DID string' as
+> equivalent to 'publishing the wallet address behind it'**."*
+> `:267` — *"**Key rotation does not unlink history.**"*
+
+Mà SDK trả về đúng chuỗi DID đầy đủ cho bên tích hợp (`PhoenixKey-SDK/src/types.ts:77-78`).
+
+⟹ Một dịch vụ nhận DID của người dùng thì đồng thời nhận được **địa chỉ ví công khai và toàn bộ
+lịch sử giao dịch** của người đó. Không có bước nào chặn, không có nút nào để người dùng từ chối.
+
+Định danh **theo từng bên** (pairwise / per-service) là cấu trúc vá được điều này. Nó **chưa có mã**:
+`PhoenixKey-STATUS.md:341` ghi `did_subaddr.ak` là *"Chưa có code"*.
+
+**Cho tới khi có:** đăng ký một dịch vụ dùng chung hệ danh tính nghĩa là chấp nhận rằng người dùng
+của nó **có thể bị liên kết chéo dịch vụ và liên kết trên chuỗi**, vĩnh viễn. Sổ này không giấu điều
+đó và không giả vờ nó đã được giải quyết. Dịch vụ nào xử lý dữ liệu người thật ở Việt Nam hoặc EU
+nên đọc kỹ chỗ này trước khi khai `ID-1` trở lên — nghĩa vụ đồng ý theo từng mục đích là của dịch
+vụ, sổ không gánh hộ.
 
 ### 2.2 Dùng chung hệ token LAMP · MAGIC · CARP · trục `token` — **cổng cứng**
 
@@ -128,12 +214,22 @@ tiếng nói — và ở riêng `L3` thì trục tuỳ chọn `ownership` (§2.5
 | Mã | Hạng | Nghĩa | Con trỏ bắt buộc |
 |---|---|---|---|
 | `TK-0` | 0 | chưa nối hệ token | `moc_du_kien` |
-| `TK-1` | 1 | tiêu MAGIC, dùng CARP, **không đốt LAMP**, **không mở đường đổi MAGIC ngược ra tài sản ngoài hệ** | `con_tro` |
+| `TK-1` | 1 | **tiêu MAGIC**, không đốt LAMP, **không mở đường đổi MAGIC ngược ra tài sản ngoài hệ** | `con_tro` |
 | `TK-2` | 2 | như `TK-1`, **và** có token riêng đã qua đúng cổng (Mint-Authority Registry, hoặc điều kiện CARP instance) | `con_tro` + `con_tro_cong_phat_hanh` |
 | `TK-X` | **−1** | có token riêng **CHƯA** qua cổng phát hành | `con_tro` |
 
-Hai chỗ dễ đọc nhầm ở bảng này:
+Ba chỗ dễ đọc nhầm ở bảng này:
 
+- **`TK-1` KHÔNG hỏi về CARP**, dù vế "dùng CARP" nằm trong ba điều kiện §10 trích ở đầu tài liệu.
+  Vế đó mô tả **hệ**, không mô tả việc một platform làm. Đo trên
+  `MagicLampEco/MAGIC/SPEC/MagicLamp-Tripletoken-Feat-(Vi).md`: MAGIC có **ba dòng vào** (`:65-67`),
+  và dòng thứ nhất là `LAMP → MAGIC` qua InstantGen/ScheduleGen — **không chạm CARP**. `:376` viết
+  thẳng *"app **CHỌN** nguồn khoá"*; `:378` Nguồn A = nắm LAMP; `:379` Nguồn B = khoá CARP.
+  ⟹ *"tiêu MAGIC thì đương nhiên dùng CARP"* **sai** theo nghĩa chặt: app đi rail A tiêu được MAGIC
+  mà không chạm CARP lần nào. Chọn rail là quyết định **tài chính của chính đội** — hỏi nó là bắt
+  đội giải trình chiến lược ngân quỹ, ngoài thứ một sổ niêm yết được phép phán. Và CARP vẫn nằm
+  trên đường **quyết toán** ở cả hai rail (`:381`), nên không hỏi cũng không mất gì.
+  **Cổng hỏi "có tiêu MAGIC không", không hỏi rail nào cấp vốn.**
 - **`TK-2` cao hơn `TK-1`, `TK-X` thì âm** — và khác nhau giữa hai cái *không* nằm ở chỗ có token
   riêng hay không, mà nằm ở chỗ **đã qua cổng phát hành hay chưa**. Cùng một dịch vụ, cùng một token,
   chỉ khác cái con trỏ `con_tro_cong_phat_hanh`: có thì `TK-2`, chưa có thì `TK-X` và bị từ chối.

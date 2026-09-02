@@ -55,6 +55,7 @@ describe("bản khai kiểu phải phủ hết khoá lõi thật trả về", ()
       dau_moi_lien_he: "ai-do@vi-du.example",
       repo: "MagicLampEco/vi-du",
       con_tro: "src/danh-tinh/phoenixkey.ts:142 · nhánh main · SHA 5c0da0371f2b8ae4",
+      platform_id_he_danh_tinh: "phoenixkey",
       instance_id: "khai-kieu-instance-01",
       custody_hash:   "e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b",
       seed_policy:    "50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72",

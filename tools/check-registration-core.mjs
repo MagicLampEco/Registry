@@ -136,6 +136,20 @@ const KHUON_NEED = {
   cut_bps: (v) =>
     Number.isInteger(v) && v >= 0 && v <= 10000 ? null : 'phải là số nguyên trong [0, 10000]',
   accepted_assets: (v) => (Array.isArray(v) && v.length > 0 ? null : 'phải là mảng không rỗng'),
+  // Hệ danh tính mà dịch vụ dùng — BẮT BUỘC từ ID-1 trở lên (2026-09-02, khi trục danh tính
+  // thôi ghim tên một nhà cung cấp). Chính ô này là thứ làm "trung lập nhà cung cấp" thành
+  // thật chứ không thành lời: không mã nào còn nói "PhoenixKey", nên hồ sơ phải NÓI RA nó
+  // dùng hệ nào, và người đọc sổ tự tra hệ đó.
+  // ⚠ ĐỌC ĐÚNG SỨC MẠNH: đây CHỈ kiểm hình dạng. Nó KHÔNG kiểm `platform_id` ấy có thật
+  // trong sổ, không kiểm hệ đó còn `Active`, và không kiểm dịch vụ thật sự gọi nó. Phép
+  // kiểm tồn tại cần đọc CẢ thư mục hồ sơ nên nó nằm ở `check-registration.mjs` cùng chỗ
+  // R1 — chưa dựng. Đừng đọc "qua khuôn" thành "hệ danh tính có thật".
+  platform_id_he_danh_tinh: (v) => {
+    const t = String(v).trim()
+    if (t.length < 3) return 'phải dài ít nhất 3 ký tự — một platform_id gọi được'
+    if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
+    return null
+  },
   // Ô KHAI, không phải cổng. Nó không quyết định hạng và không từ chối ai — nó chỉ làm hiện ra
   // một cụm hồ sơ cùng chủ, thứ mà mọi trần "mỗi bên tối đa X%" đang ngầm giả định là không có.
   chu_so_huu: (v) => {
@@ -203,17 +217,28 @@ function extractBlock(src) {
   }
 }
 
-/** rank của một mã trên một trục. ID-A mượn hạng của hệ danh tính được trỏ tới. */
+/**
+ * rank của một mã trên một trục. Mọi mã đều có hạng ĐỌC THẲNG từ `codes.json` — không mã
+ * nào thừa kế hạng từ một hồ sơ khác.
+ *
+ * ⚠ Bản trước có một nhánh riêng cho `ID-A` ("dùng hệ danh tính khác đã đăng ký"), trả
+ * `null` kèm cảnh báo "chưa chấm được". Nghe như tạm thời, nhưng đo ra là VĨNH VIỄN:
+ * `null` trượt mọi ngưỡng `identity_min` (xem `tinhHang`), và `L0` là hạng duy nhất không
+ * đòi ngưỡng đó ⟹ hồ sơ khai `ID-A` kẹt `L0` mãi mãi, kể cả khi hệ được trỏ tới đạt hạng
+ * cao nhất. Tức câu "cạnh tranh trực tiếp KHÔNG phải căn cứ từ chối" của chuẩn này bị mã
+ * làm cho rỗng — và rỗng lặng lẽ, vì bộ chấm vẫn xanh và vẫn in ra một câu nghe như chờ.
+ *
+ * Sửa ở GỐC chứ không vá bằng phép tra bắc cầu: `ID-A` chỉ tồn tại vì ID-1/2/3 từng ghim
+ * cứng tên một nhà cung cấp. Bỏ tên đó ra thì mọi hệ danh tính đã đăng ký đều đi chung ba
+ * mã ấy, hạng tính từ TÍNH CHẤT của chính dịch vụ (ai giữ khoá riêng · có đọc chứng thực
+ * không). Không thừa kế ⟹ không chuỗi, không vòng, không ca "hệ kia tụt hạng mà hồ sơ này
+ * không hay". Một phép tra bắc cầu sẽ phải trả lời cả bốn ca đó; không thừa kế thì không ca
+ * nào phát sinh.
+ */
 function rankOf(axis, code) {
   const spec = CODES.axes[axis].codes[code]
   if (!spec) return null
-  if (spec.rank !== null) return spec.rank
-  if (axis === 'identity' && code === 'ID-A') {
-    // Không tự suy được — phải tra hồ sơ của hệ danh tính kia. Ở đây trả về null và
-    // báo "chưa chấm được", thay vì đoán một hạng.
-    return null
-  }
-  return null
+  return spec.rank ?? null
 }
 
 /**
