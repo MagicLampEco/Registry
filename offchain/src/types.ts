@@ -6,7 +6,8 @@
 // PlatformEntry (v2) = Constr(0, [
 //     spec_version:int, platform_id:bytes, instance_id:bytes, custody_hash:bytes,
 //     seed_policy:bytes, beacon_policy:bytes, governance_ref:bytes,
-//     accepted_assets:List<AssetKey>, cut_bps:int, created_epoch:int, status:PlatformStatus ])
+//     accepted_assets:List<AssetKey>, cut_bps:int, created_epoch:int, status:PlatformStatus,
+//     substrate_flags:int ])
 // PlatformStatus : Active=Constr(0,[]), Paused=Constr(1,[]), Retired=Constr(2,[])
 // AssetKey       = Constr(0, [policy:bytes, name:bytes])
 // RegistryBeaconRedeemer : RegisterPlatform = Constr(0,[])
@@ -66,6 +67,12 @@ export interface PlatformEntry {
   cut_bps         : bigint;        // protocol_cut_bps ∈ [0,10000]
   created_epoch   : bigint;        // epoch đăng ký (bị ép nằm trong cửa sổ hiệu lực — R-EPOCH)
   status          : PlatformStatus;
+  /** Cờ-bit LỜI KHAI nền hạ tầng — bit 0 PhoenixKey · 1 MAGIC · 2 LampNet · 3 VeData,
+   *  bit 4..15 dự trữ. Trần `substrate_flags_max = 65535` (platform.ak).
+   *  ⚠ Là LỜI KHAI, không phải quyền: validator chỉ ép HÌNH DẠNG (0 ≤ x ≤ 65535) và ép
+   *  QUYỀN ĐỔI (authority + đồng thuận quản trị). Nó KHÔNG kiểm lời khai có đúng sự thật,
+   *  và KHÔNG kiểm "đã khai đủ bốn nền" — đừng viết `== 15` hay `>= 15` ở bất cứ đâu. */
+  substrate_flags : bigint;
 }
 
 /** Redeemer spend của validator `registry` (v2 — hai nhánh). */
@@ -109,6 +116,13 @@ export interface PlatformConfig {
 
   /** seed_policy nếu đã biết trước (hex). Trống → lấy từ tham số truyền vào lúc đăng ký. */
   seedPolicy?: string;
+
+  /**
+   * Cờ-bit LỜI KHAI nền hạ tầng — bit 0 PhoenixKey · 1 MAGIC · 2 LampNet · 3 VeData.
+   * Bỏ trống = `0n` = KHÔNG khai nền nào, và đó là giá trị hợp lệ: validator nhận, hồ sơ
+   * đăng ký được. Khai thiếu chỉ đổi HẠNG NIÊM YẾT off-chain, không chặn tiếp nhận.
+   */
+  substrateFlags?: bigint;
 
   /**
    * Độ dài một Ô THỜI GIAN theo ms — gương `util.ms_per_time_bucket` (HẰNG 432_000_000,

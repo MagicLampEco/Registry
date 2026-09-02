@@ -40,10 +40,12 @@ type PlatformEntryV3 {
   cut_bps: Int,
   created_epoch: Int,
   status: PlatformStatus,
+  substrate_flags: Int,
   display_name: ByteArray,
 }
 
 // Lược đồ giả định THIẾU một trường — chiều ngược lại, để biết phép kiểm chặt ở đâu.
+// (Thiếu ĐÚNG trường cuối của lược đồ hiện hành: `substrate_flags`.)
 type PlatformEntryThieu {
   spec_version: Int,
   platform_id: ByteArray,
@@ -55,6 +57,7 @@ type PlatformEntryThieu {
   accepted_assets: List<AssetKey>,
   cut_bps: Int,
   created_epoch: Int,
+  status: PlatformStatus,
 }
 
 fn v3_mau() -> PlatformEntryV3 {
@@ -70,6 +73,7 @@ fn v3_mau() -> PlatformEntryV3 {
     cut_bps: 250,
     created_epoch: 4000,
     status: Active,
+    substrate_flags: 15,
     display_name: #"5468752033",
   }
 }
@@ -87,6 +91,7 @@ fn entry_mau() -> PlatformEntry {
     cut_bps: 250,
     created_epoch: 4000,
     status: Active,
+    substrate_flags: 15,
   }
 }
 
@@ -102,6 +107,7 @@ fn thieu_mau() -> PlatformEntryThieu {
     accepted_assets: [],
     cut_bps: 250,
     created_epoch: 4000,
+    status: Active,
   }
 }
 

@@ -65,8 +65,15 @@ export const PLATFORM_STATUS = {
 
 const STATUS_BY_INDEX: PlatformStatus[] = ["Active", "Paused", "Retired"];
 
-/** Số trường của PlatformEntry v2. Đổi số này = đổi hợp đồng với validator. */
-export const PLATFORM_ENTRY_FIELDS = 11;
+/**
+ * Số trường của PlatformEntry v2. Đổi số này = đổi hợp đồng với validator.
+ *
+ * ⚠ Soft-cast của Aiken kiểm KHỚP ĐÚNG ARITY, không kiểm "đủ trường cần dùng". Nên lệch
+ * một trường giữa đây và `platform.ak` KHÔNG hiện ra dưới dạng lỗi kiểu hay lỗi giải mã —
+ * nó hiện ra dưới dạng validator từ chối MỌI tx dựng từ off-chain, ở tất cả các đường,
+ * cùng lúc. 11 → 12 ngày 2026-09-02 khi `substrate_flags` được nối vào đuôi.
+ */
+export const PLATFORM_ENTRY_FIELDS = 12;
 
 // ── helpers (duck-type Constr) ─────────────────────────────────────────────
 
@@ -135,6 +142,9 @@ export function encodePlatformEntry(e: PlatformEntry): Constr<Data> {
     e.cut_bps,
     e.created_epoch,
     encodePlatformStatus(e.status),
+    // Nối vào ĐUÔI, khớp `platform.ak` — Plutus Data đọc theo vị trí, chèn giữa phá mọi
+    // datum đã ghi.
+    e.substrate_flags,
   ]);
 }
 
@@ -160,6 +170,7 @@ export function decodePlatformEntry(d: Data): PlatformEntry {
     cut_bps:         asInt(c.fields[8]!, "PlatformEntry.cut_bps"),
     created_epoch:   asInt(c.fields[9]!, "PlatformEntry.created_epoch"),
     status:          decodePlatformStatus(c.fields[10]!),
+    substrate_flags: asInt(c.fields[11]!, "PlatformEntry.substrate_flags"),
   };
 }
 

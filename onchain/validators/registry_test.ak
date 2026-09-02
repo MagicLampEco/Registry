@@ -63,6 +63,12 @@ const gov_27: ByteArray = #"9999999999999999999999999999999999999999999999999999
 const gov_29: ByteArray =
   #"9999999999999999999999999999999999999999999999999999999999"
 
+// Lời khai NỀN: bit 0 PhoenixKey · bit 1 MAGIC · bit 2 LampNet · bit 3 VeData.
+// 15 = bốn nền đủ; 7 = thiếu VeData (một lời khai KHÁC, vẫn hợp hình dạng).
+const substrate_all_four: Int = 15
+
+const substrate_no_vedata: Int = 7
+
 fn accepted() -> List<AssetKey> {
   [AssetKey { policy: #"", name: #"" }, AssetKey { policy: lamp_policy, name: lamp_name }]
 }
@@ -81,6 +87,8 @@ fn entry_in() -> PlatformEntry {
     cut_bps: 1000,
     created_epoch: 5,
     status: Active,
+    // Khai đủ BỐN nền (bit 0..3): PhoenixKey · MAGIC · LampNet · VeData.
+    substrate_flags: substrate_all_four,
   }
 }
 
@@ -1435,4 +1443,180 @@ test update_accepted_over_cap_rejected() fail {
       [authority],
     )
   run(entry_in(), tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 30. `substrate_flags` — LỜI KHAI NỀN (bit 0 PhoenixKey · 1 MAGIC · 2 LampNet · 3 VeData).
+//     Hai nhóm bài, hai ràng buộc KHÁC NHAU, đừng gộp khi đọc:
+//      · HÌNH DẠNG (30a–30d) — `mutable_fields_valid`, phủ CẢ BA cửa (R-WF ở cửa đúc,
+//        U-MUT, M-MUT). Chỉ chặn bit lạ / giá trị âm, KHÔNG chặn "khai thiếu nền".
+//      · QUYỀN ĐỔI (30e–30f) — `governed_fields_changed`: đổi lời khai nền đòi authority
+//        ký VÀ đồng thuận quản trị của chính platform. Lý do: đây là thứ bên NGOÀI dựa
+//        vào để tin platform (cổng MAGIC đọc bit 1), nên một bên không được tự sửa.
+//      · ĐỊNH DANH (30g) — trường này KHÔNG bất biến: platform hôm nay chưa dùng VeData,
+//        sang năm dùng thêm là tiến hoá hợp lệ, không phải platform khác.
+// ════════════════════════════════════════════════════════════
+
+// 30a. U-MUT: cập nhật với flags VƯỢT trần đúng một nhịp (bit 16) — fail.
+test update_substrate_flags_over_max_rejected() fail {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      substrate_flags: platform.substrate_flags_max + 1,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 30b. U-MUT: flags ÂM (−1) — fail. `Int` Aiken có dấu ⇒ chiều dưới phải chặn riêng.
+test update_substrate_flags_negative_rejected() fail {
+  let e_out = PlatformEntry { ..entry_in(), substrate_flags: -1 }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 30c. M-MUT: di trú ghi flags vượt trần — fail. Đối xứng bắt buộc với 30a: Migrate ghi
+//      được đúng những trường Update ghi được, hở một cửa là hở cả hai (bài học M-GOV2).
+test migrate_substrate_flags_over_max_rejected() fail {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      substrate_flags: platform.substrate_flags_max + 1,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 30d. M-MUT: di trú ghi flags ÂM — fail.
+test migrate_substrate_flags_negative_rejected() fail {
+  let e_out =
+    PlatformEntry { ..entry_in(), spec_version: 3, substrate_flags: -1 }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 30e. U-GOV: đổi flags mà CHỈ có chữ ký authority (không có đồng thuận quản trị) — fail.
+//      Không có ràng buộc này thì một chữ ký authority sửa được lời khai của người khác:
+//      bật bit platform không dùng, hoặc tắt bit nó đang dùng ⇒ mọi validator đọc theo
+//      lời khai đó xử sai, mà platform không biết.
+test update_substrate_flags_authority_only_rejected() fail {
+  let e_out =
+    PlatformEntry { ..entry_in(), substrate_flags: substrate_no_vedata }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in())],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 30f. U-GOV: đổi flags có ĐỦ authority + đồng thuận quản trị — pass. Đường tiến hoá hợp
+//      lệ (thêm/bớt một nền) phải ĐI ĐƯỢC, nếu không thì rào biến thành khoá chết.
+test update_substrate_flags_with_consent_ok() {
+  let e_out =
+    PlatformEntry { ..entry_in(), substrate_flags: substrate_no_vedata }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_in(), tx)
+}
+
+// 30g. `substrate_flags` KHÔNG nằm trong tập ĐỊNH DANH: hai hồ sơ chỉ khác đúng trường
+//      này vẫn là CÙNG một platform. Bài thuần hàm — khẳng định thẳng vào
+//      `identity_preserved`, không đi qua tx, nên nó đỏ ngay nếu ai thêm trường này vào
+//      nhóm bất biến (và khi đó platform mất đường khai thêm nền, phải đăng ký lại từ đầu).
+test substrate_flags_not_in_identity() {
+  let a = entry_in()
+  let b = PlatformEntry { ..a, substrate_flags: substrate_no_vedata }
+  platform.identity_preserved(a, b) && platform.identity_preserved(b, a)
+}
+
+// 30h. Hệ quả đi được của 30g trên đường di trú: đổi flags KHI di trú vẫn qua M-ID
+//      (đủ authority + đồng thuận). Nếu trường này bị xếp nhầm vào định danh thì bài này
+//      đỏ, và đó là cách rẻ nhất để phát hiện.
+test migrate_substrate_flags_change_ok() {
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      spec_version: 3,
+      substrate_flags: substrate_no_vedata,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 30i. Hồi sinh KHÔNG được dùng làm cửa sau để khai lại nền.
+//
+//      Lai lịch, giữ vì nó dạy chỗ phải quét chứ không chỉ dạy luật: bài này SINH RA
+//      dưới dạng bài chứng minh một lỗ ĐANG MỞ, và nó XANH — `pure_revive`
+//      (`registry.ak:231`) liệt kê từng trường khả biến phải y hệt, nhưng liệt kê bằng
+//      TAY: spec_version · governance_ref · accepted_assets · cut_bps. `substrate_flags`
+//      là trường thứ 12, nằm ngoài danh sách ⇒ một tx `Paused → Active` vẫn được tính là
+//      "hồi sinh thuần tuý" dù lời khai nền đã đổi, và ngoại lệ U-SIG khi đó nhận
+//      `pure_revive && governance_consented(...)` ⇒ tx đi qua với `extra_signatories`
+//      RỖNG. Platform một mình khai lại nền của chính nó, không cần authority — đúng
+//      chiều mà 30e vừa cấm.
+//
+//      Vì sao vá chứ không để chủ nhân chốt: đây không phải một câu hỏi mở về quyền, mà
+//      là MỘT TRƯỜNG CÓ HAI LUẬT. `governed_fields_changed` đã đòi authority + đồng thuận
+//      cho `substrate_flags` ở đường Update; đường Revive thì chỉ đòi đồng thuận. Bên thứ
+//      ba (cổng MAGIC) đọc lời khai này để quyết mức tin, nên đường lỏng hơn là đường
+//      quyết định — tức luật chặt kia thành trang trí. Vá = cho hai đường khớp nhau.
+//
+//      Bài học mang đi: `pure_revive` là chỗ THỨ TƯ phải quét khi thêm trường khả biến.
+//      Ba chỗ kia nhận trường mới qua phép so trên cả bản ghi; chỗ này không, và trình
+//      biên dịch không kêu.
+test revive_changes_substrate_flags_without_authority_rejected() fail {
+  let e_in = PlatformEntry { ..entry_in(), status: Paused }
+  let e_out =
+    PlatformEntry {
+      ..entry_in(),
+      status: Active,
+      substrate_flags: substrate_no_vedata,
+    }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, e_in), gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [],
+    )
+  run(e_in, tx)
 }

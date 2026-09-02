@@ -56,6 +56,9 @@ const gov_27: ByteArray = #"9999999999999999999999999999999999999999999999999999
 const gov_29: ByteArray =
   #"9999999999999999999999999999999999999999999999999999999999"
 
+// Lời khai NỀN: bit 0 PhoenixKey · bit 1 MAGIC · bit 2 LampNet · bit 3 VeData.
+const substrate_all_four: Int = 15
+
 fn accepted() -> List<AssetKey> {
   [AssetKey { policy: #"", name: #"" }, AssetKey { policy: lamp_policy, name: lamp_name }]
 }
@@ -76,6 +79,8 @@ fn entry() -> PlatformEntry {
     cut_bps: 1000,
     created_epoch: reg_epoch,
     status: Active,
+    // Khai đủ BỐN nền (bit 0..3): PhoenixKey · MAGIC · LampNet · VeData.
+    substrate_flags: substrate_all_four,
   }
 }
 
@@ -946,6 +951,72 @@ test register_accepted_over_cap_rejected() fail {
       ..entry(),
       accepted_assets: many_assets(platform.max_accepted_assets + 1),
     }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 17. `substrate_flags` — LỜI KHAI NỀN, kiểm HÌNH DẠNG ở cửa đúc (R-WF →
+//     `entry_well_formed` → `mutable_fields_valid`).
+//     ⚠ Ở đây CHỈ kiểm "không có bit lạ". KHÔNG có bài nào ép "phải khai đủ bốn nền" —
+//     đó là SÀN HẠNG ở tầng off-chain, validator ghi nhận lời khai chứ không phán xử nó.
+//     Bài 17a khoá đúng điều đó bằng thực thi: khai THIẾU VeData vẫn đăng ký được.
+// ════════════════════════════════════════════════════════════
+
+// 17a. Khai THIẾU một nền (bit 3 tắt, flags = 7) — PASS. Đây là bài chống-siết: nếu ai
+//      đó thêm `== 15` vào validator, bài này đỏ ngay.
+test register_substrate_flags_incomplete_ok() {
+  let e = PlatformEntry { ..entry(), substrate_flags: 7 }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// 17b. ĐÚNG BẰNG trần (65535 — mọi bit trong 16 bit bật) — PASS. Biên là "≤", không "<";
+//      và bit 4..15 để trống CÓ CHỦ Ý nên khai chúng phải hợp lệ ngay hôm nay, nếu không
+//      thì "để dành cho nền tương lai" chỉ là lời nói.
+test register_substrate_flags_at_max_ok() {
+  let e =
+    PlatformEntry { ..entry(), substrate_flags: platform.substrate_flags_max }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// 17c. VƯỢT trần đúng một nhịp (65536 = bit 16) — FAIL ở cửa đúc (R-WF).
+test register_substrate_flags_over_max_rejected() fail {
+  let e =
+    PlatformEntry { ..entry(), substrate_flags: platform.substrate_flags_max + 1 }
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, e)],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
+// 17d. ÂM (−1) — FAIL. `Int` của Aiken có dấu, nên chiều dưới phải chặn riêng: chỉ ép
+//      `<= max` thì −1 lọt, và một lời khai âm không có nghĩa nào trong hệ cờ bit.
+test register_substrate_flags_negative_rejected() fail {
+  let e = PlatformEntry { ..entry(), substrate_flags: -1 }
   let tx =
     reg_tx(
       beacon_mint(platform_id, 1),
