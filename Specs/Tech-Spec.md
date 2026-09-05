@@ -491,8 +491,11 @@ U-VALUE   util.value_not_drained(reg_in.value, reg_out.value)            (`:226`
             hồ sơ là KẸT VĨNH VIỄN. Mở đường rút là mở đúng cái lỗ tệ hơn. Ai định "sửa" chỗ này phải
             trả lời được: ai ký lệnh rút, và phân biệt "gửi nhầm" với "tiền cọc" bằng gì.
 
-U-REVIVE  pure_revive = entry_in.status == Paused ∧ entry_out.status == Active
-            ∧ spec_version, governance_ref, accepted_assets, cut_bps GIỮ NGUYÊN     (`:231-232`)
+U-REVIVE  pure_revive = entry_in.status == Paused
+            ∧ entry_out == PlatformEntry { ..entry_in, status: Active }        (hàm `spend`)
+          ⇒ MỌI trường trừ `status` giữ nguyên, ép bằng MỘT phép so trên cả bản ghi. Bản
+            trước liệt kê bốn trường bằng tay và bỏ sót `substrate_flags` khi lược đồ lên
+            12 trường; xem `Math-Spec.md` §D8-b.
           ⇒ đây là VỊ TỪ, dùng làm ngoại lệ của U-SIG ngay dưới, không phải một phép kiểm độc lập.
           > Vì sao tách chiều (đặc tả gốc gộp một dòng `Active ↔ Paused` — đó là LỖI ĐẶC TẢ,
             `registry.ak:29-36`): nếu cả hai chiều đều chỉ cần authority thì authority đặt Paused rồi

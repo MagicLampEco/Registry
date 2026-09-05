@@ -304,6 +304,16 @@ pub fn mutable_fields_valid(e: PlatformEntry) -> Bool {
 /// platform, đúng mức cho một việc bên thứ ba dựa vào.
 /// ⚠ Trường này KHÔNG nằm trong `identity_preserved` — đổi được, có đồng thuận. Platform
 /// hôm nay chưa dùng VeData sang năm dùng thêm là tiến hoá hợp lệ, không phải platform khác.
+///
+/// ⚠ ĐỌC KÈM GIẢ ĐỊNH TRIỂN KHAI — mấy dòng trên tuyên "authority ký VÀ đồng thuận quản
+/// trị của chính platform", và câu đó mô tả CƠ CHẾ, không mô tả mức bảo vệ đang có. Trong
+/// cấu hình v1, `registry_authority` và `governance_ref` là CÙNG một committee bootstrap
+/// (`util.ak:226-229`, dẫn `Specs/CONTRACT.md:129-131, 284-286`) ⇒ "hai bên" ở đó THỰC
+/// CHẤT LÀ MỘT BÊN, và nhóm trường này được bảo vệ ở đúng mức một chữ ký. Rào hai bên chỉ
+/// có nghĩa thật khi platform vận hành `governance_ref` riêng — điều mà chuẩn đăng ký đòi
+/// khai chứ mã không ép được. Không vá bằng mã ở v2 (chốt ở `util.ak:215`); vá ở đây bằng
+/// cách nói ra, để không ai đọc khối lý lẽ trên rồi tin nhóm này đang được gác bởi hai bên
+/// độc lập.
 pub fn governed_fields_changed(a: PlatformEntry, b: PlatformEntry) -> Bool {
   a.governance_ref != b.governance_ref || a.accepted_assets != b.accepted_assets || a.cut_bps != b.cut_bps || a.substrate_flags != b.substrate_flags
 }
