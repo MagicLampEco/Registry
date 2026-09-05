@@ -394,8 +394,22 @@ export function checkOne(path) {
   // "MỌI con trỏ chứng cứ phải mang ba thứ" — chỗ này là chỗ máy nói hẹp hơn chuẩn nó phục vụ.
   let evMin = null
   for (const e of data.evidence ?? []) {
-    const t = CODES.evidence_tiers[e.tier]
+    // Khoá bắt đầu bằng `_` là CHÚ GIẢI của `codes.json`, không phải một hạng — cùng luật đã
+    // áp cho `listing_tiers` phía dưới. Thiếu dòng lọc này thì `_doc` tra ra một CHUỖI, chuỗi
+    // thì truthy nên nó qua cửa "có trong tập đóng", rồi `t.rank` là `undefined`.
+    //
+    // PoC trước bản vá, chạy thật trên `checkOne`: một hồ sơ khai `"tier": "_doc"` và KHÔNG
+    // con trỏ chứng cứ nào chấm ra `L3` — hạng cấp uy tín và quyền biểu quyết ở tầng hệ — với
+    // 0 lỗi và 0 cảnh báo. Không cần tấn công gì tinh vi: chỉ cần gõ tên một khoá chú giải có
+    // sẵn trong chính `codes.json`.
+    const t = e.tier != null && !String(e.tier).startsWith('_') ? CODES.evidence_tiers[e.tier] : undefined
     if (!t) { loi.push(`hạng chứng thực "${e.tier}" không có trong tập đóng`); saiKhuon = true; continue }
+    // Tầng thứ hai, độc lập với tầng trên: một hạng có mặt nhưng thiếu `rank` là lỗi CẤU HÌNH,
+    // và nó phải nổ ở đây chứ không lặng lẽ biến thành `undefined` rồi đi tiếp. Cùng khuôn với
+    // `listing_tiers` — nơi thiếu `rank` đã ném sẵn.
+    if (typeof t.rank !== 'number') {
+      throw new Error(`evidence_tiers.${e.tier} thiếu trường "rank" — không xếp được hạng chứng thực`)
+    }
     let rank = t.rank
     if (rank >= 1) {
       const p = e.pointer
@@ -493,7 +507,14 @@ function tinhHang(ranks, evMin, data) {
         if (v.includes(khai)) return false
         continue
       }
-      if (k === 'evidence_min') { if (evMin === null || evMin < v) return false; continue }
+      // Tầng thứ ba, và là tầng duy nhất không dựa vào việc hai tầng trên đã bắt hết: viết
+      // ngưỡng theo chiều PHẢI ĐẠT (`!(evMin >= v)`) thay vì chiều PHẢI RỚT (`evMin < v`).
+      //
+      // Khác nhau đúng ở giá trị không so được. `undefined < 1` và `NaN < 1` đều là **false**,
+      // nên bản cũ đọc "không rớt" thành "đạt" và ngưỡng bị vô hiệu hoá thay vì siết lại — một
+      // phép so bất kỳ nào hỏng đều hỏng theo chiều CHO QUA. Chiều mới thì mọi giá trị không so
+      // được đều rớt, đúng luật fail-safe của một cổng chấm.
+      if (k === 'evidence_min') { if (!(evMin >= v)) return false; continue }
       const axis = k.replace(/_min$/, '')
       if (ranks[axis] === null || ranks[axis] === undefined || ranks[axis] < v) return false
     }
