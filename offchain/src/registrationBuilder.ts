@@ -516,7 +516,10 @@ export function planRegister(params: RegisterParams): RegisterPlan {
     cut_bps:         config.cutBps,
     created_epoch:   createdEpoch,
     status:          "Active",
-    substrate_flags: config.substrateFlags ?? 0n,
+    // KHÔNG đệm `?? 0n`: đây là dữ liệu của bên khác, và nó lên chuỗi thành một lời khai mà
+    // bên thứ ba đọc. Một giá trị đệm ở đây không dừng lại chỗ được đệm — nó đi tiếp vào
+    // quyết định của cổng đọc bit, và ở đó nó không còn tự khai được là chưa ai chọn.
+    substrate_flags: config.substrateFlags,
   };
 
   // R-NAME: entry.platform_id == NFT name.

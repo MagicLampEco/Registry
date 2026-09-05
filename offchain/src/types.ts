@@ -119,10 +119,19 @@ export interface PlatformConfig {
 
   /**
    * Cờ-bit LỜI KHAI nền hạ tầng — bit 0 PhoenixKey · 1 MAGIC · 2 LampNet · 3 VeData.
-   * Bỏ trống = `0n` = KHÔNG khai nền nào, và đó là giá trị hợp lệ: validator nhận, hồ sơ
-   * đăng ký được. Khai thiếu chỉ đổi HẠNG NIÊM YẾT off-chain, không chặn tiếp nhận.
+   *
+   * BẮT BUỘC, và `0n` ("không khai nền nào") vẫn là giá trị hợp lệ. Ràng buộc ở đây không
+   * phải "phải khai nền", mà là "phải QUYẾT ĐỊNH" — trường này đi thẳng lên chuỗi thành
+   * lời khai mà bên thứ ba đọc để tin platform, nên nó không được sinh ra từ một giá trị
+   * mặc định mà chưa ai chọn.
+   *
+   * ⚠ Bản trước để tuỳ chọn và đệm `?? 0n` ở chỗ dựng entry. Hệ quả: người gọi không truyền
+   * thì hồ sơ lên chuỗi mang lời khai "không dùng nền nào" — một câu KHẲNG ĐỊNH mà không ai
+   * phát ra. Sửa lại sau khi đăng ký thì đắt: `substrate_flags` nằm trong nhóm quản trị, nên
+   * mỗi hồ sơ tốn một giao dịch riêng kèm đồng thuận quản trị của chính platform; khai đúng
+   * lúc đăng ký giá 0.
    */
-  substrateFlags?: bigint;
+  substrateFlags: bigint;
 
   /**
    * Độ dài một Ô THỜI GIAN theo ms — gương `util.ms_per_time_bucket` (HẰNG 432_000_000,

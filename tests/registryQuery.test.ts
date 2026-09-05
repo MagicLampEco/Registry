@@ -38,6 +38,7 @@ function mkEntry(name: string, status: PlatformEntry["status"] = "Active"): Plat
       buckets: [{ id: 0n, label: "ops" }],
       cutBps: 300n,
       governanceRef: "cc".repeat(28),
+      substrateFlags: 0n,
       msPerTimeBucket: MS_PER_TIME_BUCKET,
       reservedMinAda: 2_000_000n,
       registryAuthority: "ab".repeat(28),

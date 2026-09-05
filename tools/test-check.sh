@@ -104,6 +104,25 @@ kiem tools/fixtures/EV1-con-tro-rac-khong-len-L3.md \
      "HẠ về EV-0" \
      "con trỏ EV-1 không đủ ba thứ bị hạ về EV-0, kèm lý do đọc được"
 
+# Ô `nen_su_dung` (chuẩn §2.6) khác mọi ô khác ở chỗ nó LÊN CHUỖI. Hai tính chất, hai ca — và
+# chúng cố ý khác NHÃN: tên nền sai là hồ sơ tự mâu thuẫn với tập đóng nên phải ĐỎ; còn lệch với
+# trục token thì bộ chấm không biết bên nào đúng, chỉ biết hai bên không thể cùng đúng ⇒ NÊU.
+kiem tools/fixtures/nen-ten-ngoai-tap-dong.md \
+     "không có trong tập đóng" \
+     "tên nền ngoài tập đóng bị bắt, kèm danh sách tên nhận được"
+
+kiem tools/fixtures/nen-ten-ngoai-tap-dong.md \
+     "SAI HÌNH DẠNG" \
+     "tên nền lạ làm hồ sơ SAI HÌNH DẠNG, không phải một dòng cảnh báo"
+
+kiem tools/fixtures/nen-lech-truc-token.md \
+     "không có \"magic\"" \
+     "khai TK-1 mà không khai nền magic thì bộ chấm nêu chỗ lệch"
+
+kiem_khong tools/fixtures/nen-lech-truc-token.md \
+     "SAI HÌNH DẠNG" \
+     "lệch giữa hai ô KHÔNG bị đọc thành sai hình dạng — máy không biết bên nào đúng"
+
 # Lỗ R-05: R2 là căn cứ TỪ CHỐI theo chuẩn §5, không phải một dòng cảnh báo. Nhưng máy chỉ đọc
 # được VẾ 1 của R2 (ô json trống); vế 2 nằm trong văn xuôi mục (e). Nên hai khẳng định, không một:
 # máy phải NÊU vế 1 như một lỗi, và phải nói rõ nó CHƯA kết luận R2.

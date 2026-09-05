@@ -45,8 +45,11 @@
     "thu_o_dau": "",
     "danh_sach_phu_thuoc": [],
     "duong_thay_the": [],
+    "bang_chung_khong_phu_thuoc": "<CHỈ khi khai IN-3 — `<lệnh tra lại được> -> <kết quả nhận được>`, ví dụ: command grep -rn 'firebase|onesignal' src/ -> 0 dong>",
     "con_tro_cong_phat_hanh": "",
     "platform_id_he_danh_tinh": "",
+
+    "nen_su_dung": [],
 
     "nguoi_tiep_nhan_khi_ngung": ""
   },
@@ -120,6 +123,7 @@ Mỗi dòng: vì sao chọn mã đó, con trỏ kiểm được, và nếu chưa
 | Bucket kế toán | | — | id + nhãn từng khoang; không mã nào đòi, khai để người đọc hiểu dòng tiền |
 | `genesis_ref` | | — | UTxO tiêu khi dựng kho (một lần); không mã nào đòi |
 | `created_epoch` | | — | do giao dịch đăng ký ép, không tự khai được |
+| `nen_su_dung` | | **mọi hồ sơ** | tên nền hệ đang dùng (`phoenixkey` · `magic` · `lampnet` · `vedata`). Lên chuỗi thành `substrate_flags`; `[]` là lời khai hợp lệ nhưng **phải điền** — xem `../REGISTRATION-STANDARD.md` §2.6 |
 
 ## (d) Lời khẳng định và hạng chứng thực
 

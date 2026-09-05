@@ -51,6 +51,7 @@ const cfg = (over: Partial<PlatformConfig> = {}): PlatformConfig => ({
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
+  substrateFlags: 0n,
   ...over,
 });
 
@@ -243,6 +244,7 @@ describe("planMigrateEntry · M-GOV2 + M-GOVSELF-OUT", () => {
     newSpecVersion: 3n,
     registryAuthority: AUTHORITY,
     governanceConsent: true,
+    substrateFlags: 0n,
     ...over,
   });
 

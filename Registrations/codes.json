@@ -53,7 +53,7 @@
         "IN-0": { "rank": 0, "label": "chưa rà", "needs": [] },
         "IN-1": { "rank": 1, "label": "có phụ thuộc đóng KHÔNG thay thế được cho chức năng cốt lõi", "needs": ["danh_sach_phu_thuoc"] },
         "IN-2": { "rank": 2, "label": "có phụ thuộc đóng nhưng thay thế được, và đã có đường thay thế cụ thể", "needs": ["danh_sach_phu_thuoc", "duong_thay_the"] },
-        "IN-3": { "rank": 3, "label": "không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi", "needs": [] }
+        "IN-3": { "rank": 3, "label": "không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi", "needs": ["bang_chung_khong_phu_thuoc"] }
       }
     },
 
@@ -80,6 +80,15 @@
     "G4": "nếu nhánh đồng thuận của script cần MINT hoặc BURN token (mẫu phổ thông: đốt NFT đề xuất khi thực thi) thì nó xung đột với ràng buộc least-authority của cổng đúc — giao dịch đăng ký không được gánh policy mint ngoài. Hai đường vòng hợp lệ: dùng withdrawal-0, hoặc một nhánh spend không mint."
   },
 
+  "substrate_bits": {
+    "_doc": "Ánh xạ TÊN NỀN → vị trí bit trong trường on-chain `substrate_flags` (PlatformEntry, trường thứ 12). Đây là NGUỒN DUY NHẤT của ánh xạ ở tầng off-chain; gương của nó là khối chú thích trên hằng `substrate_flags_max` trong onchain/lib/magiclamp/registry/platform.ak — đổi một bên phải đổi bên kia, và thứ tự bit là HỢP ĐỒNG với mọi bên đọc sổ, đừng đánh số lại. Hồ sơ khai bằng TÊN ở pointers.nen_su_dung; bộ dựng giao dịch tự cộng thành số. Bên nộp không phải tự tính cờ bit, và một lời khai gõ nhầm số không lặng lẽ thành một nền khác.",
+    "_doc_16bit": "Trường giữ 16 bit (0..15), nhưng chỉ bốn bit đầu có nghĩa hôm nay. Bit 4..15 để trống CÓ CHỦ Ý — chúng là chỗ cho nền thứ năm trở đi, mua được với giá 0 vì bit chưa dùng không mang nghĩa gì và bên đọc chỉ nhìn bit nó biết. Nếu chặn ở 15 thì thêm một nền sau khi triển khai sẽ buộc đổi hằng ⇒ đổi script hash ⇒ phải di trú TOÀN BỘ hồ sơ, mà di trú đòi đồng thuận quản trị của TỪNG platform.",
+    "phoenixkey": { "bit": 0, "gia_tri": 1, "label": "danh tính" },
+    "magic":      { "bit": 1, "gia_tri": 2, "label": "tiêu thụ" },
+    "lampnet":    { "bit": 2, "gia_tri": 4, "label": "dữ liệu phân tán" },
+    "vedata":     { "bit": 3, "gia_tri": 8, "label": "xác thực" }
+  },
+
   "evidence_tiers": {
     "_doc": "Hạng chứng thực khai RIÊNG cho từng lời khẳng định, không khai một hạng cho cả dịch vụ. Một dịch vụ khai được nhiều hạng cho nhiều chặng.",
     "EV-0": { "rank": 0, "label": "tự khai — chính bên hưởng lợi ký hoặc không ai ký" },
@@ -98,7 +107,8 @@
     "L1": {
       "rank": 1,
       "label": "đã niêm yết",
-      "require": { "token_min": 1, "identity_min": 1, "custody_min": 2, "infra_min": 1 }
+      "require": { "token_min": 1, "identity_min": 1, "custody_min": 2, "infra_min": 1, "evidence_min": 1 },
+      "_doc": "evidence_min = 1 đặt ở L1 vì L1 là hạng gắn với việc NHẬN THƯỞNG (§2.3). Bản trước không đòi chứng cứ ở L1 trong khi L3 có đòi — tức vé nhận TIỀN rẻ hơn vé nhận UY TÍN, đúng ngược chiều mức thiệt hại khi một lời khai sai lọt qua. Nghĩa của ngưỡng giống hệt ở L3: mọi lời khẳng định trong hồ sơ phải từ EV-1 trở lên (một bên KHÔNG hưởng lợi ký), VÀ hồ sơ phải có ít nhất một lời khẳng định. Hồ sơ không khai khẳng định nào thì dừng ở L0 — vẫn được tiếp nhận, vẫn dùng hệ token bình thường, chỉ không có đường nhận thưởng."
     },
     "L2": {
       "rank": 2,

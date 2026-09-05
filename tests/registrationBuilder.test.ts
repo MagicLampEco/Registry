@@ -39,6 +39,7 @@ const baseConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig => ({
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
+  substrateFlags: 0n,
   ...over,
 });
 

@@ -28,6 +28,7 @@ const cfg = (): PlatformConfig => ({
   buckets: [{ id: 0n, label: "ops" }],
   cutBps: 300n,
   governanceRef: GOV_REF,
+  substrateFlags: 0n,
   msPerTimeBucket: MS_PER_TIME_BUCKET,
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,

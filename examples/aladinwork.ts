@@ -191,6 +191,10 @@ export function aladinWorkConfig(opts: {
     ],
     cutBps: opts.cutBps ?? 1000n,                   // 10% — ĐỀ XUẤT, Aladin/DAO chốt.
     governanceRef: opts.governanceRef ?? padHash28(asciiToHex("aladinwork-committee")),
+    // Lời khai nền — bit 0 PhoenixKey · 1 MAGIC · 2 LampNet · 3 VeData.
+    // Để `0n` trong ví dụ CÓ CHỦ Ý: đây là lời khai của chính đội sở hữu, không ai khai hộ
+    // được. Đội thật điền theo REGISTRATION-STANDARD.md §2.6 trước khi dựng giao dịch.
+    substrateFlags: 0n,
     ...(opts.seedPolicy !== undefined ? { seedPolicy: opts.seedPolicy } : {}),
     msPerEpoch: opts.msPerEpoch,
     reservedMinAda: opts.reservedMinAda,
