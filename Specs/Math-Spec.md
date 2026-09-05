@@ -454,7 +454,7 @@ có KHÔNG phải lý do từ chối**.
 
 | Tham số | Giá trị | Vì sao |
 |---|---|---|
-| `spec_version_v2` | 2 | v1 là lược đồ 9 trường không có trường phiên bản; đánh số 2 cho bản 11 trường |
+| `spec_version_v2` | 2 | v1 là lược đồ 9 trường không có trường phiên bản; đánh số 2 cho bản 12 trường |
 | dải `cut_bps` | [0, 10000] | điểm cơ bản, khớp Treasury |
 | ngưỡng multisig `A` | M-of-N, **chưa chốt** | phải chốt trước mainnet (§14 L2) |
 | cửa sổ epoch của R-EPOCH | theo `validity_range` của chính giao dịch | quy ước epoch chép từ Treasury `util.ak` — hai sổ phải cùng quy ước, lệch là hỏng đối soát |
@@ -927,10 +927,31 @@ chết theo chốt này. Đọc chốt thành "hồ sơ không cần thêm gì n
 30%/app" đóng **ở riêng đường instance của SuperApp**: hàng nghìn instance ra đời thì sổ vẫn thấy
 đúng một hồ sơ. Trục ấy còn nguyên với các đường vào khác, và chốt này không tuyên gì về chúng.
 
-#### D8 — hình dạng hồ sơ CHỐT: 11 trường, không thêm gì. Và cửa thứ hai mà D6 chưa kê
+#### D8 — hai ứng viên bị BÁC, và cửa thứ hai mà D6 chưa kê. Lược đồ hôm nay: 12 trường
 
 Hội đồng đã chạy trên ba ứng viên còn lại của cửa sổ D6 — `payee_did`, bản đồ `thread → operator`,
-và không-thêm-gì. **Chốt: không thêm trường nào.** Lược đồ đứng ở 11 trường.
+và không-thêm-gì. **Chốt (2026-08-30): bác cả hai ứng viên.**
+
+⚠ **Chốt này bác HAI ỨNG VIÊN CỤ THỂ, nó KHÔNG đóng lược đồ.** Bản trước của mục này viết *"không
+thêm trường nào — lược đồ đứng ở 11 trường"*, và câu ấy đã hết đúng ba ngày sau: `substrate_flags`
+vào lược đồ ngày 2026-09-02, nâng lên **12 trường**. Sửa ở đây chứ không đính chính bên cạnh, vì
+hai bản cùng đứng thì bản cũ vẫn ngang quyền với bản mới trong mắt người đọc sau.
+
+**Vì sao `substrate_flags` không rơi vào cùng nhóm với hai ứng viên bị bác** — cả hai lý lẽ bác ở
+dưới đều không bắt được nó, và đó là phép thử để dùng lại cho ứng viên thứ tư:
+
+1. Lý lẽ *"mua tính bất biến trong khi thứ cần là truy được trách nhiệm"* không áp: cờ bit không
+   phải một đích trả tiền, nó không thay thế một chặng phân giải nào.
+2. Lý lẽ *"để một khoá đơn ghi byte do nó tự chọn"* không áp: `substrate_flags` nằm trong
+   `governed_fields_changed`, nên đổi nó đòi authority ký **và** đồng thuận quản trị của chính
+   platform. Đây là điều kiện phải giữ — trường mới nào không vào được nhóm đó thì lý lẽ 2 bắt
+   được nó, và nó phải bị bác.
+3. Chi phí min-ADA cố định, không tăng theo N — khác hẳn bản đồ `thread → operator` ở dưới.
+
+**Và cửa sổ nay ĐÃ ĐÓNG, bằng một cơ chế khác chốt này.** Không phải vì hội đồng quyết dừng, mà vì
+soft-cast của Aiken kiểm khớp **đúng arity**: sau tx đầu tiên, thêm hay bớt một trường đều bị mọi
+validator hiện hành từ chối. Nên câu hỏi "còn thêm được không" từ nay có câu trả lời cơ học, tra ở
+`DevStatus.md` §"Thứ tự trường `PlatformEntry`", không tra ở mục này.
 
 **Vì sao, gọn trong một câu:** cả hai trường định thêm đều mua *tính bất biến*, trong khi thứ bài
 toán cần là *truy được trách nhiệm* — và một chữ ký truy được trách nhiệm dù nó nằm ở đâu. §D5 đã
@@ -967,10 +988,11 @@ tách sẵn hai thứ đó ("kiểm được ≠ không sửa được"); chỗ 
 - thay bản đồ: quy gán bằng **biên nhận do bên không hưởng lợi ký**, neo ở metadata giao dịch chứ
   không ở datum — đúng khuôn D5 đã dùng khi bác `display_name`.
 
-**Cái mà chốt này giữ được, và chưa tài liệu nào ghi:** 11 trường hôm nay chia hết thành 1
-`spec_version` (đóng băng ở Update, `registry.ak:209`) + 6 trường định danh (`identity_preserved`,
-`platform.ak:219`) + 3 trường quản trị + `status`. **Không trường nào để một khoá đơn ghi byte do nó
-tự chọn.** Đó là tính chất mạnh nhất của lược đồ hiện tại; cả `payee_did` lẫn bản đồ đều phá nó.
+**Cái mà chốt này giữ được, và chưa tài liệu nào ghi:** 12 trường hôm nay chia hết thành 1
+`spec_version` (đóng băng ở Update — khối U-VER @ `registry.ak`) + 6 trường định danh
+(`identity_preserved` @ `platform.ak`) + 4 trường quản trị + `status`. **Không trường nào để một
+khoá đơn ghi byte do nó tự chọn.** Đó là tính chất mạnh nhất của lược đồ hiện tại; cả `payee_did`
+lẫn bản đồ đều phá nó, còn `substrate_flags` thì giữ được nó nhờ nằm trong nhóm quản trị.
 
 **Giá phải trả, nói trước:** mất tính chống-chối-bỏ *liên tục* của đích trả và của quy gán — chỉ còn
 neo tại mốc ký — và phải giữ sống một nguồn ngoài chuỗi. Đây là đánh đổi thật, không phải chi phí ẩn.
