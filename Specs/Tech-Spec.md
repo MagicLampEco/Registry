@@ -750,7 +750,7 @@ ES modules, Lucid Evolution (gương `Treasury/offchain`). Bốn nhóm hàm:
 order §2 (**11 trường**, status enum 0/1/2 — `offchain/src/registryDatum.ts:127-137, 152-162`). Lệch thứ
 tự phá decode (cùng quy tắc Treasury datum). Redeemer spend cũng đã có nhánh
 `MigrateEntry = Constr(1, [bytes, int])` (`offchain/src/registryDatum.ts:192`) và hàm dựng tương ứng
-`planMigrateEntry` (`offchain/src/registrationBuilder.ts:959`).
+`planMigrateEntry` @ `offchain/src/registrationBuilder.ts`.
 
 ---
 
