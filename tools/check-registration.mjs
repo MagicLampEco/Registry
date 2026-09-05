@@ -35,6 +35,8 @@ let hong = 0
 let thieu = 0
 let chuaNop = 0
 let choNguoiDuyet = 0
+let coOThieu = 0
+let hopLe = 0
 for (const f of files) {
   const r = checkOne(resolve(ROOT, f))
   // Phân biệt hai kiểu hỏng: khai THIẾU (ô trống) khác hẳn khai SAI (mã lạ, JSON vỡ, sai khuôn).
@@ -65,12 +67,32 @@ for (const f of files) {
   else if (r.r2_ve1) choNguoiDuyet++
   else if (chiThieu) thieu++
   else if (!r.hop_le) hong++
+
+  // Đếm ĐỘC LẬP với chuỗi `else if` ở trên, và đây là chỗ bản trước nói sai.
+  //
+  // Chuỗi kia gán mỗi hồ sơ đúng MỘT nhãn để in ở cột trái — hợp lý cho việc đó. Nhưng các
+  // trạng thái không loại trừ nhau: một hồ sơ vừa chờ người duyệt vừa thiếu hai ô rơi vào
+  // nhánh `r2_ve1` rồi thôi, nên dòng tổng in `0 thiếu dữ kiện` trong khi có ô đang trống.
+  // Người đọc dòng tổng dùng nó để biết "còn phải đòi thêm dữ kiện của ai" — trả lời 0 cho
+  // câu đó là trả lời sai, im lặng, và đúng chiều làm người ta thôi đòi.
+  if (!r.chua_nop && (r.loi ?? []).length > 0) coOThieu++
+  // Đếm THẲNG, không suy ra bằng phép trừ ở dòng tổng: phép trừ chỉ đúng khi các rổ rời
+  // nhau, và chúng không rời nhau. Sai theo đường trừ thì không gì kêu — con số vẫn cộng
+  // đủ tổng.
+  if (r.hop_le) hopLe++
 }
 console.log(
-  `\n${files.length} tệp · ${files.length - hong - thieu - chuaNop - choNguoiDuyet} hợp lệ về hình dạng · ` +
+  `\n${files.length} tệp · ${hopLe} hợp lệ về hình dạng · ` +
   `${thieu} thiếu dữ kiện · ${choNguoiDuyet} chờ người duyệt (R2 vế 1) · ` +
   `${hong} sai hình dạng · ${chuaNop} chưa nộp`
 )
+if (coOThieu > thieu) {
+  console.log(
+    `⚠ ${coOThieu} hồ sơ CÓ ô còn trống, nhưng chỉ ${thieu} mang nhãn "thiếu dữ kiện" — số còn lại ` +
+    `đã nhận một nhãn nặng hơn (sai hình dạng / chờ người duyệt). Đừng đọc con số "${thieu}" thành ` +
+    `"chỉ chừng đó hồ sơ còn phải đòi thêm dữ kiện".`
+  )
+}
 
 // ── R1: platform_id trùng hoặc gây nhầm lẫn ──
 //

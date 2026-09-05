@@ -153,8 +153,26 @@ for (const f of DOC) {
 console.log(
   `Neo trong kho: ${trongKho} (soát được nội dung: ${daKiem}) · neo sang kho khác: ${ngoaiKho} — KHÔNG gác được`,
 )
+// Tỉ lệ MÙ phải đi cùng câu kết luận, không nằm ở một dòng riêng phía trên.
+//
+// Bản trước in "Không có neo chết hay neo trôi trong số soát được" rồi thoát 0. Câu ấy đúng
+// từng chữ và vẫn bị đọc thành "kho sạch neo", vì mệnh đề giới hạn nằm ở cuối câu còn con số
+// nói lên sức nặng của giới hạn thì ở một dòng khác. Đo lúc viết dòng này: 215 neo trong kho,
+// soát được nội dung 15 — tức phép rà đang mù ở 93% số neo mà vẫn thoát 0.
+//
+// Không đổi sang thoát 1: cổng sẽ đỏ vĩnh viễn và bị tắt, mất cả phần 7% đang gác thật. Cái
+// sửa được ở đây là làm trạng thái mù KÊU TO HƠN trạng thái sạch, theo đúng luật ba trạng
+// thái — khớp · lệch · KHÔNG ĐO ĐƯỢC.
+const muTuyetDoi = trongKho - daKiem
+const tiLeMu = trongKho === 0 ? 0 : Math.round((muTuyetDoi / trongKho) * 100)
 if (hong.length === 0) {
-  console.log('Không có neo chết hay neo trôi trong số soát được.')
+  if (muTuyetDoi > 0) {
+    console.log(
+      `⚠ KHÔNG ĐO ĐƯỢC ${muTuyetDoi}/${trongKho} neo (${tiLeMu}%) — phép rà chỉ soát nội dung được ${daKiem} neo.\n` +
+      `  Câu dưới đây CHỈ nói về ${daKiem} neo đó. Nó KHÔNG nói kho sạch neo trôi.`
+    )
+  }
+  console.log(`Không có neo chết hay neo trôi trong ${daKiem}/${trongKho} neo soát được.`)
   process.exit(0)
 }
 console.log(`\n${hong.length} neo hỏng:`)

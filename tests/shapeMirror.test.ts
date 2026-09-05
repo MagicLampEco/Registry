@@ -21,7 +21,7 @@
 import { describe, it, expect } from "vitest";
 import {
   planRegister, planUpdateEntry, planMigrateEntry,
-  entryWellFormed, mutableFieldsValid, isScriptHash28,
+  entryWellFormed, mutableFieldsValid, isScriptHash28, changesRequireGovernance,
   shapeCustodial, shapeNonCustodial, entryShapeValid, governanceRefNotSelf,
   timeBucketOf, txValidityForTimeBucket, validityFitsOneBucket, timeBucketInWindow,
 } from "../offchain/src/registrationBuilder.js";
@@ -530,5 +530,64 @@ describe("gương R-GOVDIST + R-CAP — hai ràng buộc on-chain vô điều ki
     const ok = custodialEntry();
     expect(mutableFieldsValid(ok)).toBe(true);
     expect(entryWellFormed(ok)).toBe(true);
+  });
+});
+
+// ── `substrate_flags`: ba gương từng KHUYẾT, mỗi cái một bài ────────────────────────────
+//
+// Trường thứ 12 vào lược đồ ngày 2026-09-02. On-chain nhận nó ở BỐN chỗ; off-chain nhận ở
+// một (bộ mã hoá datum) và khuyết ba. Cả ba khuyết đều LỎNG HƠN on-chain, và không cái nào
+// làm `tsc` kêu hay bài test cũ đỏ — điều kiện chỉ nới ra. Ba bài dưới đây là bài GÁC: gỡ
+// vế `substrate_flags` khỏi hàm tương ứng thì đúng một bài đỏ.
+describe("substrate_flags — gương off-chain của trường thứ 12", () => {
+  it("mutableFieldsValid ép dải [0, 65535] — phủ CẢ BA cửa, không riêng cửa đúc", () => {
+    const e = custodialEntry();
+    expect(mutableFieldsValid({ ...e, substrate_flags: 0n })).toBe(true);
+    expect(mutableFieldsValid({ ...e, substrate_flags: 15n })).toBe(true);
+    expect(mutableFieldsValid({ ...e, substrate_flags: 65535n })).toBe(true);   // trần, vẫn qua
+    expect(mutableFieldsValid({ ...e, substrate_flags: 65536n })).toBe(false);  // bit 16
+    expect(mutableFieldsValid({ ...e, substrate_flags: 999999n })).toBe(false);
+    // Vế `>= 0` không thừa: `Int` của Aiken CÓ DẤU, nên -1 là mọi bit bật, và nó qua được
+    // vế trên nếu ai đó chỉ chặn một chiều.
+    expect(mutableFieldsValid({ ...e, substrate_flags: -1n })).toBe(false);
+    // `entryWellFormed` GỌI `mutableFieldsValid` ⇒ cửa đúc thừa hưởng, không cần dòng riêng.
+    expect(entryWellFormed({ ...e, substrate_flags: 65536n })).toBe(false);
+  });
+
+  it("đổi substrate_flags ĐÒI đồng thuận quản trị — nó là trường thứ tư của nhóm", () => {
+    const a = custodialEntry();
+    const b: PlatformEntry = { ...a, substrate_flags: a.substrate_flags + 1n };
+    expect(changesRequireGovernance(a, b)).toBe(true);
+    // Đối chứng: không đổi gì thì không đòi — cổng không được kêu oan.
+    expect(changesRequireGovernance(a, { ...a })).toBe(false);
+  });
+
+  it("planUpdateEntry: đổi substrate_flags KHÔNG được đi lọt bằng chữ ký authority", () => {
+    const a: PlatformEntry = { ...custodialEntry(), status: "Active" };
+    const plan = planUpdateEntry(
+      a, { substrate_flags: a.substrate_flags + 8n }, BEACON_POLICY, AUTHORITY,
+      { ownRegistryHash: REGISTRY_HASH, governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
+    );
+    // Hở cũ: SDK trả `false` ở đây, nên bên tích hợp không đi xin đồng thuận, rồi tx trượt
+    // ở U-GOV mà không có lời giải thích nào từ SDK.
+    expect(plan.needsGovernanceConsent).toBe(true);
+    expect(plan.governanceConsentRefs).toContain(GOV_REF);
+  });
+
+  it("hồi sinh KÈM đổi substrate_flags KHÔNG còn là hồi sinh THUẦN TUÝ", () => {
+    const paused: PlatformEntry = { ...custodialEntry(), status: "Paused" };
+    // Hồi sinh thuần tuý: chỉ đổi status.
+    const sach = planUpdateEntry(
+      paused, { status: "Active" }, BEACON_POLICY, AUTHORITY,
+      { ownRegistryHash: REGISTRY_HASH },
+    );
+    expect(sach.pureRevive).toBe(true);
+    // Hồi sinh KÈM đổi lời khai nền — on-chain không coi là thuần tuý, off-chain phải theo.
+    const kem = planUpdateEntry(
+      paused, { status: "Active", substrate_flags: paused.substrate_flags + 1n },
+      BEACON_POLICY, AUTHORITY,
+      { ownRegistryHash: REGISTRY_HASH, governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
+    );
+    expect(kem.pureRevive).toBe(false);
   });
 });
