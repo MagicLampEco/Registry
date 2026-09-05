@@ -5,7 +5,7 @@
 // hợp đồng — Plutus Data theo vị trí, lệch một chỗ là giải mã ra giá trị của trường khác.
 //
 //   PlatformStatus: Active=Constr(0,[]), Paused=Constr(1,[]), Retired=Constr(2,[])
-//   PlatformEntry (v2, 11 trường) = Constr(0, [
+//   PlatformEntry (v2, 12 trường) = Constr(0, [
 //       spec_version:int, platform_id:bytes, instance_id:bytes, custody_hash:bytes,
 //       seed_policy:bytes, beacon_policy:bytes, governance_ref:bytes,
 //       accepted_assets:List<AssetKey>, cut_bps:int, created_epoch:int, status ])
@@ -127,7 +127,7 @@ export function decodePlatformStatus(d: Data): PlatformStatus {
   return s;
 }
 
-// ── PlatformEntry (v2 — 11 trường, thứ tự là hợp đồng) ─────────────────────
+// ── PlatformEntry (v2 — 12 trường, thứ tự là hợp đồng) ─────────────────────
 
 export function encodePlatformEntry(e: PlatformEntry): Constr<Data> {
   return new Constr(0, [

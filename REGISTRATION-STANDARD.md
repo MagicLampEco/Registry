@@ -978,7 +978,8 @@ mã từ chối (R1/R2/R3), ngày, và câu giải thích đã trả cho bên n�
 
 - **Sáu trường định danh là bất biến**: `platform_id`, `instance_id`, `custody_hash`, `seed_policy`,
   **`beacon_policy`**, `created_epoch`. Đổi bất kỳ trường nào = một platform khác, phải đăng ký mới.
-- **Bốn trường còn lại đổi được**: `status`, `governance_ref`, `accepted_assets`, `cut_bps`.
+- **Năm trường còn lại đổi được**: `status`, `governance_ref`, `accepted_assets`, `cut_bps`,
+  `substrate_flags`.
 - **Vòng đời một chiều**: `Active ⇄ Paused → Retired`. `Retired` là trạng thái cuối, không hồi sinh.
   Entry không bao giờ bị xoá — lịch sử luôn tra được.
 - ⚠️ **Trạng thái là nhãn niêm yết, không phải van khoá tiền.** Đặt `Paused` hay `Retired` **không**
@@ -1005,6 +1006,7 @@ bên cùng ký.**
 | `Paused → Active` | chữ ký quyền đăng ký **hoặc** đồng thuận quản trị của chính platform | để một lần tạm dừng đơn phương **không** biến thành gỡ vĩnh viễn trên thực tế |
 | `→ Retired` (gỡ-cứng) | quyền đăng ký **và** đồng thuận quản trị của platform | không đảo ngược được — ngưỡng phải cao hơn kết nạp |
 | `governance_ref`, `accepted_assets`, `cut_bps` | quyền đăng ký **và** đồng thuận quản trị | đây là mô tả về kho của chính platform; sổ không được nói khác chủ |
+| `substrate_flags` | quyền đăng ký **và** đồng thuận quản trị | đây là **lời khai** mà bên thứ ba dựa vào để tin platform; để ngoài nhóm thì một chữ ký sửa được lời khai của người khác |
 | di trú sang bản registry mới | quyền đăng ký **và** đồng thuận quản trị | di trú là đưa hồ sơ ra khỏi quyền tài phán của validator hiện tại |
 
 **Đồng thuận quản trị** thể hiện on-chain bằng một trong hai cách, nhận cả hai để không ép platform
