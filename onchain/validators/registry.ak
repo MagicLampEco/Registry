@@ -34,12 +34,13 @@
 //             Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md:201 §8 bước 7 — "kết nạp DỄ,
 //             gỡ KHÓ (ngưỡng cao hơn nhiều) — để không ai vũ-khí-hoá bước gỡ nhắm đối
 //             thủ". Chiều `Active → Paused` GIỮ NGUYÊN chỉ-authority: cần van dừng nhanh.
-//             "Mọi trường khác y hệt" ép CHẶT (identity 6 field + spec_version +
-//             governance_ref + accepted_assets + cut_bps + substrate_flags); lỏng một
-//             trường là platform tự mở lại KÈM đổi cut_bps — đi vòng qua đúng ràng buộc
-//             vừa dựng. `substrate_flags` vào danh sách này 2026-09-02, SAU khi một bài
-//             PoC cho thấy thiếu nó thì hồi sinh thành cửa sau để khai lại nền mà không
-//             cần authority — xem 30i trong registry_test.ak.
+//             "Mọi trường khác y hệt" ép bằng MỘT phép so trên CẢ BẢN GHI, chừa đúng
+//             `status`; lỏng một trường là platform tự mở lại KÈM đổi cut_bps — đi vòng
+//             qua đúng ràng buộc vừa dựng. Bản trước liệt kê từng trường bằng tay và đã
+//             bỏ sót thật: `substrate_flags` thêm 2026-09-02, danh sách không theo kịp,
+//             hồi sinh thành cửa sau để khai lại nền mà không cần authority — xem 30i
+//             trong registry_test.ak. Phép so cả bản ghi làm trường thứ 13 nào cũng tự
+//             động nằm trong luật, thay vì phải nhớ quét lại một chỗ.
 //   U-SINGLE  ĐÚNG 1 entry input + 1 entry output theo SCRIPT HASH (chống double-sat).
 //             ⚠ GIỚI HẠN ĐÃ BIẾT, CỐ Ý KHÔNG VÁ: đếm theo PAYMENT credential, KHÔNG so
 //             stake credential. Đó là chủ ý (đếm theo payment-hash là cách chống
@@ -232,18 +233,27 @@ validator registry(registry_authority: ByteArray) {
         // Ép chặt từng trường khả biến, không chỉ identity: lỏng một trường là platform
         // tự mở lại KÈM đổi cut_bps/governance_ref, đi vòng qua U-GOV.
         //
-        // ⚠ DANH SÁCH NÀY LIỆT KÊ BẰNG TAY ⇒ nó là chỗ thứ tư phải quét mỗi lần thêm một
-        // trường khả biến vào `PlatformEntry`. Ba chỗ kia (`mutable_fields_valid`,
-        // `governed_fields_changed`, `identity_preserved`) đều nhận trường mới qua một
-        // phép so trên cả bản ghi; chỗ này thì KHÔNG, và trình biên dịch không kêu — thiếu
-        // một trường ở đây chỉ hiện ra dưới dạng một đường đi hợp lệ mà không ai định mở.
-        // Đã xảy ra thật: `substrate_flags` thêm vào 2026-09-02, `governed_fields_changed`
-        // đòi authority cho nó, còn dòng này thì bỏ sót ⇒ platform tự khai lại nền của
-        // chính nó khi hồi sinh, chỉ bằng đồng thuận quản trị của chính nó. Cùng một
-        // trường, hai đường đi, hai luật — vá bằng cách cho đường hồi sinh khớp đường
-        // cập nhật, vì bên thứ ba (cổng MAGIC) đọc lời khai này để quyết mức tin.
+        // ⚠ BẢN TRƯỚC LIỆT KÊ BẰNG TAY, và đó là chỗ nó hỏng. Ba chỗ kia
+        // (`mutable_fields_valid`, `governed_fields_changed`, `identity_preserved`) đều
+        // nhận trường mới qua một phép so trên cả bản ghi; chỗ này thì KHÔNG, và trình
+        // biên dịch không kêu — thiếu một trường ở đây chỉ hiện ra dưới dạng một đường đi
+        // hợp lệ mà không ai định mở. Đã xảy ra thật: `substrate_flags` thêm vào
+        // 2026-09-02, `governed_fields_changed` đòi authority cho nó, còn dòng này thì bỏ
+        // sót ⇒ platform tự khai lại nền của chính nó khi hồi sinh, chỉ bằng đồng thuận
+        // quản trị của chính nó. Cùng một trường, hai đường đi, hai luật.
+        //
+        // Nay so CẢ BẢN GHI, chừa đúng `status`. Trường thứ 13 nào thêm vào sau này tự
+        // động nằm trong phép so, không phải nhớ quét lại chỗ này — và nếu ai muốn cho
+        // một trường mới đổi được khi hồi sinh thì phải viết ngoại lệ ra bằng chữ, tức
+        // quyết định ấy hiện lên trong diff thay vì trốn trong một dòng bị bỏ quên.
+        // Chặt hơn bản trước ở sáu trường định danh và `spec_version`, nhưng KHÔNG đổi
+        // hành vi: `U-ID` và `U-VER` ngay trên đã ép đúng bảy trường đó rồi, nên tới đây
+        // chúng luôn bằng nhau.
         let pure_revive =
-          entry_in.status == Paused && entry_out.status == Active && entry_out.spec_version == entry_in.spec_version && entry_out.governance_ref == entry_in.governance_ref && entry_out.accepted_assets == entry_in.accepted_assets && entry_out.cut_bps == entry_in.cut_bps && entry_out.substrate_flags == entry_in.substrate_flags
+          entry_in.status == Paused && entry_out == PlatformEntry {
+            ..entry_in,
+            status: Active,
+          }
 
         // U-SIG: authority ký. NGOẠI LỆ DUY NHẤT — hồi sinh thuần tuý cũng chấp nhận
         // đồng thuận quản trị của chính platform, để authority không biến `Paused` thành
@@ -315,11 +325,36 @@ validator registry(registry_authority: ByteArray) {
         // M-STATUS: di trú KHÔNG đổi trạng thái (chống Retire trá hình).
         expect entry_out.status == entry_in.status
         // M-VER: chỉ TIẾN, và datum out khai đúng phiên bản đã tuyên trong redeemer.
+        // ⚠ KHÔNG có trần, và cố ý không có: `new_spec_version` nhảy từ 2 lên 999999 vẫn
+        // qua. Đọc đúng thì đây không phải lỗ, vì `spec_version` là NHÃN chứ không phải
+        // phép kiểm — thứ ép hình dạng thật của datum là ARITY, và bên ép nó là validator
+        // ĐÍCH, cái sẽ soft-cast datum theo lược đồ của chính nó (`arity_poc_test.ak`).
+        // Nhãn sai chỉ làm một hồ sơ tự khai một phiên bản không ai cấp; nó không mở được
+        // đường đọc nào mà arity đã đóng. Điều KHÔNG được suy ra từ đây: rằng đọc
+        // `spec_version` là đủ để biết hồ sơ có bao nhiêu trường. Bên đọc sổ phải suy
+        // hình dạng từ chính lần cast của mình, không từ con số này.
         expect new_spec_version > entry_in.spec_version
         expect entry_out.spec_version == new_spec_version
         // M-MUT: datum ĐÍCH vẫn hợp lệ. Thiếu dòng này, nhánh cứu tự ghi ra hồ sơ khoá
         // chết (gov rỗng / cut_bps ngoài dải / accepted rỗng) ở registry mới.
         expect platform.mutable_fields_valid(entry_out)
+        // ⚠ KHÔNG có mã riêng cho `substrate_flags` ở nhánh này, và không cần — nhưng
+        // phải đọc đúng lý do, vì lý do sai dẫn tới bản sau "vá" nhầm chỗ. Ở nhánh Update,
+        // `governed_fields_changed` tồn tại để BẬT đồng thuận theo điều kiện: cập nhật
+        // thường chỉ cần authority, chỉ khi chạm bốn trường quản trị mới phải gọi thêm
+        // platform. Nhánh này không có ca "chỉ cần authority": M-SIG đòi authority VÀ
+        // M-GOV đòi đồng thuận, cả hai VÔ ĐIỀU KIỆN. Nên mọi trường khả biến — kể cả
+        // `substrate_flags` — đã đi qua đúng cặp cổng mà nhóm quản trị đòi, và một phép
+        // kiểm theo trường ở đây sẽ trùng lặp chứ không siết thêm.
+        //
+        // ⚠ Hệ quả CÓ THẬT và cố ý giữ: hồ sơ đã `Retired` vẫn ghi lại được năm trường
+        // khả biến qua đường này. Không đọc thành lỗ, vì `status` là NHÃN NIÊM YẾT chứ
+        // không phải van khoá tiền (`Specs/CONTRACT.md` PK10) — kho của platform vẫn thu
+        // và chi sau khi hồ sơ rời sổ, nên `governance_ref` của một hồ sơ `Retired` vẫn
+        // trỏ tới một cổng đang gác tiền thật, và vẫn phải xoay được khi khoá bên đó đổi.
+        // Khoá cứng nó lại là dựng đúng cái kẹt mà nhánh Migrate sinh ra để gỡ. Đường
+        // KHÔNG mở: M-STATUS ngay dưới ép `status` giữ nguyên, nên di trú không hồi sinh
+        // được một hồ sơ đã gỡ niêm yết.
         // M-GOVSELF-OUT: cùng lỗ với U-GOVSELF-OUT, hai biến thể.
         //  · == new_registry_hash ⇒ hồ sơ BRICK NGAY khi tới registry mới (validator mới
         //    mang cùng ràng buộc S-GOVSELF trên datum VÀO).

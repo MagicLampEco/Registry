@@ -997,25 +997,36 @@ lẫn bản đồ đều phá nó, còn `substrate_flags` thì giữ được n�
 **Giá phải trả, nói trước:** mất tính chống-chối-bỏ *liên tục* của đích trả và của quy gán — chỉ còn
 neo tại mốc ký — và phải giữ sống một nguồn ngoài chuỗi. Đây là đánh đổi thật, không phải chi phí ẩn.
 
-##### D8-b — điều kiện của D6 kê THIẾU một chỗ
+##### D8-b — điều kiện của D6 từng kê thiếu một chỗ, và chỗ đó nay đóng bằng CƠ CHẾ
 
 D6 chốt: trường mới phải vào `governed_fields_changed` ngay trong cùng lần chốt lược đồ. Đúng, nhưng
-**chưa đủ**. `pure_revive` (`registry.ak:231-232`) liệt kê **từng trường khả biến** phải y hệt:
+đã từng **chưa đủ** — và cách nó chưa đủ đáng giữ lại, vì nó là một hình dạng lỗi tái diễn chứ không
+phải một lần sơ ý.
+
+`pure_revive` (hàm `spend` của `registry.ak`, nhánh `UpdateEntry`) trước đây **liệt kê bằng tay**
+từng trường khả biến phải y hệt: `spec_version`, `governance_ref`, `accepted_assets`, `cut_bps`. Một
+trường mới không có trong danh sách ấy ⇒ đường **Paused → Active** thành cửa đổi trường mới mà
+**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy. Và nó đã xảy ra
+đúng như thế: `substrate_flags` vào lược đồ 2026-09-02, vào `governed_fields_changed` cùng ngày, mà
+danh sách kia không theo kịp. Cùng một trường, hai đường đi, hai luật — trình biên dịch im lặng, vì
+thiếu một vế trong một hội chỉ làm vị từ **lỏng hơn**, không làm nó sai kiểu.
+
+⇒ Vá 2026-09-05 (`registry.ak`, `pure_revive`): thay danh sách bằng **một phép so trên cả bản ghi**,
+chừa đúng `status`:
 
 ```
-entry_in.status == Paused && entry_out.status == Active
-  && entry_out.spec_version == entry_in.spec_version
-  && entry_out.governance_ref == entry_in.governance_ref
-  && entry_out.accepted_assets == entry_in.accepted_assets
-  && entry_out.cut_bps == entry_in.cut_bps
+entry_in.status == Paused && entry_out == PlatformEntry { ..entry_in, status: Active }
 ```
 
-Một trường mới không có trong danh sách này ⇒ đường **Paused → Active** thành cửa đổi trường mới mà
-**không cần chữ ký authority nào** — chỉ cần cổng quản trị của chính platform chạy (`registry.ak:239-242`).
-Chính khối chú thích ở `:228-230` đã cảnh báo đúng hình dạng lỗi này cho `cut_bps`.
+Tương đương với bản cũ tại chỗ nó đứng, và điều đó kiểm được bằng cách đếm: 12 trường = `status`
+(chừa ra, ép `Active`) + `spec_version` (U-VER ép ngay trên) + sáu trường định danh (U-ID qua
+`identity_preserved`) + bốn trường quản trị (danh sách cũ). Không trường nào ở ngoài. Đo bằng đột
+biến: gỡ vế so cả bản ghi ⇒ **3 bài đỏ**; khôi phục ⇒ 138/138.
 
-⇒ Điều kiện đúng, nếu về sau có ai mở lại cửa sổ lược đồ: **trường mới phải vào CẢ
-`governed_fields_changed` LẪN `pure_revive`, trong cùng một lần chốt.** Một trong hai là chưa đóng.
+⇒ **Điều kiện của D6 nay chỉ còn một vế**: trường mới phải vào `governed_fields_changed`. Vế
+`pure_revive` không còn là một chỗ phải nhớ — trường thứ 13 nào cũng tự nằm trong phép so, và ai muốn
+cho một trường mới đổi được khi hồi sinh thì phải viết ngoại lệ ra bằng chữ, tức quyết định ấy hiện
+lên trong diff thay vì trốn trong một dòng bị bỏ quên.
 
 #### L10 — tính DUY NHẤT của `platform_id` đứng trên một chữ ký người, không trên một dòng mã
 
