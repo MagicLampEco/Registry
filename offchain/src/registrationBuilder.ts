@@ -264,6 +264,16 @@ export function identityPreserved(a: PlatformEntry, b: PlatformEntry): boolean {
 export const MAX_ACCEPTED_ASSETS = 32;
 
 /**
+ * Trần `substrate_flags` — gương `platform.substrate_flags_max` (hằng cùng tên trong
+ * `platform.ak`). 16 bit: bit 0..15 dùng được, bit 16 trở lên bị cấm.
+ *
+ * Vế `>= 0` KHÔNG thừa, và đây là chỗ dễ bỏ nhất: `Int` của Aiken là số nguyên CÓ DẤU, nên
+ * `-1` (mọi bit bật ở biểu diễn hai-bù) qua được vế trên nếu chỉ chặn một chiều — mà một lời
+ * khai âm không mang nghĩa nào trong hệ cờ bit.
+ */
+export const SUBSTRATE_FLAGS_MAX = 65535n;
+
+/**
  * Gương `platform.governance_ref_distinct` (`platform.ak:188`).
  *
  * `governance_ref` trùng `custody_hash` là GIẢ MẠO ĐỒNG THUẬN: `custody.ak` nhánh `Collect`
@@ -285,6 +295,12 @@ export function mutableFieldsValid(e: PlatformEntry): boolean {
   return isScriptHash28(e.governance_ref)
     && governanceRefDistinct(e)
     && e.accepted_assets.length <= MAX_ACCEPTED_ASSETS
+    // Gương vế `substrate_flags` của `platform.mutable_fields_valid`. Đặt ĐÚNG ở đây, không ở
+    // `entryWellFormed`: hàm kia GỌI hàm này, còn hai nhánh spend gọi THẲNG ⇒ một dòng phủ cả
+    // ba cửa (R-WF, U-MUT, M-MUT). Đặt nhầm chỗ thì chỉ phủ cửa đúc, và KHÔNG lỗi biên dịch
+    // nào báo cho biết hai cửa spend đang hở — đúng lớp "vá nửa đường" mà on-chain đã ăn một
+    // lần ở M-GOV2.
+    && e.substrate_flags >= 0n && e.substrate_flags <= SUBSTRATE_FLAGS_MAX
     && entryShapeValid(e);
 }
 
@@ -699,13 +715,22 @@ export interface UpdatePlan {
  * Thay đổi này có đòi đồng thuận quản trị không? (§4.2 — nguyên tắc cắt quyền)
  *   - `Active ↔ Paused` : KHÔNG (gỡ niêm yết đảo ngược được → authority tự quyết).
  *   - `→ Retired`       : CÓ (không đảo ngược được).
- *   - governance_ref / accepted_assets / cut_bps đổi : CÓ.
+ *   - governance_ref / accepted_assets / cut_bps / substrate_flags đổi : CÓ.
  */
 export function changesRequireGovernance(entryIn: PlatformEntry, entryOut: PlatformEntry): boolean {
   if (entryOut.status === "Retired" && entryIn.status !== "Retired") return true;
   if (normHex(entryIn.governance_ref) !== normHex(entryOut.governance_ref)) return true;
   if (entryIn.cut_bps !== entryOut.cut_bps) return true;
   if (!sameAssetList(entryIn.accepted_assets, entryOut.accepted_assets)) return true;
+  // Trường thứ tư của nhóm — gương `platform.governed_fields_changed`. Nó là LỜI KHAI mà bên
+  // thứ ba dựa vào để tin platform (cổng đọc bit 1 để biết dịch vụ có tiêu MAGIC không), nên
+  // để ngoài nhóm thì MỘT chữ ký authority sửa được lời khai của người khác.
+  //
+  // ⚠ Thiếu dòng này là kiểu hở ĐẮT NHẤT trong tệp, vì nó không làm hỏng — nó làm SDK phát
+  // biểu SAI: bên tích hợp hỏi "có cần đồng thuận quản trị không", nhận `false`, nên không đi
+  // xin. Một vòng phối hợp giữa hai tổ chức bị bỏ vì SDK bảo là không cần, rồi tx trượt ở
+  // U-GOV mà không ai hiểu vì sao.
+  if (entryIn.substrate_flags !== entryOut.substrate_flags) return true;
   return false;
 }
 
@@ -845,11 +870,18 @@ export function planUpdateEntry(
   }
 
   // U-REVIVE: hồi sinh THUẦN TUÝ — Paused → Active và MỌI trường khả biến khác y hệt.
+  //
+  // ⚠ CHỖ THỨ TƯ, VÀ LÀ CHỖ DUY NHẤT PHẢI SỬA BẰNG TAY. Ba chỗ kia (`mutableFieldsValid`,
+  // `changesRequireGovernance`, `identityPreserved`) cũng liệt kê từng trường, nhưng thêm một
+  // trường khả biến vào `PlatformEntry` mà quên chỗ này thì `tsc` KHÔNG kêu và không bài test
+  // cũ nào đỏ — điều kiện chỉ LỎNG ra. On-chain đã ăn đúng lỗi này một lần
+  // (`registry.ak` khối U-REVIVE tự ghi lại), vá rồi; gương ở đây thì chưa cho tới bản này.
   const pureRevive = entryIn.status === "Paused" && entryOut.status === "Active"
     && entryOut.spec_version === entryIn.spec_version
     && normHex(entryOut.governance_ref) === normHex(entryIn.governance_ref)
     && sameAssetList(entryIn.accepted_assets, entryOut.accepted_assets)
-    && entryOut.cut_bps === entryIn.cut_bps;
+    && entryOut.cut_bps === entryIn.cut_bps
+    && entryOut.substrate_flags === entryIn.substrate_flags;
 
   const nftUnit = normHex(beaconPolicy) + entryOut.platform_id;   // U-NFT bảo toàn.
   const entryValue: AssetMap = { [nftKey(beaconPolicy, entryOut.platform_id)]: 1n };
