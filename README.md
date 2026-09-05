@@ -15,6 +15,7 @@ một policy — không có sổ trung tâm, nên đăng ký của bên này kh�
 
 | Bạn là | Đọc |
 |---|---|
+| Người chưa biết đây là gì | [`OVERVIEW.md`](OVERVIEW.md) — giới thiệu ngắn: giải vấn đề gì, được gì, và **không** làm gì |
 | Đội muốn đưa dịch vụ vào hệ | [`REGISTRATION-STANDARD.md`](REGISTRATION-STANDARD.md) — điều kiện, hồ sơ, quy trình bốn bước |
 | Đội đã quyết đăng ký, cần làm từng bước | [`Specs/onboarding.md`](Specs/onboarding.md) |
 | Người cần hiểu cơ chế đầy đủ | [`Specs/`](Specs/) — CONTRACT (bất biến) · FEAT (hành vi) · TECH (kiến trúc) · EXEC (lộ trình) |
@@ -23,6 +24,7 @@ một policy — không có sổ trung tâm, nên đăng ký của bên này kh�
 ## Bản đồ repo
 
 ```
+OVERVIEW.md                giới thiệu cho người ngoài hệ — đọc trước nếu chưa biết đây là gì
 REGISTRATION-STANDARD.md   chuẩn vào hệ — tài liệu bên đăng ký đọc trước
 DevStatus.md               hiện trạng ĐO ĐƯỢC (script hash, số test, việc treo) — nơi DUY NHẤT nói hiện trạng
 ChangeLog.md               chuyện đã xảy ra, thêm vào đầu, không sửa dòng cũ
