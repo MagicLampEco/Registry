@@ -1,4 +1,4 @@
-# thử hạng cao nhất
+# Ca âm — tên nền NGOÀI tập đóng phải bị bắt là sai hình dạng
 
 Mọi ô đều mang giá trị ĐÚNG HÌNH DẠNG, vì đó là điều kiện để hạng tính ra có nghĩa: hash 28 byte
 là 56 hex, con trỏ mang đủ ba thứ (`file:line` + tên nhánh + SHA — REGISTRATION-STANDARD.md §3),
@@ -7,7 +7,7 @@ lời khẳng định EV-2 neo bằng tx hash 64 hex. Bản trước của fixtu
 
 ```json registration
 {
-  "platform_id": "thu-l3", "spec_version": 2,
+  "platform_id": "thu-nen-la", "spec_version": 2,
   "declares": { "identity": "ID-3", "token": "TK-1", "custody": "CU-1", "infra": "IN-3" },
   "pointers": {
     "dau_moi_lien_he": "ai-do@vi-du.example",
@@ -21,6 +21,7 @@ lời khẳng định EV-2 neo bằng tx hash 64 hex. Bản trước của fixtu
     "governance_ref": "72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94",
     "governance_ref_tinh_chat": "G1 script chạy được (withdrawal-0); G2 khác hash validator registry; G3 không nhánh permissionless; G4 nhánh đồng thuận không mint",
     "accepted_assets": ["LAMP"], "cut_bps": 250,
+    "nen_su_dung": ["phoenixkey", "firebase"],
     "chu_so_huu": "Công ty Ví Dụ"
   },
   "evidence": [

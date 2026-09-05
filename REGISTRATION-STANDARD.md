@@ -28,7 +28,7 @@ token, và một cách kế toán giá trị. Không có sổ đăng ký thì ba
 Đăng ký giải quyết cả ba: một dịch vụ đã đăng ký thì **tìm được, kiểm chứng được, và ghép
 được** với mọi dịch vụ khác trong hệ.
 
-## 2. Điều kiện — một cổng cứng, ba lời khai có phân hạng, một ô tuỳ chọn
+## 2. Điều kiện — một cổng cứng, ba lời khai có phân hạng, một ô tuỳ chọn, một ô lên chuỗi
 
 Đây là chỗ bản trước nói mạnh hơn nguồn của nó, và đã sửa. Whitepaper hệ sinh thái viết
 (`Launch/Whitepaper-MagicLamp-Ecosystem-(Vi).md:201`, §8 bước 2):
@@ -50,6 +50,7 @@ Cách dung hoà, và nó là nguyên tắc của toàn bộ tài liệu này:
 | **2.3** | Kho giá trị on-chain | **lời khai có phân hạng** |
 | **2.4** | Phụ thuộc hạ tầng đóng ngoài hệ | **lời khai có phân hạng** |
 | **2.5** | Chủ sở hữu đứng sau hồ sơ | **tuỳ chọn** — không khai vẫn hợp lệ; chỉ đổi hạng `L3` |
+| **2.6** | Nền hạ tầng của hệ đang dùng | **không đổi hạng** — nhưng đi thẳng lên chuỗi, nên phải **quyết định**, kể cả quyết định "không nền nào" |
 
 **Lời khai có phân hạng** nghĩa là: khai đúng thì hồ sơ được **tiếp nhận**, dù khai "chưa đạt".
 Mã đã khai quyết định **hạng niêm yết**, và bên định tuyến phí đọc hạng đó rồi tự quyết mức tin.
@@ -264,7 +265,7 @@ Hai vế, và bỏ vế nào cũng hỏng:
   không đủ: `L1` chỉ đòi `custody ≥ 2`, mà `CU-N` (không thu asset ở tầng này) cũng mang rank `2`
   (`Registrations/codes.json` → `axes.custody.codes`). Hồ sơ `CU-N` không có kho, nên một điều
   khoản chỉ dựa vào hạng sẽ hứa trả vào chỗ không tồn tại.
-- **`L1`** — `token ≥ 1` · `identity ≥ 1` · `custody ≥ 2` · `infra ≥ 1` (§3). Một mình `CU-1` không
+- **`L1`** — `token ≥ 1` · `identity ≥ 1` · `custody ≥ 2` · `infra ≥ 1` · `evidence ≥ 1` (§3). Một mình `CU-1` không
   đủ: nó nói dịch vụ có **chỗ nhận**, không nói dịch vụ có **ở trong hệ**.
 
 **Vế `L1` là chỗ hai điều kiện nền của hệ được ép — mà không phải mở thêm cửa từ chối nào:**
@@ -273,6 +274,15 @@ Hai vế, và bỏ vế nào cũng hỏng:
 |---|---|---|
 | `token ≥ 1` | `TK-1` | **tiêu MAGIC** (§2.2) |
 | `identity ≥ 1` | `ID-1` | **nối một hệ danh tính ĐÃ đăng ký trong sổ**, và khai `platform_id_he_danh_tinh` (§2.1) |
+| `evidence ≥ 1` | `EV-1` | **mọi lời khẳng định trong hồ sơ có một bên KHÔNG hưởng lợi ký**, và hồ sơ phải có ít nhất một lời khẳng định (§3) |
+
+⚠ **Vì sao `evidence ≥ 1` có mặt ở đây.** Bản trước đặt ngưỡng chứng cứ ở `L3` mà không đặt ở `L1`
+— tức tấm vé nhận **tiền** rẻ hơn tấm vé nhận **uy tín**, đúng ngược chiều mức thiệt hại khi một
+lời khai sai lọt qua. Một hồ sơ khai sai ở `L3` làm lệch uy tín; khai sai ở `L1` làm lệch dòng chi.
+
+Ngưỡng này **không** thêm một cửa từ chối: hồ sơ không khai khẳng định nào vẫn được tiếp nhận, vẫn
+ở `L0`, vẫn dùng hệ token bình thường. Nó chỉ không có đường nhận thưởng — cùng một cơ chế "trả
+bằng hạng" mà trục `ownership` đã dùng ở §2.5.
 
 ⟹ dịch vụ không tiêu MAGIC, hoặc không nối hệ danh tính nào, thì **vẫn được tiếp nhận, vẫn ở `L0`,
 vẫn dùng hệ token bình thường** — nó chỉ không có đường nhận thưởng. Đây là ép **bằng lợi ích**,
@@ -337,6 +347,35 @@ Dùng kênh ngoài để **tiếp cận** người dùng thì bình thường. �
 gốc** ở đó thì hạ hạng. Và một dạng phụ thuộc dễ bỏ sót: kho ứng dụng có thể nắm **quyền phủ quyết**
 đúng chức năng cốt lõi — không phải chỉ chậm phát hành mà là gỡ hẳn.
 
+| Mã | Nghĩa | Đòi |
+|---|---|---|
+| `IN-0` | chưa rà | — |
+| `IN-1` | có phụ thuộc đóng **không** thay thế được cho chức năng cốt lõi | `pointers.danh_sach_phu_thuoc` |
+| `IN-2` | có phụ thuộc đóng nhưng thay thế được, và đã có đường thay thế cụ thể | thêm `pointers.duong_thay_the` |
+| `IN-3` | không phụ thuộc hạ tầng đóng ngoài hệ cho chức năng cốt lõi | `pointers.bang_chung_khong_phu_thuoc` |
+
+#### `IN-3` phải nộp phép rà, vì nó là một mệnh đề PHỦ ĐỊNH
+
+`IN-3` nói *"không có gì cả"*. Không có ô nào chứng minh trực tiếp một câu như thế — nên trước bản
+này `IN-3` và `IN-0` mang **cùng một bộ điều kiện: rỗng**. Hai mã cách nhau **ba bậc**, và máy không
+phân biệt được *"tôi đã rà và không thấy gì"* với *"tôi chưa rà"*. Hạng cao nhất của trục mở bằng
+đúng một dòng gõ tay — và nó mở luôn một chân của điều kiện nhận thưởng (`infra ≥ 1`, §2.3).
+
+Thứ phân biệt hai câu ấy là **phép rà**. Nên hồ sơ nộp chính phép rà đó, theo dạng **bằng chứng
+vắng mặt** mà §3 đã định nghĩa — *"lệnh tìm + kết quả rỗng"*:
+
+```
+"bang_chung_khong_phu_thuoc": "command grep -rn 'firebase|onesignal|aws-sdk' src/ -> 0 dong"
+```
+
+Hai vế ngăn bằng `→` hoặc `->`: **vế trái là lệnh chạy lại được**, **vế phải là kết quả nhận
+được**. Quy ước ngăn bằng dấu chứ không dò tên lệnh — dò tên lệnh sai được cả hai chiều: hẹp thì
+trượt mọi công cụ ngoài danh sách, rộng thì nhận mọi câu văn có chữ "tìm".
+
+⚠ **Máy chỉ kiểm hình dạng.** Nó không chạy lệnh, không biết lệnh có đúng kho không, không biết
+kết quả khai có thật không. Người đối chiếu chạy lại — và ô này tồn tại chính để họ **có cái để
+chạy**. Khai sai ở đây là `R3` như mọi lời khai khác (§5).
+
 ### 2.5 Chủ sở hữu đứng sau hồ sơ · trục `ownership` — **tuỳ chọn, KHÔNG phải điều kiện**
 
 Đọc kỹ dòng này trước đã: **không khai ô này thì hồ sơ vẫn hợp lệ, vẫn được tiếp nhận, vẫn niêm yết
@@ -366,6 +405,50 @@ Ba điều phải nói rõ để không ai đọc rộng hơn:
   dịch). Ai ký, ký cái gì, có thật không hưởng lợi không — **người đối chiếu đọc và quyết**.
 - **Khai sai sự thật ở ô này là `R3`**, như mọi lời khai khác. Và như mọi `R3`, từ chối phải nêu
   dòng khai nào sai kèm bằng chứng (§5).
+
+### 2.6 Nền hạ tầng của hệ đang dùng · ô `nen_su_dung` — **không đổi hạng, nhưng lên chuỗi**
+
+Ô này khác cả năm mục trên, và khác ở chỗ quan trọng nhất: **nó không ảnh hưởng hạng niêm yết, mà
+đi thẳng lên chuỗi thành một trường của hồ sơ.** Năm mục trên là chữ trong tệp `.md`; ô này biến
+thành trường `substrate_flags` trong `PlatformEntry` — một số nguyên 16 bit mà **bất kỳ ai** đọc sổ
+đều thấy, không cần đọc tệp hồ sơ.
+
+Khai bằng tên nền, không khai bằng số. Tập đóng, ánh xạ ở
+[`Registrations/codes.json`](Registrations/codes.json) mục `substrate_bits`:
+
+| Tên khai | Bit | Giá trị | Nền |
+|---|---|---|---|
+| `phoenixkey` | 0 | 1 | danh tính |
+| `magic` | 1 | 2 | tiêu thụ |
+| `lampnet` | 2 | 4 | dữ liệu phân tán |
+| `vedata` | 3 | 8 | xác thực |
+
+```json
+"nen_su_dung": ["phoenixkey", "magic"]
+```
+
+Bit 4..15 để trống **có chủ ý** — trường giữ 16 bit nên còn chỗ cho nền về sau mà không phải đổi
+lược đồ. Trần on-chain là `substrate_flags_max = 65535`.
+
+**Phải khai, và `[]` là một lời khai hợp lệ.** Ràng buộc ở đây không phải *"phải dùng nền nào đó"*
+— nó là *"phải QUYẾT ĐỊNH"*. Lý do là bất đối xứng: bên nộp không điền gì thì hồ sơ vẫn lên chuỗi,
+và nó lên chuỗi mang con số `0` — tức câu khẳng định **"dịch vụ này không dùng nền nào của hệ"**,
+một câu không ai phát ra mà bên thứ ba vẫn đọc được và tin. Nên bộ dựng giao dịch **ném lỗi** khi
+thiếu ô này, thay vì đệm `0`. Khai `[]` thì cũng ra số `0`, nhưng lúc đó có người chịu trách nhiệm
+về câu đó.
+
+**Sửa sau khi đăng ký thì đắt.** `substrate_flags` nằm trong nhóm trường quản trị (§6, *Ai được đổi
+gì*): mỗi lần đổi tốn một giao dịch riêng **kèm đồng thuận quản trị của chính dịch vụ**. Khai đúng
+lúc đăng ký giá 0.
+
+**Ô này và trục `token` (§2.2) nói cùng một sự thật cho hai bên đọc khác nhau.** Khai `TK-1` hoặc
+`TK-2` — tức có tiêu MAGIC — mà `nen_su_dung` không có `magic` thì sổ tự mâu thuẫn với chính nó, và
+bộ chấm **nêu ra** chỗ lệch. Nêu chứ không chặn: bộ chấm không biết bên nào đúng, chỉ biết hai bên
+không thể cùng đúng.
+
+**Validator ép hình dạng, không ép sự thật.** On-chain chỉ kiểm `0 ≤ substrate_flags ≤ 65535` và
+kiểm **quyền đổi**. Nó không kiểm lời khai có đúng không, và **không** đòi khai đủ bốn nền — đừng
+đọc trường này thành một điểm số.
 
 ---
 

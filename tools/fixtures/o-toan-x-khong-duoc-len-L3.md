@@ -12,7 +12,8 @@ vào không kiểm được bằng máy thì hạng chỉ phản ánh số ký t
   "pointers": {
     "dau_moi_lien_he": "x", "con_tro": "x", "instance_id": "x",
     "custody_hash": "x", "seed_policy": "x", "governance_ref": "x",
-    "governance_ref_tinh_chat": "x", "accepted_assets": ["x"], "cut_bps": 250
+    "governance_ref_tinh_chat": "x", "accepted_assets": ["x"], "cut_bps": 250,
+    "platform_id_he_danh_tinh": "x", "bang_chung_khong_phu_thuoc": "x"
   },
   "evidence": [ { "claim": "doanh thu", "tier": "EV-1", "pointer": "" } ]
 }

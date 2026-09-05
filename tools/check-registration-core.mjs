@@ -150,6 +150,37 @@ const KHUON_NEED = {
     if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
     return null
   },
+  // Bằng chứng VẮNG MẶT cho `IN-3` — dạng thứ ba trong bảng ba dạng con trỏ của chuẩn §3,
+  // trả lời câu "chỗ nào KHÔNG có gì giữ?". Chuẩn định nghĩa dạng này từ trước và tự ghi rằng
+  // ô json cho nó chưa tồn tại; đây là ô đó.
+  //
+  // Vì sao `IN-3` cần ô mà `IN-0` không cần, dù trước bản này cả hai đều `needs: []`:
+  // `IN-3` ("không phụ thuộc hạ tầng đóng") là một mệnh đề PHỦ ĐỊNH, còn `IN-0` là "chưa rà".
+  // Hai mã cách nhau BA bậc mà máy không phân biệt được — nên hạng cao nhất của trục mở bằng
+  // đúng một dòng gõ tay, và nó mở luôn một chân của điều kiện nhận thưởng (`infra_min: 1`).
+  // Một lời khai "tôi đã rà và không có gì" phải khác được với "tôi chưa rà"; thứ phân biệt
+  // hai câu đó là phép rà, nên hồ sơ phải nộp chính phép rà ấy.
+  //
+  // Khuôn đòi HAI VẾ ngăn bằng `→` (hoặc `->`): vế trái là lệnh chạy lại được, vế phải là kết
+  // quả nhận được. Quy ước ngăn bằng dấu chứ không dò tên lệnh — dò tên lệnh sai được cả hai
+  // chiều: hẹp thì trượt mọi công cụ ngoài danh sách, rộng thì nhận mọi câu văn có chữ "tìm".
+  //
+  // ⚠ ĐỌC ĐÚNG SỨC MẠNH: máy chỉ kiểm HÌNH DẠNG. Nó KHÔNG chạy lệnh, không biết lệnh có đúng
+  // kho không, không biết kết quả khai có thật không. Người duyệt chạy lại — và ô này tồn tại
+  // chính để họ CÓ cái để chạy. Đừng đọc "qua khuôn" thành "đã xác minh không phụ thuộc".
+  bang_chung_khong_phu_thuoc: (v) => {
+    const t = String(v).trim()
+    if (GIU_CHO.has(t.toLowerCase())) return 'đang là chỗ giữ chỗ, chưa phải một lời khai'
+    const m = t.split(/\s*(?:→|->)\s*/)
+    if (m.length < 2) {
+      return 'phải có dạng `<lệnh tra lại được> → <kết quả nhận được>` — ngăn bằng "→" hoặc "->"'
+    }
+    const [lenh, ...con] = m
+    const ketQua = con.join(' ').trim()
+    if (lenh.trim().length < 8) return 'vế trái phải là một lệnh chạy lại được, không phải một chữ'
+    if (ketQua.length === 0) return 'vế phải trống — phải ghi kết quả lệnh trả về'
+    return null
+  },
   // Ô KHAI, không phải cổng. Nó không quyết định hạng và không từ chối ai — nó chỉ làm hiện ra
   // một cụm hồ sơ cùng chủ, thứ mà mọi trần "mỗi bên tối đa X%" đang ngầm giả định là không có.
   chu_so_huu: (v) => {
@@ -438,6 +469,52 @@ export function checkOne(path) {
   // không mã nào đòi và không dòng mã nào đọc). Nên chỗ này NÊU vế 1, KHÔNG kết luận R2: kết
   // luận là việc của người duyệt sau khi đọc mục (e). Bản trước phát biểu thẳng "đây là CĂN CỨ
   // TỪ CHỐI", tức máy kết một điều nó mới thấy một nửa.
+  // ── Lời khai NỀN — ô `nen_su_dung`, gương off-chain của trường on-chain `substrate_flags` ──
+  //
+  // Khai bằng TÊN, không bằng số: bên nộp không phải tự cộng cờ bit, và một lời khai gõ nhầm số
+  // không lặng lẽ thành một nền khác. Bộ dựng giao dịch cộng thành số từ `codes.json`.
+  //
+  // Vì sao ô này phải tồn tại: `substrate_flags` là lời khai mà bên thứ ba đọc để tin platform
+  // — cổng MAGIC đọc bit 1 để biết dịch vụ có tiêu MAGIC không. Trước bản này KHÔNG có đường
+  // nào để một người đăng ký khai nó: chuẩn không có ô, và bộ dựng giao dịch đệm `?? 0n`. Hệ
+  // quả là mọi hồ sơ lên chuỗi mang lời khai "không dùng nền nào" — một câu KHẲNG ĐỊNH mà
+  // không ai phát ra. Sửa sau khi đăng ký thì mỗi hồ sơ tốn một giao dịch riêng kèm đồng thuận
+  // quản trị của chính platform; khai đúng lúc đăng ký giá 0.
+  const TEN_NEN = Object.keys(CODES.substrate_bits ?? {}).filter((k) => !k.startsWith('_'))
+  const nen = data.pointers?.nen_su_dung
+  if (nen !== undefined && nen !== null) {
+    if (!Array.isArray(nen)) {
+      loi.push('pointers.nen_su_dung phải là MẢNG tên nền, ví dụ ["phoenixkey","magic"]')
+      saiKhuon = true
+    } else {
+      for (const t of nen) {
+        if (!TEN_NEN.includes(String(t))) {
+          loi.push(
+            `pointers.nen_su_dung: "${t}" không có trong tập đóng — nhận: ${TEN_NEN.join(' · ')}`
+          )
+          saiKhuon = true
+        }
+      }
+    }
+  }
+
+  // Kiểm chéo với §2.2 — cổng CỨNG duy nhất của chuẩn.
+  //
+  // `TK-1`/`TK-2` nghĩa là "dịch vụ tiêu MAGIC". Bit MAGIC trong lời khai nền nói đúng cùng một
+  // điều, cho một bên đọc khác. Hai chỗ nói cùng một sự thật thì phải nói giống nhau — lệch
+  // nhau là sổ tự mâu thuẫn, và bên nào đọc chỗ nào sẽ ra kết luận khác nhau về cùng dịch vụ.
+  //
+  // NÊU chứ không kết: máy thấy hai lời khai lệch nhau, nó không biết lời nào đúng.
+  const maToken = data.declares?.token
+  if ((maToken === 'TK-1' || maToken === 'TK-2') && Array.isArray(nen) && !nen.includes('magic')) {
+    canh.push(
+      `trục token khai "${maToken}" (tiêu MAGIC) nhưng pointers.nen_su_dung không có "magic" — ` +
+      'hai ô này nói cùng một sự thật cho hai bên đọc khác nhau, nên lệch nhau là sổ tự mâu ' +
+      'thuẫn. Sửa một trong hai trước khi dựng giao dịch: sau khi lên chuỗi, đổi lời khai nền ' +
+      'đòi đồng thuận quản trị của chính platform (REGISTRATION-STANDARD.md §2.6).'
+    )
+  }
+
   let r2Ve1 = false
   const lienHe = data.pointers?.dau_moi_lien_he
   if (lienHe === undefined || lienHe === null || String(lienHe).trim() === '') {

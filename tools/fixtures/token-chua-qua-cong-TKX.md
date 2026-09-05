@@ -10,6 +10,8 @@ chối — nên nó không được đỏ vì bất cứ lý do nào khác.
   "pointers": {
     "dau_moi_lien_he": "ai-do@vi-du.example",
     "con_tro": "src/token/mint.ts:88 · nhánh main · SHA 5c0da0371f2b8ae4",
+    "platform_id_he_danh_tinh": "phoenixkey",
+    "bang_chung_khong_phu_thuoc": "command grep -rn 'firebase|onesignal' src/ -> 0 dong",
     "instance_id": "vi-du-instance-02",
     "custody_hash": "e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b",
     "seed_policy": "50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72",

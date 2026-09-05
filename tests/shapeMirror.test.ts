@@ -54,6 +54,7 @@ const custodialConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig => 
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
+  substrateFlags: 0n,
   ...over,
 });
 
@@ -88,6 +89,7 @@ const nonCustodialConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig 
   reservedMinAda: 2_000_000n,
   registryAuthority: AUTHORITY,
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
+  substrateFlags: 0n,
   ...over,
 });
 
@@ -98,6 +100,7 @@ const nonCustodialParams = (over: Record<string, unknown> = {}) => ({
   seedPolicy: "",
   createdEpoch: 10n,
   governanceProof: GOV_PROOF,
+  substrateFlags: 0n,
   ...over,
 });
 
