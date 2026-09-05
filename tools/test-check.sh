@@ -182,6 +182,26 @@ kiem_r1 "một hồ sơ đang dùng lại tên này" 0 \
         "nộp lại một tên từng bị từ chối ⇒ bộ chấm NÊU, không làm đỏ"
 rm -f "$TMP_TRUNG" "$TMP_TUCHOI"
 
+# Khoá chú giải của codes.json KHÔNG được dùng làm hạng chứng thực.
+#
+# Lỗ đã có thật, và nó không đòi tấn công gì tinh vi — chỉ cần gõ tên một khoá có sẵn trong
+# chính codes.json. PoC trước bản vá: một hồ sơ khai "tier": "_doc" và KHÔNG con trỏ chứng cứ
+# nào chấm ra L3 — hạng cấp uy tín và quyền biểu quyết ở tầng hệ — với 0 lỗi, 0 cảnh báo.
+#
+# Ba tầng cùng hỏng một lượt mới ra được kết quả đó: (1) `_doc` tra ra một CHUỖI, chuỗi thì
+# truthy nên nó qua cửa "có trong tập đóng"; (2) `t.rank` là undefined nên phép kiểm con trỏ bị
+# bỏ qua sạch; (3) ngưỡng viết theo chiều PHẢI RỚT (`evMin < v`), mà `undefined < 1` là false,
+# nên ngưỡng bị vô hiệu hoá thay vì siết lại. Bài này gác tầng (1); tầng (2) ném; tầng (3) đã
+# viết lại theo chiều PHẢI ĐẠT.
+TMP_DOC="Registrations/tmp-test-khoa-chu-giai.md"
+sed 's/"tier": "EV-2", "pointer": "tx 52fc9630da741eb852fc9630da741eb852fc9630da741eb852fc9630da741eb8"/"tier": "_doc"/; s/"platform_id": "thu-l3"/"platform_id": "tmp-test-khoachugiai"/' \
+    tools/fixtures/day-du-L3.md > "$TMP_DOC"
+kiem "$TMP_DOC" 'hạng chứng thực "_doc" không có trong tập đóng' \
+     "khoá chú giải \`_doc\` bị từ chối làm hạng chứng thực"
+kiem_khong "$TMP_DOC" "hạng niêm yết tính ra: L3" \
+     "hồ sơ khai \`_doc\` KHÔNG còn chấm ra L3"
+rm -f "$TMP_DOC"
+
 # Sau khi dọn phải trở về đúng trạng thái nền — nếu không, một lần chạy kiểm làm bẩn kho.
 kiem_r1 "không trùng, không cặp nào gây nhầm lẫn" 0 \
         "dọn sạch hồ sơ tạm, kho trở về trạng thái nền"
