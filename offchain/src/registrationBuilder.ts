@@ -257,7 +257,7 @@ export function identityPreserved(a: PlatformEntry, b: PlatformEntry): boolean {
 //
 // Ép ĐÚNG 28 byte cho `governance_ref` (không chỉ "khác rỗng"): giá trị rác trỏ tới một
 // script KHÔNG TỒN TẠI làm `governance_consented` thành hằng False vĩnh viễn ⇒ hồ sơ không
-// Retire được, không di trú tiếp được, không đổi được ba trường quản trị.
+// Retire được, không di trú tiếp được, không đổi được bốn trường quản trị.
 // Và dùng lại `shape_*` để hồ sơ sau cập nhật vẫn thuộc đúng MỘT hạng — cấm nửa vời.
 
 /** Trần số phần tử `accepted_assets` — gương `platform.max_accepted_assets` (`platform.ak:90`). */

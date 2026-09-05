@@ -31,7 +31,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | `Registrations/codes.json` | `đã merge (commit c63372e)`, có sửa tiếp trên nhánh đang chạy | PR #8; sửa tiếp ở `34db63b` (R1 hai mức) và đợt rà 2026-08-17 | `node tools/check-registration.mjs` ; `bash tools/test-check.sh` | hồ sơ đăng ký | 2026-08-17 |
 | Quyết định `platform_id` do NGƯỜI đặt hay MÁY sinh | `đã merge (commit 51c5401)` — câu hỏi đã được nhặt lại vào `Math-Spec.md` L1, **chủ nhân chưa chốt** | PR #10, base `main` | `grep -n 'platform_id' Specs/Math-Spec.md \| head` | cửa sổ đóng lúc hồ sơ đầu tiên lên chuỗi | 2026-08-17 |
 | Nhánh `chore/poc-arity-va-thu-tu-hop-thu` | `có PR (#12)` — 9 commit, chờ chủ nhân gộp | `main` ở `0eedb94` (PR #11 gộp 2026-08-17, CI run `31993451399` **xanh**); nhánh chứa PoC arity, năm dữ kiện D1–D5 cho câu `platform_id`, mục bằng chứng phủ định, phép thử cho `R3`, ví dụ thứ tư và thứ năm của §13.1.1, mục giới hạn `L9`, ba điều kiện của đường ngoài-chuỗi, và loạt sửa tên tổ chức | `GH_TOKEN=$TOKEN gh pr view 12 -R MagicLampEco/Registry --json state,mergeable` ; `cd onchain && script -q /dev/null aiken check` | câu `platform_id` — nhưng hạn chót **có điều kiện**: D4 chỉ áp nếu `display_name` buộc lên chuỗi, và D5 trả lời là **không buộc** | 2026-08-30 |
-| Nhánh `fix/ghim-dia-chi-ho-so-khong-phan-stake` | `đang làm` — ghim ô hồ sơ về địa chỉ **enterprise** ở cả ba cửa (`R-ADDR`/`U-ADDR`/`M-ADDR`), đóng lỗ TÀNG HÌNH Math-Spec §8 T16 | đo tại chỗ: `aiken check` 116 kiểm 0 lỗi (nền 113) · đột biến gỡ ba dòng gác ⇒ đúng ba bài kiểm mới đỏ, không bài nào khác đổi · `vitest` 218/218 · `tsc` 0 · `test-check.sh` 18/0 | `cd onchain && aiken check` ; `cd onchain && aiken build && grep -o '"hash": "[a-f0-9]*"' plutus.json \| sort -u` | **script hash ĐỔI CÓ CHỦ Ý** — `registry` `d4202913…65f6` → `d10bb50d…0115`, `registry_beacon` `e596b61f…bd6f` → `73a25648…b97d`. Miễn phí vì chưa deploy mạng nào | 2026-09-01 |
+| Nhánh `fix/ghim-dia-chi-ho-so-khong-phan-stake` | `XONG` — gộp qua PR #15 ngày 2026-09-01. Ghim ô hồ sơ về địa chỉ **enterprise** ở cả ba cửa (`R-ADDR`/`U-ADDR`/`M-ADDR`), đóng lỗ TÀNG HÌNH Math-Spec §8 T16 | đo lúc làm: `aiken check` 116 kiểm 0 lỗi (nền 113) · đột biến gỡ ba dòng gác ⇒ đúng ba bài kiểm mới đỏ, không bài nào khác đổi · `vitest` 218/218 · `tsc` 0 · `test-check.sh` 18/0 | `aiken check` tại `onchain/` ; `aiken build && grep -o '"hash": "[a-f0-9]*"' plutus.json \| sort -u` | **script hash ĐỔI CÓ CHỦ Ý**, miễn phí vì chưa deploy mạng nào. ⚠ Dòng này KHÔNG chép giá trị hash: bản trước chép cặp `d10bb50d…0115` / `73a25648…b97d`, và hai giá trị ấy đã chết sau hai lần đổi tiếp theo mà không dòng nào kêu. Hash hiện hành đọc từ `onchain/plutus.json` bằng lệnh ở cột bên trái | 2026-09-05 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
 | Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
 
@@ -88,7 +88,7 @@ Nguồn: `onchain/lib/magiclamp/registry/platform.ak`. Kiểm bằng
 ### Thứ tự trường `PlatformEntry` — đóng băng theo vị trí
 
 `spec_version, platform_id, instance_id, custody_hash, seed_policy, beacon_policy, governance_ref,
-accepted_assets, cut_bps, created_epoch, status`
+accepted_assets, cut_bps, created_epoch, status, substrate_flags`
 
 Plutus Data mã hoá **theo vị trí**, không theo tên. Chèn giữa = mọi bên đang giải mã hỏng im lặng.
 Kiểm: `grep -n 'pub type PlatformEntry' -A14 onchain/lib/magiclamp/registry/platform.ak`.
@@ -101,8 +101,8 @@ phiên bản sau. Đo bằng bài thực thi (`onchain/validators/arity_poc_test
 
 | Datum đích | Ép về `PlatformEntry` |
 |---|---|
-| khớp đúng 11 trường (chứng dương) | **qua** |
-| 11 trường + 1 trường thừa **ở cuối** | **bị từ chối** |
+| khớp đúng 12 trường (chứng dương) | **qua** |
+| 12 trường + 1 trường thừa **ở cuối** | **bị từ chối** |
 | thiếu 1 trường ở cuối | **bị từ chối** |
 
 Hai chiều cùng bị chặn ⇒ phép ép kiểu mềm của Aiken kiểm **khớp đúng arity**, không phải "đủ tối

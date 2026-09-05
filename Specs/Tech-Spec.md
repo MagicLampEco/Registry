@@ -34,7 +34,7 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 ### Thuộc spec này (TECH)
 - 2 validator Registry: **`registry_beacon`** (minting — đăng ký platform) + **`registry`** (spend —
   cập nhật VÀ di trú hồ sơ). Param + redeemer + bất biến từng cái.
-- Datum **`PlatformEntry`** (11 trường + Constr order) + enum `PlatformStatus`.
+- Datum **`PlatformEntry`** (12 trường + Constr order) + enum `PlatformStatus`.
 - **Phá vòng** beacon↔registry theo chiều v2: `registry(authority)` biên dịch trước, `registry_beacon`
   nhận `registry_hash` (§5).
 - **Authority-gated** (R-SIG/U-SIG) — duy nhất `platform_id` + curated, KHÔNG state trung tâm.
@@ -65,7 +65,7 @@ platform là Treasury (`Treasury/TECH.md`) — TECH này CHỈ đặc tả tần
 > | Số trường datum | 9 | **11** — thêm `spec_version` (đầu) và `beacon_policy` (`platform.ak:104-121`) |
 > | Chiều tham số | `registry(authority, beacon_policy)`, `registry_beacon(authority)` | **đảo**: `registry(authority)` (`registry.ak:161`), `registry_beacon(authority, registry_hash)` (`registry_beacon.ak:87`) |
 > | R-OUT-1 | chỉ cấm ví thường | ép **đúng** `Script(registry_hash)` (`registry_beacon.ak:106`) |
-> | Định danh bất biến | 5 trường | **6** — thêm `beacon_policy` (`platform.ak:218-220`) |
+> | Định danh bất biến | 5 trường | **6** — thêm `beacon_policy` (`identity_preserved` @ `platform.ak`) |
 > | Redeemer spend | chỉ `UpdateEntry` | thêm **`MigrateEntry`** (constr 1 — `platform.ak:136`) |
 > | `→ Retired` / đổi `cut_bps`… | một chữ ký authority là đủ | đòi **thêm** đồng thuận quản trị (U-GOV — `registry.ak:247-255`) |
 > | Hạng hình dạng hồ sơ | chỉ một hạng (mọi hồ sơ phải có kho) | **hai** hạng loại trừ nhau: `shape_custodial` / `shape_non_custodial` (`platform.ak:179-190`) |
@@ -108,7 +108,7 @@ Sơ đồ dưới đây là **v2.1**, đếm mã trực tiếp từ validator �
                                ┌────────────────────▼──────────────────────────┐
                                │  ô hồ sơ @ registry — địa chỉ ENTERPRISE      │
                                │  beacon NFT + min-ADA + datum PlatformEntry   │
-                               │  (11 trường, status = Active)  ── trỏ ──▶ kho (Treasury)
+                               │  (12 trường, status = Active)  ── trỏ ──▶ kho (Treasury)
                                └────────────────────┬──────────────────────────┘
    authority ký                                     │ chi tiêu: cập nhật HOẶC di trú
    UpdateEntry / MigrateEntry ─▶┌───────────────────▼──────────────────────────┐
@@ -157,8 +157,13 @@ pub type PlatformStatus {
   Retired      // 2
 }
 
-// PlatformEntry — Constr 0, 11 trường theo thứ tự (v2 — off-chain Data.Object phải khớp ĐÚNG thứ tự).
-// Nguồn: platform.ak:104-121.
+// PlatformEntry — Constr 0, 12 trường theo thứ tự (v2 — off-chain Data.Object phải khớp ĐÚNG thứ tự).
+// Nguồn: `pub type PlatformEntry` @ onchain/lib/magiclamp/registry/platform.ak.
+//
+// ⚠ Bảng này là HỢP ĐỒNG LIÊN BÊN: bên ngoài dùng nó để giải mã Plutus Data theo VỊ TRÍ.
+// Thiếu một trường ở đây thì bộ giải mã của họ ném ở mọi hồ sơ thật, và bộ dựng tx của họ
+// bị validator từ chối ngay tại `expect entry: PlatformEntry = od` — bằng "validator
+// crashed", không bằng một lỗi nói được. Cửa sổ arity ĐÓNG VĨNH VIỄN ở tx đầu tiên.
 pub type PlatformEntry {
   spec_version    : Int,              // 0  phiên bản lược đồ hồ sơ (v2 = 2)  ← THÊM Ở v2
   platform_id     : ByteArray,        // 1  = beacon NFT name (duy nhất, authority kiểm duyệt)
@@ -171,6 +176,7 @@ pub type PlatformEntry {
   cut_bps         : Int,              // 8  protocol_cut_bps của instance
   created_epoch   : Int,              // 9  ô-thời-gian đăng ký (ô 5 ngày kể từ mốc Unix, KHÔNG phải epoch Cardano)
   status          : PlatformStatus,   // 10
+  substrate_flags : Int,              // 11 cờ bit nền, 16 bit dùng được (0..65535)  ← THÊM 2026-09-02
 }
 ```
 
@@ -180,19 +186,19 @@ pub type PlatformEntry {
 
 **Định danh (6 trường bất biến — PK4, v2):** `platform_id`(1), `instance_id`(2), `custody_hash`(3),
 `seed_policy`(4), `beacon_policy`(5), `created_epoch`(9). Khoá cứng ở **cả** `UpdateEntry` (U-ID) **lẫn**
-`MigrateEntry` (M-ID) — `platform.identity_preserved` (`platform.ak:218-220`). Đổi = platform mới, đăng
+`MigrateEntry` (M-ID) — `identity_preserved` @ `platform.ak`. Đổi = platform mới, đăng
 ký lại. `spec_version` KHÔNG nằm trong nhóm này: nó bất biến ở nhánh Update (ép riêng U-VER) và **tăng**
-ở nhánh Migrate (M-VER) — `platform.ak:216-217`.
+ở nhánh Migrate (M-VER) — `registry.ak` khối U-VER / M-VER.
 
-**Khả biến (4 trường):** `governance_ref`(6), `accepted_assets`(7), `cut_bps`(8), `status`(10). Đổi qua
-`UpdateEntry`, authority ký.
+**Khả biến (5 trường):** `governance_ref`(6), `accepted_assets`(7), `cut_bps`(8), `status`(10),
+`substrate_flags`(11). Đổi qua `UpdateEntry`, authority ký.
 
-⚠ **Đọc kỹ chỗ này — hai cấp quyền khác nhau, đừng gộp.** 11 − 6 = **5 trường** đổi được, nhưng
-`spec_version` bị U-VER khoá ở nhánh Update, nên đường Update còn đúng bốn trường trên. Trong bốn:
+⚠ **Đọc kỹ chỗ này — hai cấp quyền khác nhau, đừng gộp.** 12 − 6 = **6 trường** đổi được, nhưng
+`spec_version` bị U-VER khoá ở nhánh Update, nên đường Update còn đúng năm trường trên. Trong năm:
 
 | Trường | Đổi bằng gì |
 |---|---|
-| `governance_ref`, `accepted_assets`, `cut_bps` | authority ký **VÀ** đồng thuận quản trị — `governed_fields_changed` khoá đúng ba trường này (`platform.ak:254-256`) |
+| `governance_ref`, `accepted_assets`, `cut_bps`, `substrate_flags` | authority ký **VÀ** đồng thuận quản trị — `governed_fields_changed` khoá đúng bốn trường này (`governed_fields_changed` @ `platform.ak`) |
 | `status: → Retired` | authority ký **VÀ** đồng thuận quản trị (`registry.ak:248-251`) |
 | `status: Active → Paused` | **MỘT chữ ký authority là đủ** |
 
@@ -456,7 +462,7 @@ U-MUT     platform.mutable_fields_valid(entry_out)                       (`:211`
             (`platform.ak:242-249`)
           ⇒ ép ĐÚNG 28 byte, không chỉ "khác rỗng": một giá trị rác trỏ tới script không tồn tại làm
             `governance_consented` thành hằng False vĩnh viễn ⇒ hồ sơ không Retire được, không di trú
-            được, không đổi được ba trường quản trị (`platform.ak:224-227`).
+            được, không đổi được bốn trường quản trị (`governed_fields_changed` @ `platform.ak`).
           > ⚠ Hàm này KHÔNG đủ để chặn hồ sơ tự khoá — `own_hash` dài đúng 28 byte nên qua được nó
             (`platform.ak:229-232`). Việc chặn là của U-GOVSELF-OUT ngay dưới.
 
@@ -514,8 +520,8 @@ U-GOV     việc KHÔNG ĐẢO NGƯỢC ĐƯỢC đòi đồng thuận quản tr
             needs_consent = (entry_out.status == Retired)
                           ∨ governed_fields_changed(entry_in, entry_out)
             !needs_consent  ∨  governance_consented(tx, entry_in.governance_ref)
-          với `governed_fields_changed` khoá ĐÚNG BA trường — `governance_ref`, `accepted_assets`,
-            `cut_bps` (`platform.ak:254-256`).
+          với `governed_fields_changed` khoá ĐÚNG BỐN trường — `governance_ref`, `accepted_assets`,
+            `cut_bps`, `substrate_flags` (`governed_fields_changed` @ `platform.ak`).
           ⇒ dùng `governance_ref` CŨ: bên đương nhiệm phải đồng ý cả khi bị thay.
 
 U-GOV2    ĐỔI governance_ref = BÀN GIAO HAI CHIỀU:                       (`:262-265`)
@@ -527,7 +533,7 @@ U-GOV2    ĐỔI governance_ref = BÀN GIAO HAI CHIỀU:                       (
             trước bản vá). Không đổi ref thì không phát sinh nghĩa vụ nào thêm.
 ```
 
-**Cổng quản trị KHÔNG phủ hết phần khả biến** — U-GOV khoá ba trường, còn `Active → Paused` chỉ cần một
+**Cổng quản trị KHÔNG phủ hết phần khả biến** — U-GOV khoá bốn trường, còn `Active → Paused` chỉ cần một
 chữ ký authority. Bảng đếm đầy đủ ở §2 ("hai cấp quyền khác nhau"); đây là chỗ nó được ép.
 
 > **`status` KHÔNG nằm trong `mutable_fields_valid`** — vì mọi giá trị `PlatformStatus` đều hợp lệ về
@@ -747,10 +753,11 @@ ES modules, Lucid Evolution (gương `Treasury/offchain`). Bốn nhóm hàm:
   governance_ref)`; custody là chuẩn (PK7) → cảnh báo nếu entry lệch.
 
 `decodePlatformEntry` / `encodePlatformEntry` — schema `Data.Object`/`Data.Enum` **khớp ĐÚNG** Constr
-order §2 (**11 trường**, status enum 0/1/2 — `offchain/src/registryDatum.ts:127-137, 152-162`). Lệch thứ
-tự phá decode (cùng quy tắc Treasury datum). Redeemer spend cũng đã có nhánh
-`MigrateEntry = Constr(1, [bytes, int])` (`offchain/src/registryDatum.ts:192`) và hàm dựng tương ứng
-`planMigrateEntry` (`offchain/src/registrationBuilder.ts:959`).
+order §2 (**12 trường**, status enum 0/1/2 — `decodePlatformEntry` / `encodePlatformEntry` @
+`offchain/src/registryDatum.ts`). Lệch thứ tự phá decode (cùng quy tắc Treasury datum). Redeemer
+spend cũng đã có nhánh `MigrateEntry = Constr(1, [bytes, int])` (`encodeSpendRedeemer` @
+`offchain/src/registryDatum.ts`) và hàm dựng tương ứng `planMigrateEntry` @
+`offchain/src/registrationBuilder.ts`.
 
 ---
 
