@@ -1084,6 +1084,18 @@ trực giác.
 Không có bản Coq/Lean/Isabelle. Mọi chứng minh trên là lập luận tay dựa vào đọc mã. Mức bảo đảm:
 **đọc mã + kiểm thử đơn vị**, không hơn. Bộ kiểm thử tương ứng liệt kê ở §17.
 
+⚠ Và "kiểm thử đơn vị" phải đọc đúng sức: **một bài âm tính đỏ không chứng minh nó gác chốt mang
+tên nó.** Bài có thể chết ở một chốt SỚM HƠN trong cùng luồng — vẫn đỏ, trace vẫn trỏ một dòng có
+thật, không kênh nào kêu. Đo 2026-09-05 bằng đột biến (gỡ hẳn từng `expect` rồi chạy trọn bộ):
+**16 trong 52 chốt** gỡ ra mà không bài nào đỏ. Gốc chung ở 11/16: bài âm tính lệch khỏi ca hợp lệ
+ở **hai** chỗ, chỗ thứ hai thường thêm vào vì "đằng nào cũng đỏ trước đó".
+
+⇒ Phép đo đúng cho **độ phủ** là đột biến, không phải số bài xanh. Và nó có một trạng thái thứ ba
+phải kêu to hơn "hở": chốt **không đo được** bằng đột biến một dòng — hoặc vì gỡ ra thì không biên
+dịch (khối `expect or { … }`, phép gán), hoặc vì hai dòng **tương đương logic** nên phải gỡ cả cặp
+mới thấy. Chốt trong trạng thái ba **vẫn có thể đang được gác**; đọc con số "còn N chốt" thành "còn
+N lỗ" là đọc sai.
+
 ### L7 — Chưa audit ngoài
 
 Chưa có bên thứ ba nào audit. Bắt buộc trước mainnet.

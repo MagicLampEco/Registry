@@ -44,6 +44,12 @@ const governance_ref: ByteArray = #"99999999999999999999999999999999999999999999
 
 const lamp_policy: ByteArray = #"1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b1a3b"
 
+// Policy id ĐÚNG 28 byte nhưng KHÁC policy beacon thật. Cần một giá trị đúng độ dài để
+// cô lập R-POLICY khỏi R-WF: R-WF ép `beacon_policy` dài 28 byte, nên một giá trị ngắn
+// (vd #"dead") chết ở R-WF chứ không ở R-POLICY — bài khi đó mang tên một chốt mà canh
+// một chốt khác.
+const fake_beacon_policy: ByteArray = #"facefacefacefacefacefacefacefacefacefacefacefacefaceface"
+
 const lamp_name: ByteArray = #"4c414d50"
 
 // Ô THỜI GIAN đăng ký của entry mặc định — tx mặc định đặt validity_range GỌN trong ô này.
@@ -207,14 +213,18 @@ test register_happy() {
 
 // ════════════════════════════════════════════════════════════
 // 2. THIẾU CHỮ KÝ AUTHORITY (fail) — extra_signatories không có vkh authority (R-SIG).
-//    Fail SỚM hơn R-BIND → không cần reference custody.
+//    Canh R-SIG (registry_beacon.ak `expect list.has(tx.extra_signatories,
+//    registry_authority)`). So với `register_happy` đổi ĐÚNG MỘT thứ: danh sách người ký.
+//    ⚠ Bản trước bỏ luôn reference custody (`[]`) ⇒ bài chết ở R-BIND, không ở R-SIG: đo
+//    bằng đột biến (thay dòng R-SIG bằng `expect True`) thì bài vẫn xanh. Giữ
+//    `custody_ref_ok()` để mọi ràng buộc khác thoả.
 // ════════════════════════════════════════════════════════════
 test register_no_authority_sig() fail {
   let tx =
     reg_tx(
       beacon_mint(platform_id, 1),
       [entry_output(platform_id, entry())],
-      [],
+      [custody_ref_ok()],
       [#"deadbeef"],
     )
   run(tx)
@@ -282,6 +292,23 @@ test register_output_staked_variant() fail {
   run(tx)
 }
 
+// 5c. HAI output cùng mang beacon NFT (fail) — R-OUT-1 vế ĐẾM
+//     (`count_outputs_with_token(...) == 1`). So với `register_happy` đổi ĐÚNG MỘT thứ:
+//     danh sách output có thêm một bản sao Y HỆT ô hồ sơ.
+//     Vì sao cần bài riêng: `output_with_token` lấy ô ĐẦU TIÊN mang NFT, nên bỏ vế đếm đi
+//     thì mọi chốt sau đó vẫn đọc ô thứ nhất và đều thoả — sổ có HAI ô cùng khai một
+//     platform_id, và bên quét sổ theo policy thấy hai hồ sơ cho một platform.
+test register_two_entry_outputs_rejected() fail {
+  let tx =
+    reg_tx(
+      beacon_mint(platform_id, 1),
+      [entry_output(platform_id, entry()), entry_output(platform_id, entry())],
+      [custody_ref_ok()],
+      [authority],
+    )
+  run(tx)
+}
+
 // 5b. Output mang NFT ở VÍ THƯỜNG (fail) — giữ ca cũ.
 test register_output_not_script() fail {
   let wallet_out =
@@ -293,13 +320,16 @@ test register_output_not_script() fail {
 // ════════════════════════════════════════════════════════════
 // 6. NFT NAME ≠ entry.platform_id (fail) — R-NAME.
 //    Mint name=#"ffff" (output mang đúng nó qua R-OUT-1) nhưng datum.platform_id=#"706b".
+//    Canh R-NAME (`expect entry.platform_id == platform_id`). So với `register_happy` đổi
+//    ĐÚNG MỘT thứ: tên NFT được đúc (và ô hồ sơ mang đúng tên đó, để R-OUT-1/R-VALUE vẫn
+//    thoả). ⚠ Bản trước bỏ reference custody ⇒ bài chết ở R-BIND; gỡ R-NAME ra vẫn xanh.
 // ════════════════════════════════════════════════════════════
 test register_name_mismatch() fail {
   let tx =
     reg_tx(
       beacon_mint(#"ffff", 1),
       [entry_output(#"ffff", entry())],
-      [],
+      [custody_ref_ok()],
       [authority],
     )
   run(tx)
@@ -309,9 +339,15 @@ test register_name_mismatch() fail {
 // 6b. R-POLICY — beacon_policy trong datum khai SAI (fail).
 //     registry.ak đọc beacon_policy TỪ DATUM để đối chiếu NFT; nếu lời tự khai không
 //     bị ép khớp policy thật lúc đúc thì hồ sơ tự trỏ sang một policy tự chế.
+//     Canh R-POLICY (`expect entry.beacon_policy == policy_id`). So với `register_happy`
+//     đổi ĐÚNG MỘT thứ: trường `beacon_policy` trong datum.
+//     ⚠ Bản trước khai #"dead" (2 byte) ⇒ bài chết ở R-WF (`entry_well_formed` ép
+//     `beacon_policy` đúng 28 byte), không ở R-POLICY: gỡ R-POLICY ra vẫn xanh. Nay khai
+//     một policy ĐÚNG ĐỘ DÀI nhưng sai giá trị, để R-WF thoả và R-POLICY là chốt duy nhất
+//     bị vi phạm. Ca "beacon_policy sai độ dài" đã có chỗ khác canh (R-WF).
 // ════════════════════════════════════════════════════════════
 test register_beacon_policy_mismatch() fail {
-  let e = PlatformEntry { ..entry(), beacon_policy: #"dead" }
+  let e = PlatformEntry { ..entry(), beacon_policy: fake_beacon_policy }
   let tx =
     reg_tx(
       beacon_mint(platform_id, 1),
@@ -578,15 +614,22 @@ test register_mint_foreign_policy() fail {
 //     `governance_ref = registry_hash` biến đồng thuận quản trị thành hằng True vĩnh
 //     viễn ⇒ authority một mình Retire / đổi cut_bps / di trú được. Trước bản vá, hồ sơ
 //     này ĐƯỢC NHẬN (PoC `poc_register_with_self_gov_accepted` PASS).
+//     Canh R-GOVSELF (`expect entry.governance_ref != registry_hash`). So với
+//     `register_happy` đổi ĐÚNG MỘT thứ: giá trị `governance_ref` trong datum — và vì đổi
+//     nó thì bằng chứng R-GOVLIVE phải trỏ theo, input quản trị đặt ở `Script(reg_sh)`.
+//     ⚠ Bản trước dùng `reg_tx` (input quản trị luôn ở `Script(governance_ref)` mặc định)
+//     ⇒ bài chết ở R-GOVLIVE, không ở R-GOVSELF: gỡ R-GOVSELF ra vẫn xanh.
 // ════════════════════════════════════════════════════════════
 test register_self_gov_rejected() fail {
   let e = PlatformEntry { ..entry(), governance_ref: reg_sh }
   let tx =
-    reg_tx(
+    reg_tx_full(
       beacon_mint(platform_id, 1),
       [entry_output(platform_id, e)],
       [custody_ref_ok()],
       [authority],
+      bucket_range(reg_epoch),
+      [gov_input_at(reg_sh)],
     )
   run(tx)
 }

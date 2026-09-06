@@ -11,6 +11,53 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-05 — đường hồi sinh so **cả bản ghi**, và ba câu trong mã nói lệch thực tế
+
+- **Đổi gì.** `pure_revive` trong nhánh `UpdateEntry` của `registry.ak` thôi liệt kê từng trường,
+  đổi sang `entry_out == PlatformEntry { ..entry_in, status: Active }`. Ba khối chú thích được viết
+  lại vì chúng nói mạnh hơn hoặc im hơn thực tế: nhóm quản trị ở `platform.ak` nay trỏ tới giả định
+  v1 (`registry_authority` và `governance_ref` cùng một committee ⇒ "hai bên" là một bên); nhánh
+  Migrate nói rõ vì sao nó **không cần** mã riêng cho `substrate_flags`; và `M-VER` nói rõ
+  `spec_version` là **nhãn**, thứ ép hình dạng datum là **arity** của validator đích.
+  `Specs/Math-Spec.md` §D8-b viết lại theo.
+- **Vì sao.** Danh sách viết tay là chỗ thứ tư phải quét mỗi lần lược đồ thêm trường, trong khi ba
+  chỗ kia đều nhận trường mới qua một phép so trên cả bản ghi. Nó đã bỏ sót thật: `substrate_flags`
+  vào lược đồ và vào `governed_fields_changed` cùng ngày 2026-09-02, danh sách này không theo kịp —
+  cùng một trường, hai đường đi, hai luật. Trình biên dịch không kêu, vì thiếu một vế trong một hội
+  chỉ làm vị từ **lỏng hơn**, không làm nó sai kiểu.
+
+  Phép so mới **tương đương** bản cũ tại chỗ nó đứng, và đó là thứ đếm được chứ không phải tin: 12
+  trường = `status` (chừa ra) + `spec_version` (U-VER ép ngay trên) + sáu trường định danh (U-ID) +
+  bốn trường quản trị (danh sách cũ). Cái đổi không phải mức chặt, mà là **ai chịu trách nhiệm nhớ**.
+- **Gãy gì nếu ai đó bám bản cũ.** Script hash `registry` đổi (`registry_beacon` không đổi). Miễn
+  phí vì chưa deploy mạng nào — giá trị hiện hành đọc từ `onchain/plutus.json`, không chép vào đây.
+
+  Và một điều kiện trong `Math-Spec` §D6 **hết hiệu lực một nửa**: yêu cầu "trường mới phải vào CẢ
+  `governed_fields_changed` LẪN `pure_revive`" nay chỉ còn vế đầu. Ai đang dùng bản cũ của điều kiện
+  đó sẽ đi tìm một chỗ không còn cần sửa.
+
+## 2026-09-05 — ô khai nền hạ tầng, và hai ngưỡng hạng đặt sai chiều
+
+- **Đổi gì.** Ba chỗ trong chuẩn đăng ký và bộ chấm:
+  - Chuẩn có **§2.6** mới — ô `nen_su_dung`, khai bằng **tên nền** (tập đóng ở `codes.json` mục
+    `substrate_bits` mới), ánh xạ sang trường on-chain `substrate_flags`. `PlatformConfig
+    .substrateFlags` thành **bắt buộc**, bộ dựng giao dịch bỏ đệm `?? 0n`.
+  - `IN-3` — hạng cao nhất của trục hạ tầng — đòi `bang_chung_khong_phu_thuoc` theo dạng
+    `<lệnh tra lại được> → <kết quả nhận được>`.
+  - `L1` đòi `evidence_min = 1`.
+  - Bộ chấm thêm phép kiểm chéo: khai `TK-1`/`TK-2` mà `nen_su_dung` không có `magic` thì **nêu**
+    chỗ lệch (nêu chứ không chặn — máy không biết bên nào đúng).
+- **Vì sao.** Cả ba là cùng một hình dạng: một lời khai đi được qua cổng mà không người nào đứng sau
+  nó. `substrate_flags` lên chuỗi từ một giá trị đệm ⇒ hồ sơ mang câu *"dịch vụ này không dùng nền
+  nào của hệ"* mà không ai phát ra. `IN-3` có `needs: []` **giống hệt** `IN-0` là hạng thấp nhất
+  cùng trục — một mệnh đề **phủ định** lên hạng cao nhất mà không phải nộp gì. Và `L1` là hạng gắn
+  với việc **nhận thưởng**, `L3` gắn với uy tín — nên vé nhận tiền đang rẻ hơn vé nhận uy tín.
+- **Gãy gì nếu ai đó bám bản cũ.** Mã gọi SDK **không biên dịch được** nếu không truyền
+  `substrateFlags` — đó là chủ ý, vì đường im lặng cũ ghi một lời khai lên chuỗi. Hồ sơ đang khai
+  `IN-3` mà không có ô bằng chứng thì **tụt hạng trục hạ tầng**; hồ sơ ở `L1` không có lời khẳng
+  định nào từ `EV-1` trở lên thì **tụt xuống `L0`**. Cả hai đọc đúng là hồ sơ chưa đủ dữ kiện, không
+  phải hồ sơ bị phạt.
+
 ## 2026-09-01 — ô hồ sơ bị ghim về địa chỉ **enterprise** (`R-ADDR` · `U-ADDR` · `M-ADDR`)
 
 - **Đổi gì.** Ba dòng ràng buộc mới, cùng một bất biến ở ba cửa của vòng đời hồ sơ: ô hồ sơ ra phải

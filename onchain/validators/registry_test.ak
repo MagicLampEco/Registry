@@ -140,6 +140,27 @@ fn new_gov_input() -> Input {
   )
 }
 
+// Input chứng minh "một script BẤT KỲ đã chạy trong tx" — đặt ở script hash tuỳ ý.
+// Cần khi hồ sơ trỏ `governance_ref` vào một hash đặc biệt (registry đích, registry cũ):
+// muốn cô lập chốt đang thử thì U-GOV2/M-GOV2 phải THOẢ, chứ không được là chỗ bài chết.
+fn script_input(ix: Int, sh: ByteArray) -> Input {
+  util.mk_input(
+    util.mk_ref(ix),
+    util.mk_output_no_datum(
+      util.script_address(sh),
+      assets.from_lovelace(2_000_000),
+    ),
+  )
+}
+
+// Hồ sơ NỬA VỜI: giữ nguyên ba trường định danh kho nhưng `accepted_assets` rỗng ⇒ KHÔNG
+// thuộc hạng nào (`shape_custodial` sai vì accepted rỗng, `shape_non_custodial` sai vì
+// instance_id/custody_hash/seed_policy khác rỗng). Chỉ dùng làm datum VÀO — validator
+// không ép hình dạng của datum vào, nên trạng thái này biểu diễn được trên chuỗi.
+fn entry_half_shape() -> PlatformEntry {
+  PlatformEntry { ..entry_in(), accepted_assets: [] }
+}
+
 // Dựng tx cập nhật: inputs, outputs, mint, ký authority (extra_signatories).
 fn upd_tx(
   inputs   : List<Input>,
@@ -257,6 +278,31 @@ test update_drop_beacon_nft() fail {
 }
 
 // ════════════════════════════════════════════════════════════
+// 4b. Ô hồ sơ KHÔNG MANG beacon NFT ở CẢ HAI ĐẦU (fail) — U-NFT, cặp `has_one_nft` vào+ra.
+//     So với `update_happy` đổi ĐÚNG MỘT thứ: beacon NFT vắng mặt (value ở cả input lẫn
+//     output chỉ còn min-ADA), nên U-VALUE vẫn thoả và cặp U-NFT là chốt duy nhất bị vi
+//     phạm. Đây là ca "ô hồ sơ giả" — một UTxO tự dựng ở địa chỉ registry với datum bịa,
+//     không mang beacon NFT thật; nếu đi qua được thì nó có quyền tài phán như hồ sơ thật.
+//     ⚠ ĐỌC ĐÚNG SỨC MẠNH: bài này ghim CẶP, không ghim từng dòng. `identity_preserved`
+//     (U-ID) ép `platform_id`/`beacon_policy` giống nhau hai đầu và `value_not_drained`
+//     (U-VALUE) ép phần native asset hai đầu BẰNG NHAU ⇒ hai dòng `has_one_nft` tương
+//     đương logic, không tx nào vi phạm dòng này mà thoả dòng kia. Bài 4
+//     (`update_drop_beacon_nft`) bỏ NFT ở MỘT đầu nên nó chết ở U-VALUE khi cặp bị gỡ.
+// ════════════════════════════════════════════════════════════
+test update_no_beacon_nft_in_and_out() fail {
+  let e_out = PlatformEntry { ..entry_in(), status: Paused }
+  let bare = assets.from_lovelace(2_000_000)
+  let in_bare =
+    util.mk_input(
+      own_ref(),
+      util.mk_output(util.script_address(reg_sh), bare, entry_in()),
+    )
+  let out_bare = util.mk_output(util.script_address(reg_sh), bare, e_out)
+  let tx = upd_tx([in_bare], [out_bare], assets.zero, [authority])
+  run(entry_in(), tx)
+}
+
+// ════════════════════════════════════════════════════════════
 // 5. TX CÓ MINT ≠ 0 (fail) — U-MINT-0 (update không đụng beacon supply).
 // ════════════════════════════════════════════════════════════
 test update_mint_rejected() fail {
@@ -280,6 +326,26 @@ test update_double_entry() fail {
   let in2 = reg_input(util.mk_ref(1), platform_id, entry_in())
   let tx =
     upd_tx([in1, in2], [reg_output(platform_id, e_out)], assets.zero, [authority])
+  run(entry_in(), tx)
+}
+
+// ════════════════════════════════════════════════════════════
+// 6b. 2 ENTRY OUTPUT CÙNG SCRIPT HASH (fail) — U-SINGLE vế RA
+//     (`count_outputs_at_script(tx.outputs, own_hash) == 1`). So với `update_happy` đổi
+//     ĐÚNG MỘT thứ: danh sách output có thêm một bản sao Y HỆT ô hồ sơ.
+//     Vì sao cần bài riêng, tách khỏi bài 6 (vế VÀO): `output_at_script` lấy ô ĐẦU TIÊN,
+//     nên bỏ vế đếm RA đi thì mọi chốt sau vẫn đọc ô thứ nhất và đều thoả — một lần chi
+//     tiêu đẻ ra HAI ô hồ sơ ở registry, cả hai cùng khai một platform_id.
+// ════════════════════════════════════════════════════════════
+test update_double_entry_output() fail {
+  let e_out = PlatformEntry { ..entry_in(), status: Paused }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in())],
+      [reg_output(platform_id, e_out), reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
   run(entry_in(), tx)
 }
 
@@ -677,6 +743,26 @@ test migrate_drop_beacon_nft() fail {
   run_migrate(entry_in(), new_reg_sh, 3, tx)
 }
 
+// 18c'. Di trú mà ô hồ sơ KHÔNG MANG beacon NFT ở CẢ HAI ĐẦU (fail) — M-NFT, cặp
+//       `has_one_nft` vào+ra. So với `migrate_active_ok` đổi ĐÚNG MỘT thứ: beacon NFT vắng
+//       mặt ở cả input lẫn output, nên M-VALUE vẫn thoả.
+//       ⚠ Ghim CẶP, không ghim từng dòng — cùng lý do như bài 4b ở nhánh Update: M-ID ép
+//       `platform_id`/`beacon_policy` giống nhau hai đầu và M-VALUE ép phần native asset
+//       hai đầu bằng nhau ⇒ hai dòng `has_one_nft` tương đương logic. Bài 18c bỏ NFT ở MỘT
+//       đầu nên khi cặp bị gỡ nó chết ở M-VALUE.
+test migrate_no_beacon_nft_in_and_out() fail {
+  let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
+  let bare = assets.from_lovelace(2_000_000)
+  let in_bare =
+    util.mk_input(
+      own_ref(),
+      util.mk_output(util.script_address(reg_sh), bare, entry_in()),
+    )
+  let out_bare = util.mk_output(util.script_address(new_reg_sh), bare, e_out)
+  let tx = upd_tx([in_bare, gov_input()], [out_bare], assets.zero, [authority])
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
 // 18d. Di trú mà rút bớt ADA khỏi ô hồ sơ (fail) — M-VALUE.
 test migrate_drain_lovelace() fail {
   let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
@@ -706,6 +792,24 @@ test migrate_double_entry() fail {
     upd_tx(
       [in1, in2, gov_input()],
       [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_in(), new_reg_sh, 3, tx)
+}
+
+// 18f. HAI output ở registry ĐÍCH trong một tx di trú (fail) — M-DEST vế "đúng 1 output ở
+//      đích" (`count_outputs_at_script(tx.outputs, new_registry_hash) == 1`). So với
+//      `migrate_active_ok` đổi ĐÚNG MỘT thứ: thêm một bản sao Y HỆT ô hồ sơ đích.
+//      Đối xứng bắt buộc với 18e (vế "đúng 1 input"): `output_at_script` lấy ô ĐẦU TIÊN,
+//      nên bỏ vế đếm RA đi thì mọi chốt sau vẫn đọc ô thứ nhất và đều thoả — một hồ sơ đi
+//      vào, hai hồ sơ hạ cánh ở registry mới.
+test migrate_double_dest_output() fail {
+  let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [new_reg_output(platform_id, e_out), new_reg_output(platform_id, e_out)],
       assets.zero,
       [authority],
     )
@@ -763,6 +867,32 @@ test migrate_self_gov_rejected() fail {
       [authority],
     )
   run_migrate(entry_self_gov(), new_reg_sh, 3, tx)
+}
+
+// 19f. XOAY `governance_ref` RA KHỎI hồ sơ tự-quản-trị (fail) — canh ĐÚNG S-GOVSELF
+//      (`expect entry_in.governance_ref != own_hash`), và là bài DUY NHẤT trong nhóm 19
+//      làm được việc đó.
+//      Vì sao 19a/19b/19c KHÔNG canh được S-GOVSELF: cả ba giữ `governance_ref = reg_sh`
+//      Ở CẢ DATUM RA, nên gỡ S-GOVSELF đi thì chúng chết ở U-GOVSELF-OUT / M-GOVSELF-OUT
+//      — vẫn đỏ, nhưng đỏ ở một chốt khác (đo bằng đột biến). Bài này ghi datum RA trỏ
+//      sang một ref hợp lệ khác, nên hai chốt kia thoả.
+//      Đòn thật: `governance_ref` vào == own_hash làm `governance_consented` tự thoả bằng
+//      CHÍNH ô hồ sơ đang chi tiêu ⇒ U-GOV (đổi trường quản trị phải có đồng thuận) thành
+//      thủ tục rỗng ⇒ authority MỘT MÌNH chỉ định cổng quản trị mới cho platform.
+//      So với `update_happy` đổi ĐÚNG MỘT thứ về bản chất: `governance_ref` của datum VÀO
+//      (kèm hai thứ bắt buộc đi theo — datum ra phải trỏ ref mới, và ref mới phải có bằng
+//      chứng chạy được, nếu không bài lại chết ở U-GOV2 thay vì ở S-GOVSELF).
+test update_self_gov_ref_rotation_rejected() fail {
+  let e_out =
+    PlatformEntry { ..entry_self_gov(), governance_ref: new_governance_ref }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_self_gov()), new_gov_input()],
+      [reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run(entry_self_gov(), tx)
 }
 
 // 19d/19e. governance_ref ở datum ĐÍCH dài sai (27 / 29 byte) → U-MUT chặn.
@@ -1032,6 +1162,28 @@ test update_half_shape_clear_assets() fail {
   run(entry_in(), tx)
 }
 
+// 23d'. Hồ sơ VÀO nửa vời được "chữa" thành CÓ KHO qua đường Update (fail) — canh ĐÚNG
+//       U-SHAPE (`shape_custodial(entry_in) == shape_custodial(entry_out)`), và là bài duy
+//       nhất trong nhóm 23 làm được việc đó.
+//       Vì sao 23c/23d KHÔNG canh được U-SHAPE: 23c xoá ba trường định danh kho nên chết ở
+//       U-ID; 23d ghi datum RA nửa vời nên chết ở U-MUT. Cả hai đều đỏ ở một chốt KHÁC —
+//       gỡ U-SHAPE đi thì cả hai vẫn xanh (đo bằng đột biến).
+//       Ca này lật chiều: datum VÀO là cái nửa vời (validator KHÔNG ép hình dạng datum
+//       vào), datum RA hợp lệ hoàn toàn. U-ID thoả (ba trường định danh kho giữ nguyên),
+//       U-MUT thoả (datum ra đúng hạng có kho) ⇒ U-SHAPE là chốt duy nhất bị vi phạm.
+//       Đòn thật: một ô hồ sơ hỏng/nửa vời trên chuỗi được authority + một lần đồng thuận
+//       nâng cấp lặng lẽ thành hồ sơ có kho, không đi qua cửa đăng ký.
+test update_shape_repair_from_half_shape_rejected() fail {
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_half_shape()), gov_input()],
+      [reg_output(platform_id, entry_in())],
+      assets.zero,
+      [authority],
+    )
+  run(entry_half_shape(), tx)
+}
+
 // 23e. MigrateEntry chuyển hạng (fail) — chặn bởi M-ID.
 test migrate_shape_flip() fail {
   let e_out = PlatformEntry { ..entry_non_custodial(), spec_version: 3 }
@@ -1066,6 +1218,22 @@ test migrate_half_shape_clear_assets() fail {
 }
 
 
+// 23f'. Hồ sơ VÀO nửa vời được "chữa" thành CÓ KHO qua đường DI TRÚ (fail) — canh ĐÚNG
+//       M-SHAPE. Đối xứng bắt buộc với 23d': Migrate ghi được đúng những trường Update ghi
+//       được, nên hở một cửa là hở cả hai (bài học M-GOV2, registry.ak:124).
+//       23e chết ở M-ID, 23f chết ở M-MUT ⇒ gỡ M-SHAPE đi cả hai vẫn xanh.
+test migrate_shape_repair_from_half_shape_rejected() fail {
+  let e_out = PlatformEntry { ..entry_in(), spec_version: 3 }
+  let tx =
+    upd_tx(
+      [reg_input(own_ref(), platform_id, entry_half_shape()), gov_input()],
+      [new_reg_output(platform_id, e_out)],
+      assets.zero,
+      [authority],
+    )
+  run_migrate(entry_half_shape(), new_reg_sh, 3, tx)
+}
+
 // ════════════════════════════════════════════════════════════
 // 24. U-GOVSELF-OUT / M-GOVSELF-OUT — nửa còn lại của S-GOVSELF: chặn ở datum RA.
 //     Đợt trước chỉ chặn cửa nộp (R-GOVSELF) và datum VÀO (S-GOVSELF); datum RA chỉ bị
@@ -1092,12 +1260,21 @@ test update_gov_ref_to_own_hash_rejected() fail {
 
 // 24b. Migrate ghi governance_ref = new_registry_hash (fail) — hồ sơ brick NGAY khi tới
 //      registry mới, vì validator mới mang cùng ràng buộc S-GOVSELF.
+//      Canh M-GOVSELF-OUT (`expect entry_out.governance_ref != new_registry_hash`). So với
+//      `migrate_gov_ref_change_ok` đổi ĐÚNG MỘT thứ: ref mới là `new_reg_sh` thay vì một
+//      hash bên thứ ba — và bằng chứng "ref mới chạy được" đi theo nó sang `Script(
+//      new_reg_sh)`.
+//      ⚠ Bản trước chỉ có `gov_input()` (ref cũ) ⇒ bài chết ở M-GOV2 ("ref mới phải chạy
+//      được"), không ở M-GOVSELF-OUT: gỡ chốt ấy ra vẫn xanh (đo bằng đột biến).
 test migrate_gov_ref_to_new_registry_rejected() fail {
   let e_out =
     PlatformEntry { ..entry_in(), spec_version: 3, governance_ref: new_reg_sh }
   let tx =
     upd_tx(
-      [reg_input(own_ref(), platform_id, entry_in()), gov_input()],
+      [
+        reg_input(own_ref(), platform_id, entry_in()), gov_input(),
+        script_input(8, new_reg_sh),
+      ],
       [new_reg_output(platform_id, e_out)],
       assets.zero,
       [authority],
