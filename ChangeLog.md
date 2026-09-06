@@ -11,6 +11,30 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-06 — nhãn trạng thái tự khai bị gỡ khỏi mọi tệp đặc tả
+
+- **Đổi gì.** Bảy tệp trong `Specs/` bỏ hai hàng siêu dữ liệu: `Trạng thái` (mang chữ `DRAFT`) và
+  `Bộ trạng thái` (hàng chỉ tồn tại để giải nghĩa hàng trên). `Specs/README.md` bỏ luôn cột
+  `Trạng thái` trong bảng mục lục. Hàng **`Người duyệt | chưa ai duyệt`** giữ nguyên ở mọi tệp, và
+  khối ⚠ ở `Specs/README.md` được nói rõ nó đang thay cho cái vừa gỡ. Ba chỗ khác đổi câu chữ:
+  `Specs/Resource-Dictionary.md` §2 thôi tên là *"Từ điển canonical"*, và hai chỗ trong
+  `REGISTRATION-STANDARD.md` thôi dùng chữ `canonical` để chỉ bản của kho khác — nói **"bản phải
+  trích"**, vì đó mới là điều đo được.
+
+- **Vì sao.** Một nhãn trạng thái chỉ có nghĩa khi có cổng chuyển nó. Không cổng nào trong kho đọc
+  hàng đó — rà toàn bộ tệp được git theo dõi, không tệp `.mjs`/`.ts`/`.sh`/`.yml` nào chạm tới nó.
+  Nhãn không ai chuyển thì nó **không tự già**: nó ghi `DRAFT` mãi, kể cả sau khi đặc tả đã được
+  dùng để dựng hai validator và một SDK. Thứ nó định nói — "chưa qua duyệt" — đã có sẵn ở hàng
+  `Người duyệt`, và câu đó **sai đi ngay** khi có người duyệt thật. Giữ cả hai là giữ một bản khai
+  kiểm được cạnh một bản khai không kiểm được, và bản không kiểm được thì đứng ở đầu tệp.
+  Đối xứng bị bỏ sót lúc thêm nhãn (mục **2026-08-13** dưới): luật cấm tài liệu tự phong vai được
+  đọc như luật cấm phong vai **CAO** (`canonical`, `final`), nên một vai **THẤP** đi lọt — dù nó
+  cùng là một tài liệu tự khai một thứ về chính nó mà không ai cưỡng chế.
+
+- **Gãy gì nếu bám bản cũ.** Ai từng lọc tệp theo hàng `Trạng thái` sẽ không thấy hàng đó nữa; câu
+  hỏi *"tệp này qua duyệt chưa"* nay đọc ở hàng `Người duyệt`. Và đừng đọc việc **gỡ nhãn** thành
+  **nâng cấp trạng thái** — không tệp nào trong `Specs/` được ai duyệt, hôm nay cũng như hôm qua.
+
 ## 2026-09-05 — đường hồi sinh so **cả bản ghi**, và ba câu trong mã nói lệch thực tế
 
 - **Đổi gì.** `pure_revive` trong nhánh `UpdateEntry` của `registry.ak` thôi liệt kê từng trường,

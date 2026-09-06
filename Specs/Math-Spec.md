@@ -3,13 +3,11 @@
 | Trường | Giá trị |
 |---|---|
 | Phiên bản | v0.2.0 |
-| Trạng thái | `DRAFT` |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Người viết | Registry agent — 2026-08-13 |
 | Người duyệt | **chưa ai duyệt** |
 | Cập nhật cuối | 2026-08-15 (thêm §13 — tiêu chí biên nhận `T-RECEIPT`) |
 | Loại toán | E (đúng đắn thuần) + B (cơ chế, phần quyền hạn) |
-| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 > **Nguồn gốc bản này.** Nội dung §7 (mười một bất biến), §6.2 (mô hình tin cậy) và §8 (kẻ tấn
 > công) **chuyển từ** `CONTRACT.md` — trước đây nằm ở §8 (dòng 276-312), §3.2 (dòng 110-121) và

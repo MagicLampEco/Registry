@@ -3,30 +3,32 @@
 | Trường | Giá trị |
 |---|---|
 | Phiên bản | v1.1.0 |
-| Trạng thái | `DRAFT` (mục lục — theo trạng thái thấp nhất của các tệp nó dẫn) |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Người viết | Registry agent |
 | Người duyệt | **chưa ai duyệt** |
 | Cập nhật cuối | 2026-08-17 |
-| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 Registry ở **tầng hạ tầng nền** và là hai validator on-chain, nên theo chuẩn StandardSpec tầng này
 đòi **đủ bốn** đặc tả — Feat, Math, Tech, Exec — không được cắt bớt. Bốn đặc tả đó, cộng bản hợp
 đồng interface, một tài liệu hướng dẫn, và một từ điển đơn vị đo:
 
-| File | Trả lời câu hỏi | Trạng thái |
-|---|---|---|
-| [CONTRACT.md](CONTRACT.md) | Interface khoá + chỉ mục 11 bất biến `PK1…PK11`. Cái gì KHÔNG ai được đổi. | `DRAFT` |
-| [Math-Spec.md](Math-Spec.md) | **Phát biểu hình thức** của 11 bất biến, mô hình tin cậy, bảng kẻ tấn công, **tiêu chí biên nhận `T-RECEIPT` (§13)**, mục giới hạn. | `DRAFT` |
-| [Feat-Spec.md](Feat-Spec.md) | Hành vi: ba cửa onboarding, adapter thu phí, discover, vòng đời niêm yết. | `DRAFT` |
-| [Tech-Spec.md](Tech-Spec.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + mô hình đe doạ + phụ lục blockchain. | `DRAFT` |
-| [Exec-Spec.md](Exec-Spec.md) | Lộ trình bootstrap M0…M6 (mười thành phần mỗi mốc), rủi ro vận hành. | `DRAFT` |
-| [onboarding.md](onboarding.md) | Hướng dẫn từng bước cho team muốn onboard (a→f). | `DRAFT` |
-| [Resource-Dictionary.md](Resource-Dictionary.md) | **Đơn vị đo** tài nguyên (`op_type` → lớp/đơn vị/quy ước đo) để hai dịch vụ so giá được. KHÔNG chứa đơn giá — đơn giá ở beacon từng platform, theo ranh giới [Feat-Spec §0.3](Feat-Spec.md). | `DRAFT` |
+| File | Trả lời câu hỏi |
+|---|---|
+| [CONTRACT.md](CONTRACT.md) | Interface khoá + chỉ mục 11 bất biến `PK1…PK11`. Cái gì KHÔNG ai được đổi. |
+| [Math-Spec.md](Math-Spec.md) | **Phát biểu hình thức** của 11 bất biến, mô hình tin cậy, bảng kẻ tấn công, **tiêu chí biên nhận `T-RECEIPT` (§13)**, mục giới hạn. |
+| [Feat-Spec.md](Feat-Spec.md) | Hành vi: ba cửa onboarding, adapter thu phí, discover, vòng đời niêm yết. |
+| [Tech-Spec.md](Tech-Spec.md) | Kiến trúc on-chain (2 validator) + off-chain SDK + mô hình đe doạ + phụ lục blockchain. |
+| [Exec-Spec.md](Exec-Spec.md) | Lộ trình bootstrap M0…M6 (mười thành phần mỗi mốc), rủi ro vận hành. |
+| [onboarding.md](onboarding.md) | Hướng dẫn từng bước cho team muốn onboard (a→f). |
+| [Resource-Dictionary.md](Resource-Dictionary.md) | **Đơn vị đo** tài nguyên (`op_type` → lớp/đơn vị/quy ước đo) để hai dịch vụ so giá được. KHÔNG chứa đơn giá — đơn giá ở beacon từng platform, theo ranh giới [Feat-Spec §0.3](Feat-Spec.md). |
 
 > ⚠ **Chưa tệp nào được duyệt.** Chuẩn StandardSpec quy định phía sau chỉ được bắt đầu khi đặc tả
 > phía trước **đã duyệt**. SDK off-chain đã dựng xong trên nền một đặc tả chưa qua cổng đó. Ghi ra để
 > không ai tưởng đã qua.
+>
+> Đây là **dữ kiện kiểm được** — hàng "Người duyệt" ở mỗi tệp trống. Nó thay cho nhãn trạng thái tự
+> khai mà các tệp này từng mang: nhãn ấy không có cổng nào chuyển, nên nó ghi một chữ vĩnh viễn dù
+> tài liệu có đi tiếp hay không, còn câu "chưa ai duyệt" thì sai đi ngay khi có người duyệt thật.
 
 Chuẩn dành cho bên đăng ký nằm ở [../REGISTRATION-STANDARD.md](../REGISTRATION-STANDARD.md) —
 đó là tài liệu một platform đọc TRƯỚC khi nộp hồ sơ; các tệp trên là đặc tả đầy đủ của cơ chế.

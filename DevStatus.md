@@ -6,7 +6,7 @@ này cấm kể lịch sử.
 
 Cần hiểu Registry thì đọc **hai tệp này trước**. Đừng quét repo, đừng đoán.
 
-Cập nhật cuối: **2026-09-05**.
+Cập nhật cuối: **2026-09-06**.
 
 ---
 
@@ -34,7 +34,7 @@ Hai bậc 🔴 là hai chỗ công sức bốc hơi. `làm ngoài git` nặng h�
 | Nhánh `fix/ghim-dia-chi-ho-so-khong-phan-stake` | `XONG` — gộp qua PR #15 ngày 2026-09-01. Ghim ô hồ sơ về địa chỉ **enterprise** ở cả ba cửa (`R-ADDR`/`U-ADDR`/`M-ADDR`), đóng lỗ TÀNG HÌNH Math-Spec §8 T16 | đo lúc làm: `aiken check` 116 kiểm 0 lỗi (nền 113) · đột biến gỡ ba dòng gác ⇒ đúng ba bài kiểm mới đỏ, không bài nào khác đổi · `vitest` 218/218 · `tsc` 0 · `test-check.sh` 18/0 | `aiken check` tại `onchain/` ; `aiken build && grep -o '"hash": "[a-f0-9]*"' plutus.json \| sort -u` | **script hash ĐỔI CÓ CHỦ Ý**, miễn phí vì chưa deploy mạng nào. ⚠ Dòng này KHÔNG chép giá trị hash: bản trước chép cặp `d10bb50d…0115` / `73a25648…b97d`, và hai giá trị ấy đã chết sau hai lần đổi tiếp theo mà không dòng nào kêu. Hash hiện hành đọc từ `onchain/plutus.json` bằng lệnh ở cột bên trái | 2026-09-05 |
 | `OVERVIEW.md` — giới thiệu cho người ngoài hệ | `đã merge` (PR #32, 2026-09-05) | 159 dòng; ba góc phản biện ngôn từ chạy trước khi đẩy | `command grep -c 'OVERVIEW' README.md` (phải ≥ 2 — bảng *bắt đầu từ đâu* và bản đồ kho) | chỗ bắt đầu cho người chưa biết kho này là gì | 2026-09-05 |
 | Triển khai Preview / mainnet | `chưa làm` | — | `find . -iname '*LIVE_DEPLOY*'` (rỗng = chưa deploy) | mốc M5, M6 | 2026-08-17 |
-| Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt** | `Specs/*.md` khối siêu dữ liệu | `grep -n 'Người duyệt' Specs/*.md` | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-08-17 |
+| Duyệt đặc tả | `chưa làm` — **không tệp nào ở `Specs/` được duyệt, và kho KHÔNG có cơ chế nào chuyển trạng thái ấy**. Nhãn tự khai `DRAFT` đã gỡ 2026-09-06 vì nó khai một quy trình không tồn tại; thứ nó định nói nằm ở hàng `Người duyệt`, và hàng đó sai đi ngay khi có người duyệt thật | `Specs/*.md` khối siêu dữ liệu; `Specs/README.md` khối ⚠ dưới bảng mục lục | `command grep -c 'chưa ai duyệt' Specs/*.md` — mọi tệp phải ra **≥1**. Tệp nào ra `0` là tệp đó đang **im** về việc chưa duyệt, và im ở đây đọc ra "đã duyệt" | theo chuẩn StandardSpec: mọi thứ dựng phía sau đang chạy trước cổng | 2026-09-06 |
 
 **Không chép số kiểm thử vào tệp này.** Cột *Lệnh kiểm* là để người sau chạy một cái là biết. Số cũ
 đã đo (`137 pass` cây Treasury, `86 pass` off-chain, `30/30` cây này) đều đo **trước** đợt sửa v2 và

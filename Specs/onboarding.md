@@ -3,12 +3,10 @@
 | Trường | Giá trị |
 |---|---|
 | Phiên bản | v1.0.1 |
-| Trạng thái | `DRAFT` |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) — tài liệu hướng dẫn, không phải một trong bốn spec |
 | Người viết | Registry agent |
 | Người duyệt | **chưa ai duyệt** |
 | Cập nhật cuối | 2026-08-13 |
-| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 > Tệp này trước đây tên `ONBOARDING.md`. Đổi thành `onboarding.md` ngày 2026-08-13 cho khớp quy ước
 > tên tệp (viết hoa toàn bộ chỉ dành cho từ viết tắt).

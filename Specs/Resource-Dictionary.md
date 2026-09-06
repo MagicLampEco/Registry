@@ -1,6 +1,7 @@
 # Từ điển tài nguyên — mẫu số chung để so giá giữa các dịch vụ
 
-> Trạng thái: **v0.3**. Ngày: 2026-09-02 (v0.2: 2026-08-17).
+> Phiên bản: **v0.3**. Ngày: 2026-09-02 (v0.2: 2026-08-17).
+> Người duyệt: **chưa ai duyệt**.
 > Phạm vi: Registry giữ **đơn vị đo**, KHÔNG giữ **đơn giá**.
 > v0.3 rà lại các module mà v0.2 chưa chạm. **Không mã nào được cấp thêm** — và ba mã bị rút lại:
 > **10 `IDENTITY_RESOLVE` và 12 `MESSAGE_DELIVERED` thu hồi, 11 `VERIFY_PROOF` treo** (§2.2). Và
@@ -64,7 +65,7 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 
 ---
 
-## 2. Từ điển canonical
+## 2. Bảng `op_type` — đơn vị đo và quy ước đo
 
 🔴 **ĐỌC KHỐI NÀY TRƯỚC BẢNG. Tiền đề đánh số của v0.2 SAI, và sai theo cách tự nó không kêu.**
 Tìm 2026-09-02. Ba việc rời nhau, cộng lại thì bảng dưới đây **đụng số với một sổ đã chốt trước
