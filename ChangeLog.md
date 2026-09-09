@@ -11,6 +11,32 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-06 — phép đo độ phủ vào kho, và nó cắt phạm vi bằng ngoặc chứ không bằng thụt lề
+
+- **Đổi gì.** Thêm `tools/dot-bien.mjs` — phép đo độ phủ thật của bộ kiểm on-chain: gỡ hẳn từng
+  ràng buộc `expect` trong validator rồi chạy trọn bộ; chốt nào gỡ ra mà không bài nào đỏ là chốt
+  không có bài kiểm nào canh riêng nó. Bản này cắt phạm vi biểu thức bằng **cân bằng ngoặc**, thay
+  cho cách cắt bằng **thụt lề** của bản chạy tay trước đó.
+
+- **Vì sao.** Hai lý do rời nhau, cùng dẫn về một chỗ.
+
+  Thứ nhất, cách cắt cũ **mù đúng 6 chốt** và mù trong im lặng. Với `expect or {` thụt 8 mà dòng
+  đóng khối thụt 10, phép so *"thụt ≤ thụt-của-expect"* nhảy qua dòng đóng thật rồi bắt vào dấu `}`
+  đóng **cả hàm**; bản đột biến nuốt phần đuôi, không biên dịch được, và một bản đột biến không
+  biên dịch được thì nó **không nói gì** về độ phủ. Cùng lỗi với biểu thức trải nhiều dòng. Thụt lề
+  chưa bao giờ là đại lượng đúng để cắt một biểu thức — phạm vi của nó là chỗ mọi ngoặc đã đóng.
+  Đo lại 6 chốt ấy bằng cách cắt mới: **cả 6 đều có bài canh riêng**.
+
+  Thứ hai, phép đo này trước nay sống trong thư mục tạm của một phiên làm việc, và `DevStatus.md`
+  trỏ cột *Lệnh kiểm* vào đúng đường dẫn đó. Một con trỏ tới thứ sẽ biến mất, và **không gì kêu**
+  khi nó biến mất — người sau đọc dòng ấy, chạy lệnh, nhận "không tìm thấy tệp", rồi không có cách
+  nào biết phép đo từng cho ra số gì.
+
+- **Gãy gì nếu bám bản cũ.** Ai đọc mục *Việc còn treo* bản trước sẽ thấy dòng "6 chốt không đo
+  được" kèm chẩn đoán *"làm mất binding bên trong"* và đề xuất *"đảo vế thay vì gỡ khối"*. **Cả hai
+  đều sai**, và sai theo hướng dẫn người sau đi nhầm đường: không có binding nào bị mất, và đảo vế
+  không sửa được cái gì. Dòng ấy đã được thay bằng nguyên nhân thật.
+
 ## 2026-09-06 — nhãn trạng thái tự khai bị gỡ khỏi mọi tệp đặc tả
 
 - **Đổi gì.** Bảy tệp trong `Specs/` bỏ hai hàng siêu dữ liệu: `Trạng thái` (mang chữ `DRAFT`) và
