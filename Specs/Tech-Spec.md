@@ -3,13 +3,11 @@
 | Trường | Giá trị |
 |---|---|
 | Phiên bản | v1.0.1 |
-| Trạng thái | `DRAFT` |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Loại dự án | **F — Blockchain / Smart Contract** (phụ lục §22.F bắt buộc) |
 | Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13; §1–§5 chép sang v2.1 ngày 2026-09-01 |
 | Người duyệt | **chưa ai duyệt** |
 | Cập nhật cuối | 2026-09-01 |
-| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 > ⚠ **Chuẩn StandardSpec: phía sau chỉ được bắt đầu khi phía trước ĐÃ DUYỆT.** Bản này chưa duyệt,
 > và SDK off-chain đã dựng xong trên nền nó. Ghi ra, không đánh dấu duyệt hộ ai.

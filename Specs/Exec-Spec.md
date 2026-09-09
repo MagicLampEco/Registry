@@ -3,13 +3,11 @@
 | Trường | Giá trị |
 |---|---|
 | Phiên bản | v1.0.1 |
-| Trạng thái | `DRAFT` |
 | Tầng phạm vi | `L1` (hạ tầng / nền tảng) |
 | Pha hiện tại | M0–M4 đã có mã; **chưa mốc nào có bằng chứng kiểm chứng lại được** (xem §9) |
 | Người viết | LAMP agent 2026-06-15; Registry agent cập nhật 2026-08-13 |
 | Người duyệt | **chưa ai duyệt** |
 | Cập nhật cuối | 2026-08-13 |
-| Bộ trạng thái | StandardSpec — `DRAFT / IN-REVIEW / REVISE / APPROVED / CONDITIONALLY-APPROVED / LOCKED / SUPERSEDED / ARCHIVED / ABANDONED` (`TigerAgent/StandardSpec/_shared/overview/SPEC-OVERVIEW.md` Sơ đồ 4) |
 
 > **Tên cũ của lớp này là "PlatformKit"** (khi nó còn sống trong repo LAMP). Tên hiện hành: **Registry**.
 

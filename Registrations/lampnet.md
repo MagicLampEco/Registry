@@ -177,7 +177,7 @@ tả, không phải hình phạt — hệ không có quyền phạt (anh Đức 
 
 | Ngày | Việc | Kết quả |
 |---|---|---|
-| 2026-08-02 | Join agent nộp hồ sơ theo khung nêu trong thư mời (chuẩn chính thức khi đó chưa có trên remote) | Tiếp nhận |
+| 2026-08-02 | Join agent nộp hồ sơ theo khung nêu trong thư mời (chuẩn đăng ký khi đó chưa có trên remote) | Tiếp nhận |
 | 2026-08-04 | Registry ánh xạ sang khung mẫu; đổi `platform_id` `joinnet` → `join` | Thiếu **2.4**, **đầu mối liên hệ**, **người tiếp nhận** |
 | 2026-08-07 | Chép nguyên văn lời khai Join agent (thư 2026-08-05) vào ba ô trống; hạ mức bảo đảm `did:phoenix` xuống đúng mức đo được | **2.4** khai xong. **Người tiếp nhận** ghi nhận, chưa khoá. **Đầu mối liên hệ** vẫn CHƯA KHAI |
 | 2026-08-13 | Anh Đức chốt **một hồ sơ chung cho LampNet + Join** (ngược đề nghị (A) của LampNet agent, lý do và cách bù đã gửi thư). Chuyển sang khuôn khai-bằng-mã v2. Chép tám dòng `evidence` từ thư LampNet 2026-08-07 và 2026-08-11 | Hạng tính ra: **L0 — đã tiếp nhận**. Chặn lên `L1` bởi **đúng hai ô**: `governance_ref` và trục danh tính `ID-0`. Ba ô người-thật (`đầu mối liên hệ` × 2 con trỏ, `ai nhận nếu cả hai ngừng`) vẫn CHƯA KHAI — Registry không điền hộ |

@@ -126,7 +126,7 @@ hồ sơ phải nói ra, và người đọc sổ tự tra. ⚠ Bộ chấm **ch
 <details><summary>Lịch sử — mã <code>ID-A</code> và vì sao bỏ nó thay vì vá</summary>
 
 Tới 2026-09-02 ba mã trên ghim cứng chữ "PhoenixKey", và mọi hệ danh tính khác bị đẩy sang một mã
-thoát `ID-A` mang `rank: null`, nhãn *"hạng lấy theo hạng của hệ đó"*. Bản chuẩn cũ mô tả nó là
+thoát `ID-A` mang `rank: null`, nhãn *"hạng lấy theo hạng của hệ đó"*. Bản trước của chuẩn này mô tả nó là
 *"rỗng cho tới khi tra được"* — nghe như tạm thời.
 
 Đo trên mã thì nó **vĩnh viễn**: `rankOf` trả `null`, và `tinhHang` có
@@ -194,7 +194,7 @@ vụ, sổ không gánh hộ.
 |---|---|---|
 | **LAMP** | Token gốc, tổng cung cố định **36 tỷ, không đốt**. Giảm lưu hành = chuyển vào Treasury, không huỷ. | Không thiết kế cơ chế đốt LAMP. Nguồn: `LAMP/Treasury/CONTRACT.md §5`. |
 | **MAGIC** | Quyền dùng dịch vụ, được cấp (Gen) chứ không mua. | **Không tạo đường-ra**: không cho phép đổi MAGIC ngược ra tài sản ngoài hệ, dưới bất kỳ hình thức nào. |
-| **CARP** | Đồng lưu thông và ổn định của hệ; **đơn vị trả thưởng đóng góp tài nguyên**. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: repo `CarpetMint` (đường dẫn cũ `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md` không còn; **file canonical đang chờ đội CARP xác nhận** — đừng trích số từ bản nào khác cho tới lúc đó). Đừng nhầm với `LampNetCloud/Specs/Carpet/` — đó là lớp mạng P2P Carpet, không phải token CARP. |
+| **CARP** | Đồng lưu thông và ổn định của hệ; **đơn vị trả thưởng đóng góp tài nguyên**. | Dùng CARP làm phương tiện thanh toán trong hệ. Nguồn: repo `CarpetMint` (đường dẫn cũ `MAGIC/SPEC/Carpet-CARP-DacTa-Vi.md` không còn; **đội CARP chưa xác nhận bản nào là bản phải trích** — đừng trích số từ bản nào cho tới lúc đó). Đừng nhầm với `LampNetCloud/Specs/Carpet/` — đó là lớp mạng P2P Carpet, không phải token CARP. |
 
 **Biến thể được phép.** Một dịch vụ có thể phát hành token riêng neo vào hệ — nhưng phải qua đúng
 cổng của nó, không tự ý. Token neo policy LAMP thì đăng ký quyền phát hành ở **Mint-Authority
@@ -843,7 +843,7 @@ một tệp ở kho khác thì không cổng nào ở đây gác được nó.
 không ghi tên trần — và nếp "trích theo nội dung" ở dưới **cũng không cứu được** chỗ này: `grep`
 một câu trả về hai kết quả ở hai tệp, mỗi tệp một số dòng.
 
-🔴 **Bản CANONICAL là bản trong kho Glint**, không phải bản `VeDataIO/Specs/`. Kho Glint tự tuyên
+🔴 **Bản phải trích là bản trong kho Glint**, không phải bản `VeDataIO/Specs/`. Kho Glint tự tuyên
 bố ở `VeDataIO/Glint/README.md:45`: *"Spec nằm **trong kho này**, ở `Spec/` — không phải ở kho
 khác"*, và frontmatter cho số hiệu: `Spec/` = `version: 0.4.4`, `Specs/` = `version: 0.4.3`.
 
