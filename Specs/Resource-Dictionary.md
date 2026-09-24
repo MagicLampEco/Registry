@@ -58,7 +58,7 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 | **RD-3** | Đơn vị phải **cộng được**: đo 2 lần rồi cộng = đo 1 lần gộp | `required = base_price × op_count` chỉ đúng khi `op_count` cộng được. Đơn vị không cộng được (vd "một phiên") làm phép nhân vô nghĩa |
 | **RD-4** | Đơn vị phải **đơn thứ nguyên** — không gói nhiều tài nguyên vào một số | "1 task" gói CPU + RAM + thời gian + I/O. Hai task cùng đếm 1 có thể lệch chi phí 100×, nên giá per-task không nói gì về chi phí |
 | **RD-5** | Registry **không** cấp `op_type` cho thứ chưa có cách đo. Chưa đo được thì ghi vào §5 (danh sách hở), không cấp mã | Cấp mã cho thứ chưa đo được = cấp giấy phép định giá một đơn vị không tồn tại |
-| **RD-6** | Bảng giá on-chain có **tối đa 16 dòng cho CẢ HỆ**, không phải cho mỗi platform. Cấp **số** thì không có trần; cấp **dòng giá** thì có | `PriceParam` là **một** datum mang **một** danh sách `op_prices` (`MAGIC/ConsumeMAGIC/onchain/lib/magiclamp/consume/types.ak` ▸ `pub type PriceParam`), và `max_op_prices = 16` (`pricing.ak` ▸ hằng cùng tên) chặn độ dài danh sách đó. ⚠ Bản trước của dòng này ghi *"trần áp cho mỗi platform"* — **sai**, đọc nhầm một trần kích thước datum thành một hạn mức riêng. Hệ quả của bản sai: người giữ sổ tưởng dòng giá dồi dào, cấp mã theo đơn thay vì theo ngân sách dòng — §2 khối *"Số thì thừa, dòng giá thì thiếu"* |
+| **RD-6** | Bảng giá on-chain có **một trần số dòng cho CẢ HỆ**, không phải cho mỗi platform. Cấp **số** thì không có trần; cấp **dòng giá** thì có | `PriceParam` là **một** datum mang **một** danh sách `op_prices` (`MAGIC/ConsumeMAGIC/onchain/lib/magiclamp/consume/types.ak` ▸ `pub type PriceParam`), và hằng `max_op_prices` (`pricing.ak`) chặn độ dài danh sách đó. **Đọc trần ở hằng đó, đừng đọc ở đây**: trần là con số ConsumeMAGIC đo từ chi phí MEM của phép kiểm bảng giá, và nó sẽ **giảm** khi mỗi dòng mang thêm trường (`ConsumeMAGIC/CONTRACT.md` ▸ `CC-LOAD-COUNT-UNIT`). Giá trị đo 2026-09-24 trên `MAGIC@443859ee`: 16. ⚠ Bản trước của dòng này ghi *"trần áp cho mỗi platform"* — **sai**, đọc nhầm một trần kích thước datum thành một hạn mức riêng. Hệ quả của bản sai: người giữ sổ tưởng dòng giá dồi dào, cấp mã theo đơn thay vì theo ngân sách dòng — §2 khối *"Số thì thừa, dòng giá thì thiếu"* |
 | **RD-7** | Trong bảng giá, `op_type` phải **tăng ngặt** (sắp tăng, không trùng) | Ép bởi `pricing.ak:75` (`sorted_strict_op_types`). Trùng mã thì on-chain lấy dòng ĐẦU còn off-chain viết bằng map lấy dòng CUỐI ⇒ hai phía lệch giá im lặng (`pricing.ak:108-109`) |
 | **RD-8** | Chữ **"epoch"** KHÔNG được dùng làm đơn vị thời gian trong từ điển. Dùng **giờ (h)** | Chữ này mang **ba** nghĩa khác nhau trong cùng hệ sinh thái, và đã có hai lần trả giá thật — §3.4 |
 | **RD-9** | Vector phân rã của một service phải **TRỌN VẸN**: mọi tài nguyên mà bên bán đang thu tiền của bên mua đều phải có mặt trong vector, kể cả khi nó nằm trong một khoản gộp tên là "phí dịch vụ" | Không có điều này thì "so giá được" chỉ đúng cho phần bên bán **muốn** cho so. Bên bán khai đúng một mã rẻ nhất, thắng mọi bảng so sánh, rồi dồn chi phí thật vào khoản ngoài vector — khai đúng luật mà vẫn lừa. Xem §4.1 |
@@ -120,10 +120,13 @@ mới là vế quyết định (đính chính 2026-09-24, MAGIC đo và báo; nh
   (`pricing.ak` ▸ `lookup_base`). Nên **không bao giờ tiết kiệm số, và không bao giờ tái dùng số** —
   đó là hành vi nguy hiểm nhất với một quyển sổ (§2.2, luật bia mộ).
 - **Dòng giá có trần, và trần đó là của CẢ HỆ.** `PriceParam` là một datum mang một danh sách
-  `op_prices`; `max_op_prices = 16` chặn độ dài danh sách đó. Không có bảng riêng cho từng platform.
+  `op_prices`; hằng `max_op_prices` chặn độ dài danh sách đó. Không có bảng riêng cho từng platform.
 - **Đếm ngân sách dòng** (2026-09-24, đếm từ bảng dưới): số còn sống đã cấp = 1, 2, 3, 4, 7, 8, 9,
-  11, 13–19 = **15**. Nếu mỗi số cần một dòng giá thì còn **1**. Đây là ngân sách thật để xét đơn,
-  không phải con số 8/16 hay "không giới hạn" của các bản trước.
+  11, 13–19 = **15**. Ngân sách còn lại = `max_op_prices` − 15, nếu mỗi số cần một dòng giá. Với
+  trần đo 2026-09-24 (16) thì còn **1**. Trần đó sẽ giảm (RD-6); xuống dưới 15 thì các mã đã cấp
+  không còn cùng nằm được trong **một** bảng.
+- **Ràng buộc đang áp khi xét đơn:** cấp **số** vẫn cấp; kèm theo số **không** có cam kết nào về
+  dòng giá hay mốc thời gian có dòng giá. Dòng giá do bảng giá bên ConsumeMAGIC quyết.
 
 Hệ quả cho người xét đơn: **cấp số ≠ cấp dòng giá.** Một mã có số mà chưa có dòng giá thì chưa thu
 được đồng nào — nó chỉ giữ chỗ cho nghĩa. Đổi trần (nâng `max_op_prices`, hay nhiều bảng) là việc
@@ -582,7 +585,7 @@ Viết ra để không ai trích dẫn nó quá tay:
    đúng*. Provider khai vống thì từ điển không bắt được — đó là việc của biên nhận (Math-Spec §13),
    nơi bên chịu thiệt chính là bên đã kiểm.
 2. **Không có số nào ở đây là giá.** Mọi con số trong tệp này là hằng đơn vị (2^30, 1000 token,
-   3600 giây) hoặc trần kỹ thuật (16 dòng), không phải tiền.
+   3600 giây) hoặc trần kỹ thuật (`max_op_prices`, RD-6), không phải tiền.
 3. **Không ràng buộc được repo khác.** Ba đề nghị ở §3.2–3.4 (LampNet sửa chú thích GB, TigerAgent
    tách bốn số khi khai ra hệ) là **đề nghị**. Registry chỉ ràng buộc được thứ đi qua cổng đăng ký.
 4. **Chưa có bộ kiểm, và chưa cả có Ô ĐỂ KHAI.** `tools/check-registration.mjs` chưa validate
