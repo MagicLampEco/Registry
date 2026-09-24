@@ -11,6 +11,17 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-24 — bảng đối chiếu mã ràng buộc on-chain ↔ đặc tả ↔ off-chain; `R-GOVDIST` và `R-CAP` vào `Tech-Spec.md`
+
+- **Đổi gì.**
+  - Thêm `tests/constraintCrosswalk.test.ts`. Bài lấy mọi mã ràng buộc (`R-*`, `U-*`, `M-*`, `S-*`) xuất hiện trong mã on-chain (bỏ tệp `_test.ak`), rồi đỏ khi có mã thiếu ở `Specs/Tech-Spec.md` hoặc thiếu ở `offchain/src/`. Chiều ngược lại cũng đỏ: mã chỉ có ở off-chain phải nằm trong danh sách `OFFCHAIN_ONLY`, mỗi mục kèm lý do.
+  - Ngoại lệ hiện có:
+    - `S-REG` là tiêu đề một nhóm trong chú thích, không phải một ràng buộc.
+    - `U-BEACON` và `M-GOVSELF-OWN` là hai phép kiểm chỉ có ở off-chain.
+  - `Tech-Spec.md` thêm hai mục `R-GOVDIST` và `R-CAP`, ngay sau `R-WF`. Hàm gương off-chain `governanceRefDistinct` và hằng `MAX_ACCEPTED_ASSETS` nay mang tên mã tương ứng.
+- **Vì sao.** `registry_beacon.ak` ép cả hai ràng buộc này, và `shapeMirror.test.ts` có bài gương cho cả hai. Nhưng `Tech-Spec.md` tả khối `R-WF` mà không nhắc tới chúng, và mã gương off-chain cũng không gắn tên. `R-GOVDIST` chặn một đường mà authority một mình gỡ niêm yết vĩnh viễn được, vì nhánh `Collect` của kho custody không đòi chữ ký. Bên tích hợp đọc đặc tả không có cách nào biết ràng buộc đó tồn tại. Không bài kiểm nào đỏ, vì chưa có gì đối chiếu ba nơi với nhau. Chạy lần đầu, bài mới đỏ đúng hai mã này và không đỏ ở chỗ nào khác.
+- **Cái gì gãy.** Không đổi validator nào, script hash giữ nguyên. Từ nay, thêm một mã ràng buộc vào validator mà không thêm dòng ở đặc tả và ở off-chain thì CI đỏ. Đó là chủ ý của bài.
+
 ## 2026-09-24 — sổ `op_type` khớp lại với bảng giá on-chain; `ID-3` trỏ về nguồn personhood thật
 
 - **Đổi gì.** Sáu việc trong `Specs/Resource-Dictionary.md`:
