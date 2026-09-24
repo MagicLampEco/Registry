@@ -58,7 +58,7 @@ con số*. Đổi `GB → GiB` thuộc tệp này. Đổi `1 → 2 µLAMP` thì 
 | **RD-3** | Đơn vị phải **cộng được**: đo 2 lần rồi cộng = đo 1 lần gộp | `required = base_price × op_count` chỉ đúng khi `op_count` cộng được. Đơn vị không cộng được (vd "một phiên") làm phép nhân vô nghĩa |
 | **RD-4** | Đơn vị phải **đơn thứ nguyên** — không gói nhiều tài nguyên vào một số | "1 task" gói CPU + RAM + thời gian + I/O. Hai task cùng đếm 1 có thể lệch chi phí 100×, nên giá per-task không nói gì về chi phí |
 | **RD-5** | Registry **không** cấp `op_type` cho thứ chưa có cách đo. Chưa đo được thì ghi vào §5 (danh sách hở), không cấp mã | Cấp mã cho thứ chưa đo được = cấp giấy phép định giá một đơn vị không tồn tại |
-| **RD-6** | Một platform khai **tối đa 16** dòng `op_type` trong bảng giá on-chain | Trần cứng, đo bằng ExUnit thật: `MAGIC/ConsumeMAGIC/onchain/lib/magiclamp/consume/pricing.ak:53` (`max_op_prices = 16`), số đo mem ở `:38-47`. Từ điển toàn hệ ĐƯỢC phép dài hơn 16 — trần áp cho **mỗi platform**, không cho từ điển |
+| **RD-6** | Bảng giá on-chain có **tối đa 16 dòng cho CẢ HỆ**, không phải cho mỗi platform. Cấp **số** thì không có trần; cấp **dòng giá** thì có | `PriceParam` là **một** datum mang **một** danh sách `op_prices` (`MAGIC/ConsumeMAGIC/onchain/lib/magiclamp/consume/types.ak` ▸ `pub type PriceParam`), và `max_op_prices = 16` (`pricing.ak` ▸ hằng cùng tên) chặn độ dài danh sách đó. ⚠ Bản trước của dòng này ghi *"trần áp cho mỗi platform"* — **sai**, đọc nhầm một trần kích thước datum thành một hạn mức riêng. Hệ quả của bản sai: người giữ sổ tưởng dòng giá dồi dào, cấp mã theo đơn thay vì theo ngân sách dòng — §2 khối *"Số thì thừa, dòng giá thì thiếu"* |
 | **RD-7** | Trong bảng giá, `op_type` phải **tăng ngặt** (sắp tăng, không trùng) | Ép bởi `pricing.ak:75` (`sorted_strict_op_types`). Trùng mã thì on-chain lấy dòng ĐẦU còn off-chain viết bằng map lấy dòng CUỐI ⇒ hai phía lệch giá im lặng (`pricing.ak:108-109`) |
 | **RD-8** | Chữ **"epoch"** KHÔNG được dùng làm đơn vị thời gian trong từ điển. Dùng **giờ (h)** | Chữ này mang **ba** nghĩa khác nhau trong cùng hệ sinh thái, và đã có hai lần trả giá thật — §3.4 |
 | **RD-9** | Vector phân rã của một service phải **TRỌN VẸN**: mọi tài nguyên mà bên bán đang thu tiền của bên mua đều phải có mặt trong vector, kể cả khi nó nằm trong một khoản gộp tên là "phí dịch vụ" | Không có điều này thì "so giá được" chỉ đúng cho phần bên bán **muốn** cho so. Bên bán khai đúng một mã rẻ nhất, thắng mọi bảng so sánh, rồi dồn chi phí thật vào khoản ngoài vector — khai đúng luật mà vẫn lừa. Xem §4.1 |
@@ -112,13 +112,22 @@ thật trong `09_deploy_consume.ts:196-199` và các fixture/test bám theo. Sá
 các số ấy thì **chưa một dòng mã nào dùng**. Đổi bên nào rẻ hơn là rõ ⟹ **v0.2 nhường, dời xuống
 13–18** (bảng dưới). Không mã nào mất nghĩa, chỉ đổi số, và đổi trong lúc còn 0 đồng.
 
-⚠ **Sổ KHÔNG sắp hết chỗ — `CONTRACT.md §A` ghi "Còn 8/16 dòng" là đọc nhầm trần.** Con số 16 là
-`max_op_prices` (`ConsumeMAGIC/onchain/lib/magiclamp/consume/pricing.ak:53`), và chú thích ngay trên
-nó nói rõ đó là trần **kích thước datum của MỘT bảng giá** — *"16 dòng ≈ 256 byte datum"*. Nó chặn
-**số dòng một platform khai**, không chặn **giá trị** của `op_type`: `op_type` là `Int` thường, hàm
-tra là `list.find` tuyến tính (`pricing.ak:100-101`), không đâu chặn trên. RD-6 của tệp này đã ghi
-đúng điều đó từ v0.2. Ghi lại ở đây vì tin nhầm "chỉ còn 8 ô" dẫn thẳng tới hành vi nguy hiểm nhất
-với một quyển sổ: tiết kiệm số, rồi tái dùng số.
+🔴 **Số thì thừa, dòng giá thì thiếu — bản trước của khối này nói ngược vế sau.** Bản trước ghi *"Sổ
+KHÔNG sắp hết chỗ"* và *"16 chặn số dòng MỘT PLATFORM khai"*. Vế đầu đúng, vế sau sai, và vế sau
+mới là vế quyết định (đính chính 2026-09-24, MAGIC đo và báo; nhà này đọc lại kiểu datum):
+
+- **Số `op_type` không có trần.** `op_type` là `Int` thường, hàm tra là `list.find` tuyến tính
+  (`pricing.ak` ▸ `lookup_base`). Nên **không bao giờ tiết kiệm số, và không bao giờ tái dùng số** —
+  đó là hành vi nguy hiểm nhất với một quyển sổ (§2.2, luật bia mộ).
+- **Dòng giá có trần, và trần đó là của CẢ HỆ.** `PriceParam` là một datum mang một danh sách
+  `op_prices`; `max_op_prices = 16` chặn độ dài danh sách đó. Không có bảng riêng cho từng platform.
+- **Đếm ngân sách dòng** (2026-09-24, đếm từ bảng dưới): số còn sống đã cấp = 1, 2, 3, 4, 7, 8, 9,
+  11, 13–19 = **15**. Nếu mỗi số cần một dòng giá thì còn **1**. Đây là ngân sách thật để xét đơn,
+  không phải con số 8/16 hay "không giới hạn" của các bản trước.
+
+Hệ quả cho người xét đơn: **cấp số ≠ cấp dòng giá.** Một mã có số mà chưa có dòng giá thì chưa thu
+được đồng nào — nó chỉ giữ chỗ cho nghĩa. Đổi trần (nâng `max_op_prices`, hay nhiều bảng) là việc
+thiết kế của validator bên MAGIC, không phải việc của sổ này.
 
 Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:27-28`.
 
@@ -136,10 +145,10 @@ Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:
 |---|---|---|---|---|---|
 | **1** | `MEDIA_IMAGE` (MAGIC gọi: `ảnh`) | media | 1 ảnh đã nhận | Đếm ảnh nhận thành công tại biên dịch vụ, sau khi qua cổng kích thước. **Đây là mã tương thích ngược, vi phạm RD-4** (một ảnh 200 KB và một ảnh 20 MB cùng đếm 1) — §5.1 | Đã vào script triển khai |
 | **2** | `ANCHOR_CID` (MAGIC gọi: `CID`) | anchor | 1 CID được neo | Đếm CID **khác nhau** ghi vào một giao dịch đã lên chuỗi. Retry cùng CID không cộng thêm. Mọi bên neo bằng chứng **dùng lại mã này, KHÔNG xin mã mới** (`ConsumeMAGIC/CONTRACT.md:42`) | Đã vào script triển khai |
-| **3** | `recognition_storage_mb` | storage | 1 **MB** | ⚠ **KẾ THỪA** từ `ConsumeMAGIC/CONTRACT.md §A`, cấp cho OriLife. Có `base_price` thật ở `09_deploy_consume.ts:198`. **Chưa qua rà RD**, và có một chỗ phải biết: nó đếm MB **không kèm thời gian**, nên nó KHÔNG cùng đại lượng với mã 13 — lưu 1 MB một giờ và lưu 1 MB một năm cùng đếm 1 | Đã vào script triển khai |
-| **4** | `recognition_compute_mb` | compute | 1 **MB** tính toán | ⚠ **KẾ THỪA**, cấp cho OriLife, `base_price` ở `09_deploy_consume.ts:199`. **Chưa qua rà RD.** §2.1 giải thích vì sao "compute" toàn hệ chưa đo được — dòng này không gỡ được điều đó, nó chỉ là một đơn vị nội bộ của một app | Đã vào script triển khai |
-| **5** | `job_post` | marketplace | 1 tin việc đăng + phát tán | ⚠ **KẾ THỪA**, cấp cho AladinWork. **Chưa qua rà RD** | Chốt số, chưa nối giá |
-| **6** | `contract_settle` | marketplace | 1 hợp đồng tất toán | ⚠ **KẾ THỪA**, cấp cho AladinWork. **Chưa qua rà RD** | Chốt số, chưa nối giá |
+| **3** | `recognition_storage_event` (bản trước: `recognition_storage_mb`) | storage | 1 **lần lưu** | ⚠ **KẾ THỪA** từ `ConsumeMAGIC/CONTRACT.md §A`, cấp cho OriLife; `base_price` DAO chốt. Bản trước ghi đơn vị **1 MB** — **sai với mã**: `required_for` nhân thẳng `op_count`, không chỗ nào quy đổi byte (`pricing.ak` ▸ `required_for`); MAGIC đổi tên sang `_event` 2026-09-21. Nghĩa của mã không đổi — chỉ lời tả được sửa cho khớp. **Vi phạm RD-4** cùng kiểu mã 1: lưu 1 KB và lưu 1 GB cùng đếm 1. Không cùng đại lượng với mã 13 | Đã vào script triển khai |
+| **4** | `recognition_compute_event` (bản trước: `recognition_compute_mb`) | compute | 1 **lần tính** | ⚠ **KẾ THỪA**, cấp cho OriLife; `base_price` DAO chốt. Cùng đính chính với mã 3: đếm **lần**, không đếm MB. **Vi phạm RD-4** — một lần tính nhỏ và một lần tính lớn cùng đếm 1. §2.1 giải thích vì sao "compute" toàn hệ chưa đo được; dòng này là đơn vị nội bộ của một app, không gỡ được điều đó | Đã vào script triển khai |
+| **5** | ~~`job_post`~~ | ~~marketplace~~ | — | ⛔ **RÚT 2026-09-21** theo đề nghị của chính AladinWork, bên đã xin nó; chưa từng lên chuỗi. **Số để TRỐNG vĩnh viễn, không cấp lại** — `pricePerOp(5, …)` ở kho AladinWork đã trả một giá hợp lệ suốt 45 ngày, nên cấp lại số 5 cho nghĩa khác là để mọi bản sao còn sót trả giá của một mã khác mà không bản nào tự khai. Lý do rút: mã tả một **sự kiện nghiệp vụ của nền tảng**, không tả một nghiệp vụ hạ tầng (§5, dòng `geo_dispatch`) | Thu hồi |
+| **6** | ~~`contract_settle`~~ | ~~marketplace~~ | — | ⛔ **RÚT 2026-09-21**, cùng lý do và cùng luật bia mộ với mã 5 | Thu hồi |
 | **7** | `did.rotate` | identity | 1 lần xoay khoá DID | ⚠ **KẾ THỪA**, cấp cho PhoenixKey. Là **thao tác an ninh** — đặt giá cao ở đây khoá được người dùng khỏi tự bảo vệ mình, nên nó không cùng loại với các dòng thương mại | Chốt số, chưa nối |
 | **8** | `did.transfer` | identity | 1 lần chuyển DID | ⚠ **KẾ THỪA**, cấp cho PhoenixKey. Thương mại — chịu hệ số cầu là đúng | Chốt số, chưa nối |
 | **9** | `SENSING_READING` | sensing | 1 lần đọc cảm biến **đã được tiêu thụ** | Đếm ở phía **hạ nguồn** (bên đọc dữ liệu), không đếm ở phía cảm biến. Cảm biến tự đếm thì đếm bao nhiêu cũng được — vi phạm RD-2 | Mới |
@@ -152,6 +161,7 @@ Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:
 | **16** | `AI_TOKEN_OUT` | ai | 1000 token **đầu ra** | *(dời từ số 6)* `usage.output_tokens` | Mới |
 | **17** | `AI_TOKEN_CACHE_W` | ai | 1000 token **ghi cache** | *(dời từ số 7)* `usage.cache_creation_input_tokens` | Mới |
 | **18** | `AI_TOKEN_CACHE_R` | ai | 1000 token **đọc cache** | *(dời từ số 8)* `usage.cache_read_input_tokens` | Mới |
+| **19** | `CAVE_FUEL_K` | cave | 1000 **fuel** của runtime Cave (wasmtime) | Cấp 2026-09-24 cho Dhost; chủ dự án chốt đơn vị. **`op_count = ⌈fuel_used / 1000⌉`, làm tròn lên MỖI JOB** — không gộp theo giao dịch hay theo lô, vì cách gộp do bên ký giao dịch chọn. `fuel_used = fuel_limit − fuel còn lại` do wasmtime đếm. **Job lỗi vẫn đếm**, vì chi phí đã tiêu rồi (cùng tiền lệ mã 11): hết fuel thì đếm trọn `fuel_limit`; quá hạn hoặc bẫy thì đếm số fuel đã tiêu tới lúc dừng. ⚠ Hôm nay Dhost **chưa** trả `fuel_used` ở nhánh lỗi — phải sửa trước khi nối giá. **Không phải mã COMPUTE chung** (§2.1): fuel chỉ so được trong cùng một bảng tính fuel của runtime. Đổi bản wasmtime mà cách tính fuel đổi theo thì phải cấp mã mới (RD-1). Lệch RD-3 có trần: tối đa 999 fuel mỗi job | Mới |
 
 Lớp (`class`) không phải để trang trí: nó là khoá của hệ số cầu per-platform per-class
 (PC-5, bản nháp cơ chế phí), nên hai `op_type` cùng lớp thì cùng chịu một hệ số cầu.
@@ -556,6 +566,7 @@ RD-5 cấm cấp mã cho thứ chưa đo được. Dưới đây là hàng chờ
 | **Tách `VERIFY_PROOF` theo hệ chứng minh** | Mã 11 giữ số nhưng không dùng được cho tới khi tách (§2.2) | VeData chốt cách tách, theo đúng tiền lệ của chính họ ở `op_type` 2 vs 3 (lệch 53×, lý do `[I1]`, `VeData-Metering-Feat-Spec.md:104-112`). Tối thiểu phải tách chữ ký thường khỏi ZK; trong ZK còn phải cân Groth16 với PLONK/Halo2 |
 | **Giao tin nhắn** | Thay chỗ cho mã 12 đã thu hồi (§2.2) | **Hai bước, làm một bước vẫn hỏng**: (1) nối lại đường gọi `markDelivered` cho nó sống; (2) ký biên nhận bằng khoá riêng **người nhận**. Chỉ (1) thì được một ACK do hạ tầng bên bán tự sinh — vẫn vi phạm RD-2 |
 | **MEDIA theo dung lượng** | Mã **1** đếm ảnh, vi phạm RD-4 | Không sửa mã 1 (RD-1). Cấp mã mới đếm **MiB ảnh đã nhận**; mã 1 xuống trạng thái "kế thừa". ⚠ Trong lúc hai mã cùng sống, mã 1 hở về **phía bên mua**: tải toàn ảnh sát ngưỡng cổng kích thước thì rút tối đa dung lượng với giá "1 ảnh" cố định. Bên nào còn dùng mã 1 tự đặt `base_price` bù rủi ro cỡ-tối-đa — đây là việc của platform, không phải lỗ của từ điển |
+| **`geo_dispatch`** (ghép việc theo vị trí — MAGIC xin hộ AladinWork, 2026-09-14) | Ba lý do độc lập, gỡ một vẫn còn hai: **(1) số xin đã có chủ** — đơn xin số **9** vì bản sổ bên xin chỉ thấy 1–8, nhưng số 9 là `SENSING_READING` ở §2 từ 2026-09-02; đây là va chạm giữa hai bản chép của cùng một sổ, không phải lỗi của bên xin. **(2) RD-5** — đơn tự khai *"neo mã thật đang đếm: chưa có"*. **(3) RD-2 chưa rõ** — bên đếm "lượt nhận" là bên vận hành sổ ghép việc; nếu đó là chính bên bán thì là tự khai. Thêm một câu hỏi chưa ai trả lời, ghi lại chứ không tự chốt: phép thử MAGIC nêu khi rút mã 5/6 (2026-09-21) — *"mã tả một nghiệp vụ hạ tầng bên tiêu thụ MAGIC chạy, hay một sự kiện nghiệp vụ của nền tảng cắm vào?"* — `geo_dispatch` đứng ở phía nào? Phép thử đó **chưa phải một luật RD** | Có mã đếm lượt nhận, đếm ở phía **không phải** bên bán (hoặc có biên nhận người nhận việc ký), và trả lời được câu hỏi phép thử. Khi đủ thì cấp **số kế tiếp chưa ai giữ**, không cấp 9. ⚠ Cấp số thì không có trần; dòng giá thì có — xem RD-6 |
 | **COORDINATION** (điều phối nhiều agent) | Không phải resource — nó là **service vector**, đã có §4 phục vụ | Không cấp. Nếu ai đòi mã riêng, hỏi họ nó đo bằng gì |
 | **Giữ chỗ / cọc** (AladinWork `holdDeposit`) | Chưa cài; spec tự đánh dấu `[PARAM]` chưa chốt (`AladinWork/Specs/Task/Task-Schedule-ExtraFee-JobTypeGov-v2.md:7,138-149`) | Cọc **không phải** tiêu thụ tài nguyên — nó là tài sản hoàn lại. Thuộc Treasury, không thuộc từ điển |
 | **Phụ phí thời-giá** (`surchargeIndex`) | Chưa cài (cùng nguồn trên) | Là **hệ số nhân**, không phải tài nguyên. Thuộc PC-5 (hệ số cầu), không thuộc từ điển |
