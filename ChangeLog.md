@@ -42,6 +42,35 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
   - Bên nào xin mã mới với giả định mỗi platform có 16 dòng: con số thật là 2 dòng cho cả hệ trước mã 19, 1 dòng sau mã 19.
   - Bên nào đã dựng theo đơn vị ⌈fuel/10⁶⌉ đề xuất trước đó cho Dhost: đơn vị chính thức là 1000 fuel.
 
+## 2026-09-24 — SDK off-chain nhận bộ ba script thành MỘT kiểu, và mọi gương của ràng buộc vô điều kiện thành bắt buộc
+
+- **Đổi gì.** Thêm kiểu `RegistryScripts { registryAuthority, registryHash, beaconPolicy }`
+  (`offchain/src/types.ts`). `planRegister`, `onboardPlatform`, `planUpdateEntry`, `planMigrateEntry`
+  nhận nó thay cho các chuỗi rời. Bảy tham số trước đây tuỳ chọn nay bắt buộc: `timeBucketWindow`,
+  `registryHash`, `ownRegistryHash` (bỏ hẳn, lấy từ `scripts`), `valueIn`/`valueOut` ở cả Update lẫn
+  Migrate. Thêm ba phép ném: `REG-AUTH`, `ONBOARD-AUTH` (khoá authority của cấu hình platform khác
+  khoá của bộ script) và `UPD-BEACON` (policy beacon truyền vào khác policy mà hồ sơ mang). Phép kiểm
+  hồi sinh thuần tuý phía off-chain nay so cả bản ghi thay vì liệt kê trường. `summary` của Update và
+  Migrate cảnh báo cấm mint/burn. Cổng số trường trong tài liệu (`tests/soTruongTaiLieu.test.ts`)
+  quét mọi tệp `Specs/*.md` và khớp cả chữ `field`.
+
+- **Vì sao.** Mỗi tham số tuỳ chọn ở đây là một gương của một ràng buộc on-chain **vô điều kiện**;
+  bỏ trống thì gương im, và bên gọi dựng được một giao dịch mà chain chắc chắn từ chối — lỗi chỉ lộ
+  ra lúc nộp, sau một vòng phối hợp giữa hai tổ chức. Nặng nhất là `ownRegistryHash`: bỏ trống thì
+  SDK báo hợp lệ cho một giao dịch khoá beacon NFT vĩnh viễn. `registryHash` và `beaconPolicy` gắn
+  với nhau bằng mật mã (policy được apply từ hash), nên nhận chúng rời nhau thì gương R-GOVSELF báo
+  xanh cho một hash sai mà vẫn đủ 28 byte. Khi rà họ lỗ này, phép đo cũ đếm được **ba** ô vì nó đo
+  bằng tên tham số; đo bằng hình dạng (`if (x !== undefined)` bọc một gương) thì ra **bảy**.
+  Không đổi dòng validator nào; chú thích U-GOV trong `registry.ak` thôi liệt kê tên trường (nó đã
+  liệt thiếu `substrate_flags`), script hash không đổi.
+
+- **Cái gì gãy.** Mọi chỗ gọi bốn hàm trên theo chữ ký cũ không biên dịch được nữa — gãy ồn ào, có
+  chủ ý. Gói `@magiclamp/registry-kit` chưa phát hành và chưa khai điểm vào, nên không bên ngoài kho
+  nào đang nhập nó. Bên nào đang ghép tay `beaconPolicy` với `registryHash` từ hai nguồn khác nhau
+  sẽ gặp `REG-AUTH`/`UPD-BEACON` thay vì một giao dịch bị từ chối lúc nộp. Ví dụ ở
+  `Specs/onboarding.md` mục (d) viết theo chữ ký mới; bản cũ thiếu bốn tham số bắt buộc và trỏ tới
+  một kịch bản không tồn tại.
+
 ## 2026-09-06 — phép đo độ phủ vào kho, và nó cắt phạm vi bằng ngoặc chứ không bằng thụt lề
 
 - **Đổi gì.** Thêm `tools/dot-bien.mjs` — phép đo độ phủ thật của bộ kiểm on-chain: gỡ hẳn từng

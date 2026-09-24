@@ -17,7 +17,7 @@
 //   kho và hồ sơ ⇒ BƯỚC 1 PHẢI SUBMIT trước BƯỚC 2 (R-BIND: bước 2 readFrom UTxO kho của bước
 //   1). Bên gọi điền `custodyOutRef` (txHash#index) sau khi submit bước 1.
 
-import type { PlatformConfig } from "./types.js";
+import type { PlatformConfig, RegistryScripts } from "./types.js";
 import type { CustodyDatum, LedgerEntry, PlanSeedFn, SeedPlanLike } from "./treasuryShapes.js";
 import {
   planRegister, type CustodyRef, type TimeBucketWindow, type RegisterPlan,
@@ -33,28 +33,33 @@ export interface OnboardParams {
    */
   planSeed: PlanSeedFn;
 
-  /** beacon NFT policy = hash(registry_beacon(authority, registry_hash)). */
-  beaconPolicy: string;
+  /**
+   * BỘ BA script của lần triển khai registry đang đăng ký vào (xem `RegistryScripts`).
+   * Thay cho hai tham số rời `beaconPolicy` + `registryHash?` của bản trước — `registryHash`
+   * từng tuỳ chọn, nên đường onboard BỎ QUA R-GOVSELF trong khi đường `planRegister` thẳng
+   * thì kiểm: hai lối vào cùng một builder mà ép khác nhau.
+   */
+  scripts: RegistryScripts;
   /** script hash kho của platform. Vào entry.custody_hash + địa chỉ output bước seed. */
   custodyHash: string;
   /** seed_policy = policy id của custody_seed đã apply genesis_ref. */
   seedPolicy: string;
   /** ô thời gian đăng ký (vào trường `created_epoch`) ≥ 0. */
   createdEpoch: bigint;
-  /** Cửa sổ ô thời gian của tx đăng ký (R-EPOCH) — cấp vào thì created_epoch bị ép nằm trong. */
-  timeBucketWindow?: TimeBucketWindow;
+  /**
+   * Cửa sổ ô thời gian của tx đăng ký (R-EPOCH) — BẮT BUỘC, chuyển thẳng xuống `planRegister`.
+   *
+   * ⚠ Ràng buộc on-chain vô điều kiện. Trường này từng để trống được, và khi trống thì việc
+   * chuyển tiếp cũng bị bỏ qua ⇒ đường onboard dựng ra hồ sơ có `created_epoch` chưa ai đối
+   * chiếu với `validity_range` của chính tx, mà trường đó BẤT BIẾN.
+   */
+  timeBucketWindow: TimeBucketWindow;
 
   /**
    * R-GOVLIVE — bằng chứng cổng quản trị của platform CHẠY THẬT trong tx BƯỚC 2 (đăng ký).
    * BẮT BUỘC: ràng buộc on-chain vô điều kiện, thiếu là tx đăng ký bị từ chối 100%.
    */
   governanceProof: GovernanceProof;
-
-  /**
-   * script hash validator registry đích — cấp vào thì ép thêm R-GOVSELF
-   * (`governance_ref != registry_hash`). Bỏ trống thì bước đăng ký bỏ qua kiểm đó.
-   */
-  registryHash?: string;
 
   /** Sổ kế toán genesis (thường rỗng — kho bắt đầu trống, chỉ có ADA giữ min-UTxO). */
   genesisLedger?: LedgerEntry[];
@@ -78,12 +83,26 @@ export interface OnboardPlan {
  * bất kỳ gương nào hỏng.
  */
 export function onboardPlatform(params: OnboardParams): OnboardPlan {
-  const { config, beaconPolicy, custodyHash, seedPolicy, createdEpoch } = params;
+  const { config, scripts, custodyHash, seedPolicy, createdEpoch } = params;
 
   if (typeof params.planSeed !== "function") {
     throw new Error(
       "ONBOARD-DEP: thiếu tham số `planSeed`. Registry KHÔNG nhập SDK Treasury — bên gọi phải "
       + "tiêm hàm dựng kho vào. Chỉ cần đăng ký (kho đã có) thì dùng thẳng planRegister.",
+    );
+  }
+
+  // ONBOARD-AUTH: `registry_authority` khai ở HAI nguồn — hồ sơ platform (`config`) và bộ
+  // script đã triển khai (`scripts`). Phải là cùng một sự thật; `planRegister` cũng ném ở
+  // REG-AUTH, nhưng ở đây phải ném SỚM HƠN: bước SEED chạy TRƯỚC bước đăng ký, nên nếu để tới
+  // đó mới hỏng thì hàm `planSeed` do bên ngoài tiêm đã chạy xong với một bộ tham số sai.
+  if (config.registryAuthority.toLowerCase() !== scripts.registryAuthority.toLowerCase()) {
+    throw new Error(
+      `ONBOARD-AUTH: config.registryAuthority (${config.registryAuthority.toLowerCase()}) != `
+      + `scripts.registryAuthority (${scripts.registryAuthority.toLowerCase()}). Hai chỗ này `
+      + `khai CÙNG MỘT sự thật — key-hash mà validator đòi chữ ký; bộ script (registryHash, `
+      + `beaconPolicy) được apply từ giá trị thứ hai còn plan khai người phải ký theo giá trị `
+      + `thứ nhất. Ném TRƯỚC bước seed để hàm planSeed được tiêm không chạy oan`,
     );
   }
 
@@ -119,17 +138,19 @@ export function onboardPlatform(params: OnboardParams): OnboardPlan {
   };
 
   // ── BƯỚC 2: đăng ký hồ sơ ─────────────────────────────────────────────────
+  // Chuyển tiếp VÔ ĐIỀU KIỆN. Bản trước bọc `timeBucketWindow` và `registryHash` trong hai
+  // nhánh `!== undefined`, nên hai gương R-EPOCH + R-GOVSELF chỉ chạy khi bên gọi nhớ truyền —
+  // một cổng vào cùng builder mà ép lỏng hơn cổng kia. Nay cả hai là trường bắt buộc của
+  // `OnboardParams`, không còn nhánh nào để rẽ.
   const register = planRegister({
     config,
-    beaconPolicy,
+    scripts,
     custodyHash,
     seedPolicy: seed.seedPolicy,   // <-- phụ thuộc từ bước 1
     createdEpoch,
     custodyUtxo,                   // <-- R-BIND: kho từ bước SEED
     governanceProof: params.governanceProof,   // <-- R-GOVLIVE
-    ...(params.timeBucketWindow !== undefined
-      ? { timeBucketWindow: params.timeBucketWindow } : {}),
-    ...(params.registryHash !== undefined ? { registryHash: params.registryHash } : {}),
+    timeBucketWindow: params.timeBucketWindow, // <-- R-EPOCH
   });
 
   // Kiểm chéo: entry.instance_id phải khớp instance_id của kho (cùng một instance).

@@ -711,10 +711,13 @@ ES modules, Lucid Evolution (gương `Treasury/offchain`). Bốn nhóm hàm:
   `readFrom` UTxO custody này khi dựng tx thật (reference input on-chain). Custody phải seed TRƯỚC.
 - `verifyCustodyBinding(custody, seedPolicy, instanceId, custodyHash) -> {ok, reason?}` — gương R-BIND
   thuần (kiểm NFT qty==1 + script hash địa chỉ == custody_hash). Dùng cả ở builder (fail-fast) lẫn audit.
-- `planUpdateEntry(entryIn, changes, beaconPolicy, authority)` — spend entry, tạo entry_out đổi mutable
-  fields (gồm `status`). Gương U-ID (giữ SÁU trường định danh —
-  `offchain/src/registrationBuilder.ts:246-254`) + U-MUT + U-NFT. **U-TERMINAL (mới):** reject nếu
+- `planUpdateEntry(entryIn, changes, scripts, opts)` — spend entry, tạo entry_out đổi mutable
+  fields (gồm `status`). Gương U-ID (giữ SÁU trường định danh — hàm `identityPreserved` @
+  `offchain/src/registrationBuilder.ts`) + U-MUT + U-NFT. **U-TERMINAL:** reject nếu
   `entryIn.status === "Retired"` (ném `UPD-TERMINAL`) — Retired terminal, không revive.
+  `scripts: RegistryScripts` là bộ ba `registryAuthority`/`registryHash`/`beaconPolicy` của CÙNG
+  một lần triển khai; hàm ném `UPD-BEACON` nếu `scripts.beaconPolicy` khác `entryIn.beacon_policy`.
+  `opts.valueIn`/`opts.valueOut` bắt buộc (U-VALUE vô điều kiện on-chain).
 
 ### 6.3 `collectAdapter` — sự kiện app → CollectItem (cửa 3, FEAT §2)
 - `collectAdapter(events) -> CollectItem[]` — map sự kiện platform `{amount đã định giá, category}` sang

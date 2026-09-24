@@ -89,7 +89,11 @@
 //   U-TERMINAL KHÔNG chi tiêu hồ sơ đã Retired qua đường Update.
 //   U-VALUE   không rút bớt native asset / lovelace khỏi ô hồ sơ.
 //   U-GOV     ĐỔI KHÔNG ĐẢO NGƯỢC ĐƯỢC ⇒ cần đồng thuận quản trị của chính platform:
-//             (a) status → Retired, (b) đổi governance_ref / accepted_assets / cut_bps.
+//             (a) status → Retired, (b) đổi bất kỳ trường nào trong `governed_fields_changed`.
+//             ⚠ CỐ Ý KHÔNG liệt tên trường ở đây. Bản trước liệt ba tên, rồi
+//             `substrate_flags` vào nhóm ngày 2026-09-02 và dòng này KHÔNG đi theo — một
+//             chú thích nói sai luật của chính hàm ngay dưới nó, và không cổng nào kêu vì
+//             chú thích không biên dịch. Đọc tập thật ở `platform.governed_fields_changed`.
 //
 // ÉP (MigrateEntry — đưa hồ sơ sang registry validator mới):
 //   M-SIG/M-GOV   authority ký VÀ platform đồng thuận (di trú = ra khỏi quyền tài phán

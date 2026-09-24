@@ -8,10 +8,11 @@ import {
   valuePreserved, timeBucketInWindow, changesRequireGovernance,
   shapeCustodial, shapeNonCustodial, entryShapeValid, isScriptHash28,
   governanceRefNotSelf, timeBucketOf, txValidityForTimeBucket, validityFitsOneBucket,
+  type EntryChanges, type UpdateOptions,
 } from "../offchain/src/registrationBuilder.js";
 import { decodePlatformEntry } from "../offchain/src/registryDatum.js";
 import { Data } from "@lucid-evolution/lucid";
-import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
+import type { PlatformConfig, PlatformEntry, RegistryScripts } from "../offchain/src/types.js";
 import { SPEC_VERSION_V2, MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
 
@@ -20,6 +21,21 @@ const CUSTODY_HASH  = "34".repeat(28);
 const SEED_POLICY   = "56".repeat(28);
 const AUTHORITY     = "ab".repeat(28);
 const GOV_REF       = "cc".repeat(28);
+const REGISTRY_HASH = "77".repeat(28);
+
+/** BỘ BA của lần triển khai giả định — ba giá trị đi cùng nhau qua mọi lời gọi. */
+const SCRIPTS: RegistryScripts = {
+  registryAuthority: AUTHORITY,
+  registryHash:      REGISTRY_HASH,
+  beaconPolicy:      BEACON_POLICY,
+};
+
+/** Cửa sổ ô thời gian khớp `createdEpoch: 10n` — R-EPOCH nay vô điều kiện. */
+const WINDOW_10 = { from: 10n, to: 10n };
+
+/** Value ô hồ sơ giữ nguyên ⇒ U-VALUE (nay vô điều kiện) đi qua. */
+const entryVal = (platformIdHex: string) =>
+  ({ [`${BEACON_POLICY}|${platformIdHex}`]: 1n, "|": 2_000_000n });
 
 /**
  * R-GOVLIVE: tx đăng ký PHẢI làm cổng quản trị chạy thật. Mọi ca đăng ký hợp lệ dưới đây đều
@@ -53,12 +69,22 @@ const okCustody = (cfg: PlatformConfig) => ({
 
 const regParams = (cfg: PlatformConfig) => ({
   config: cfg,
-  beaconPolicy: BEACON_POLICY,
+  scripts: SCRIPTS,
   custodyHash: CUSTODY_HASH,
   seedPolicy: SEED_POLICY,
   createdEpoch: 10n,
+  timeBucketWindow: WINDOW_10,
   custodyUtxo: okCustody(cfg),
   governanceProof: GOV_PROOF,
+});
+
+/** `opts` nay bắt buộc — mặc định là ca U-VALUE GIỮ NGUYÊN; bài kiểm U-VALUE đè lên. */
+const upd = (
+  e: PlatformEntry, changes: EntryChanges, opts: Partial<UpdateOptions> = {},
+) => planUpdateEntry(e, changes, SCRIPTS, {
+  valueIn:  entryVal(e.platform_id),
+  valueOut: entryVal(e.platform_id),
+  ...opts,
 });
 
 describe("planRegister — đường xuôi", () => {
@@ -109,7 +135,9 @@ describe("planRegister — R-WF từ chối", () => {
     expect(() => planRegister({ ...regParams(baseConfig()), seedPolicy: "" })).toThrow(/REG-WF/);
   });
   it("beacon_policy rỗng → REG-WF (trường mới v2 cũng phải khác rỗng)", () => {
-    expect(() => planRegister({ ...regParams(baseConfig()), beaconPolicy: "" })).toThrow(/REG-WF/);
+    expect(() => planRegister({
+      ...regParams(baseConfig()), scripts: { ...SCRIPTS, beaconPolicy: "" },
+    })).toThrow(/REG-WF/);
   });
   it("entryWellFormed từ chối spec_version != 2", () => {
     const cfg = baseConfig();
@@ -190,7 +218,7 @@ describe("planUpdateEntry — quyền một bên (đảo ngược được)", ()
   const entryIn = (): PlatformEntry => planRegister(regParams(baseConfig())).entry;
 
   it("Active → Paused chỉ cần chữ ký authority", () => {
-    const plan = planUpdateEntry(entryIn(), { status: "Paused" }, BEACON_POLICY, AUTHORITY);
+    const plan = upd(entryIn(), { status: "Paused" });
     expect(plan.entryOut.status).toBe("Paused");
     expect(plan.needsGovernanceConsent).toBe(false);
     expect(identityPreserved(entryIn(), plan.entryOut)).toBe(true);
@@ -199,13 +227,13 @@ describe("planUpdateEntry — quyền một bên (đảo ngược được)", ()
 
   it("Paused → Active cũng chỉ cần authority (gỡ niêm yết đảo ngược được)", () => {
     const paused: PlatformEntry = { ...entryIn(), status: "Paused" };
-    const plan = planUpdateEntry(paused, { status: "Active" }, BEACON_POLICY, AUTHORITY);
+    const plan = upd(paused, { status: "Active" });
     expect(plan.entryOut.status).toBe("Active");
     expect(plan.needsGovernanceConsent).toBe(false);
   });
 
   it("spec_version giữ nguyên qua UpdateEntry (U-VER)", () => {
-    const plan = planUpdateEntry(entryIn(), { status: "Paused" }, BEACON_POLICY, AUTHORITY);
+    const plan = upd(entryIn(), { status: "Paused" });
     expect(plan.entryOut.spec_version).toBe(entryIn().spec_version);
   });
 });
@@ -214,13 +242,13 @@ describe("planUpdateEntry — TÁCH QUYỀN: việc không đảo ngược đư�
   const entryIn = (): PlatformEntry => planRegister(regParams(baseConfig())).entry;
 
   it("→ Retired chỉ có authority → UPD-GOV", () => {
-    expect(() => planUpdateEntry(entryIn(), { status: "Retired" }, BEACON_POLICY, AUTHORITY))
+    expect(() => upd(entryIn(), { status: "Retired" }))
       .toThrow(/UPD-GOV/);
   });
 
   it("→ Retired có cả đồng thuận quản trị → qua, NFT vẫn giữ (không đốt)", () => {
-    const plan = planUpdateEntry(
-      entryIn(), { status: "Retired" }, BEACON_POLICY, AUTHORITY, { governanceConsent: true },
+    const plan = upd(
+      entryIn(), { status: "Retired" }, { governanceConsent: true },
     );
     expect(plan.entryOut.status).toBe("Retired");
     expect(plan.needsGovernanceConsent).toBe(true);
@@ -228,21 +256,20 @@ describe("planUpdateEntry — TÁCH QUYỀN: việc không đảo ngược đư�
   });
 
   it("đổi cut_bps chỉ có authority → UPD-GOV; có đồng thuận → qua", () => {
-    expect(() => planUpdateEntry(entryIn(), { cut_bps: 800n }, BEACON_POLICY, AUTHORITY))
+    expect(() => upd(entryIn(), { cut_bps: 800n }))
       .toThrow(/UPD-GOV/);
-    const plan = planUpdateEntry(
-      entryIn(), { cut_bps: 800n }, BEACON_POLICY, AUTHORITY, { governanceConsent: true },
+    const plan = upd(
+      entryIn(), { cut_bps: 800n }, { governanceConsent: true },
     );
     expect(plan.entryOut.cut_bps).toBe(800n);
   });
 
   it("đổi governance_ref hoặc accepted_assets cũng đòi đồng thuận", () => {
-    expect(() => planUpdateEntry(
-      entryIn(), { governance_ref: "dd".repeat(28) }, BEACON_POLICY, AUTHORITY,
+    expect(() => upd(
+      entryIn(), { governance_ref: "dd".repeat(28) },
     )).toThrow(/UPD-GOV/);
-    expect(() => planUpdateEntry(
+    expect(() => upd(
       entryIn(), { accepted_assets: [{ policy: "ee".repeat(28), name: asciiToHex("LAMP") }] },
-      BEACON_POLICY, AUTHORITY,
     )).toThrow(/UPD-GOV/);
   });
 
@@ -261,24 +288,24 @@ describe("planUpdateEntry — các van còn lại", () => {
 
   it("U-TERMINAL: hồ sơ đã Retired không cập nhật/hồi sinh được", () => {
     const retired: PlatformEntry = { ...entryIn(), status: "Retired" };
-    expect(() => planUpdateEntry(retired, { status: "Active" }, BEACON_POLICY, AUTHORITY,
+    expect(() => upd(retired, { status: "Active" },
       { governanceConsent: true })).toThrow(/UPD-TERMINAL/);
-    expect(() => planUpdateEntry(retired, { cut_bps: 500n }, BEACON_POLICY, AUTHORITY,
+    expect(() => upd(retired, { cut_bps: 500n },
       { governanceConsent: true })).toThrow(/UPD-TERMINAL/);
   });
 
   it("U-MUT: cut_bps > 10000 → UPD-MUT", () => {
-    expect(() => planUpdateEntry(entryIn(), { cut_bps: 10001n }, BEACON_POLICY, AUTHORITY,
+    expect(() => upd(entryIn(), { cut_bps: 10001n },
       { governanceConsent: true })).toThrow(/UPD-MUT/);
   });
   it("U-MUT: accepted rỗng → UPD-MUT", () => {
-    expect(() => planUpdateEntry(entryIn(), { accepted_assets: [] }, BEACON_POLICY, AUTHORITY,
+    expect(() => upd(entryIn(), { accepted_assets: [] },
       { governanceConsent: true })).toThrow(/UPD-MUT/);
   });
 
   it("U-VALUE: rút token khỏi ô hồ sơ → UPD-VALUE", () => {
     const nft = `${BEACON_POLICY}|${asciiToHex("TestPlat")}`;
-    expect(() => planUpdateEntry(entryIn(), { status: "Paused" }, BEACON_POLICY, AUTHORITY, {
+    expect(() => upd(entryIn(), { status: "Paused" }, {
       valueIn:  { [nft]: 1n, "|": 5_000_000n },
       valueOut: { [nft]: 1n, "|": 3_000_000n },
     })).toThrow(/UPD-VALUE/);
@@ -286,7 +313,7 @@ describe("planUpdateEntry — các van còn lại", () => {
 
   it("U-VALUE: giữ nguyên token, thêm ADA → qua", () => {
     const nft = `${BEACON_POLICY}|${asciiToHex("TestPlat")}`;
-    const plan = planUpdateEntry(entryIn(), { status: "Paused" }, BEACON_POLICY, AUTHORITY, {
+    const plan = upd(entryIn(), { status: "Paused" }, {
       valueIn:  { [nft]: 1n, "|": 2_000_000n },
       valueOut: { [nft]: 1n, "|": 2_500_000n },
     });
