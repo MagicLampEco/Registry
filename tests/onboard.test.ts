@@ -25,13 +25,25 @@ const cfg = phoenixKeyConfig({
   genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
 });
 
+/**
+ * BỘ BA script. `registryAuthority` PHẢI khớp `config.registryAuthority` — ONBOARD-AUTH ném
+ * TRƯỚC bước seed nếu lệch, nên nó phải suy từ chính config chứ không gõ lại một hằng số.
+ */
+const scriptsFor = (config: typeof cfg) => ({
+  registryAuthority: config.registryAuthority,
+  registryHash:      "77".repeat(28),
+  beaconPolicy:      "12".repeat(28),
+});
+
 const onboardArgs = (config: typeof cfg) => ({
   config,
   planSeed: fakePlanSeed,
-  beaconPolicy: "12".repeat(28),
+  scripts: scriptsFor(config),
   custodyHash:  "34".repeat(28),
   seedPolicy,
   createdEpoch: 7n,
+  // R-EPOCH nay VÔ ĐIỀU KIỆN và được chuyển tiếp vô điều kiện xuống planRegister.
+  timeBucketWindow: { from: 7n, to: 7n },
   // R-GOVLIVE: bước 2 (đăng ký) chỉ hợp lệ khi cổng quản trị của platform chạy thật trong
   // chính tx đó. `config.governanceRef` là placeholder của examples/ nên proof bám theo nó.
   governanceProof: { spends: [{ scriptHash: config.governanceRef }] },
@@ -77,8 +89,36 @@ describe("onboardPlatform — 2 bước", () => {
   it("R-EPOCH chảy qua onboard: cửa sổ lệch epoch → ném REG-EPOCH", () => {
     expect(() => onboardPlatform({ ...onboardArgs(cfg), timeBucketWindow: { from: 8n, to: 8n } }))
       .toThrow(/REG-EPOCH/);
-    const ok = onboardPlatform({ ...onboardArgs(cfg), timeBucketWindow: { from: 7n, to: 7n } });
+    const ok = onboardPlatform(onboardArgs(cfg));
     expect(ok.register.entry.created_epoch).toBe(7n);
+  });
+
+  it("R-GOVSELF chảy qua onboard — hai lối vào builder nay ép GIỐNG NHAU", () => {
+    // ⚠ Bản trước `registryHash` là tuỳ chọn và onboard chuyển tiếp nó CÓ ĐIỀU KIỆN, nên đường
+    // onboard bỏ qua R-GOVSELF trong khi đường `planRegister` thẳng thì kiểm. Nay bộ ba là
+    // trường bắt buộc, không còn nhánh nào để rẽ.
+    const tuThoa = { ...cfg, governanceRef: "77".repeat(28) };   // == scripts.registryHash.
+    expect(() => onboardPlatform({
+      ...onboardArgs(tuThoa),
+      governanceProof: { spends: [{ scriptHash: "77".repeat(28) }] },
+    })).toThrow(/REG-GOVSELF/);
+  });
+
+  it("ONBOARD-AUTH: config.registryAuthority lệch scripts.registryAuthority → ném TRƯỚC bước seed", () => {
+    // Ca âm tính. Phải ném ở onboard chứ không đợi planRegister: bước SEED chạy trước, và hàm
+    // `planSeed` được tiêm là mã của bên ngoài — không cho nó chạy với tham số đã sai.
+    let seedDaChay = false;
+    expect(() => onboardPlatform({
+      ...onboardArgs(cfg),
+      scripts: { ...scriptsFor(cfg), registryAuthority: "99".repeat(28) },
+      planSeed: (d, sp, r) => { seedDaChay = true; return fakePlanSeed(d, sp, r); },
+    })).toThrow(/ONBOARD-AUTH/);
+    expect(seedDaChay, "planSeed đã chạy trước khi ONBOARD-AUTH ném").toBe(false);
+  });
+
+  it("ONBOARD-AUTH: khớp thì KHÔNG ném, người phải ký đúng giá trị đó (ca dương tính)", () => {
+    const plan = onboardPlatform(onboardArgs(cfg));
+    expect(plan.register.requiredSigner).toBe(cfg.registryAuthority.toLowerCase());
   });
 
   it("thiếu planSeed → ném ONBOARD-DEP (nêu rõ phải tiêm, không nhập)", () => {
@@ -113,8 +153,9 @@ describe("onboardPlatform — 2 bước", () => {
       genesisRef: { transaction_id: "ee".repeat(32), output_index: 1n },
     });
     const plan = onboardPlatform({
-      config: ori, planSeed: fakePlanSeed, beaconPolicy: "12".repeat(28),
+      config: ori, planSeed: fakePlanSeed, scripts: scriptsFor(ori),
       custodyHash: "34".repeat(28), seedPolicy, createdEpoch: 3n,
+      timeBucketWindow: { from: 3n, to: 3n },
       governanceProof: { spends: [{ scriptHash: ori.governanceRef }] },
     });
     expect(entryWellFormed(plan.register.entry)).toBe(true);
@@ -131,8 +172,9 @@ describe("onboardPlatform — 2 bước", () => {
       genesisRef: { transaction_id: "dd".repeat(32), output_index: 0n },
     });
     const plan = onboardPlatform({
-      config: tpl, planSeed: fakePlanSeed, beaconPolicy: "12".repeat(28),
+      config: tpl, planSeed: fakePlanSeed, scripts: scriptsFor(tpl),
       custodyHash: "34".repeat(28), seedPolicy, createdEpoch: 1n,
+      timeBucketWindow: { from: 1n, to: 1n },
       governanceProof: { spends: [{ scriptHash: tpl.governanceRef }] },
     });
     expect(entryWellFormed(plan.register.entry)).toBe(true);

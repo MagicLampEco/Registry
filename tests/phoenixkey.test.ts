@@ -34,10 +34,17 @@ describe("phoenixKeyConfig hợp lệ", () => {
     const seedPolicy = "56".repeat(28);
     const plan = planRegister({
       config: cfg,
-      beaconPolicy: "12".repeat(28),
+      // BỘ BA đi cùng nhau: `registryAuthority` phải khớp `cfg.registryAuthority` (REG-AUTH).
+      scripts: {
+        registryAuthority: cfg.registryAuthority,
+        registryHash:      "77".repeat(28),
+        beaconPolicy:      "12".repeat(28),
+      },
       custodyHash: "34".repeat(28),
       seedPolicy,
       createdEpoch: 5n,
+      // R-EPOCH nay vô điều kiện — cửa sổ phải khớp createdEpoch.
+      timeBucketWindow: { from: 5n, to: 5n },
       // R-BIND: custody UTxO mang NFT authenticity (seedPolicy, instanceId) @ Script(custodyHash).
       custodyUtxo: {
         value: { [`${seedPolicy}|${cfg.instanceId.toLowerCase()}`]: 1n, "|": 2_000_000n },

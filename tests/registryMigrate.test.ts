@@ -8,7 +8,7 @@ import {
   planMigrateEntry, planRegister, type MigrateParams,
 } from "../offchain/src/registrationBuilder.js";
 import { registryRedeemerFromCbor } from "../offchain/src/registryDatum.js";
-import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
+import type { PlatformConfig, PlatformEntry, RegistryScripts } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
 import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 
@@ -20,6 +20,17 @@ const OWN_HASH      = "77".repeat(28);
 const NEW_HASH      = "88".repeat(28);
 const GOV_REF       = "cc".repeat(28);
 const GOV_PROOF     = { spends: [{ scriptHash: GOV_REF }] };
+
+/** BỘ BA của registry ĐANG giữ hồ sơ — `registryHash` là own_hash của M-DEST / S-GOVSELF. */
+const SCRIPTS: RegistryScripts = {
+  registryAuthority: AUTHORITY,
+  registryHash:      OWN_HASH,
+  beaconPolicy:      BEACON_POLICY,
+};
+
+/** Value ô hồ sơ giữ nguyên ⇒ M-VALUE (nay vô điều kiện) đi qua. */
+const NFT_KEY  = `${BEACON_POLICY}|${asciiToHex("TestPlat")}`;
+const VALUE_OK = { [NFT_KEY]: 1n, "|": 2_000_000n };
 
 const cfg = (): PlatformConfig => ({
   platformId: asciiToHex("TestPlat"),
@@ -38,10 +49,11 @@ const cfg = (): PlatformConfig => ({
 const entry = (over: Partial<PlatformEntry> = {}): PlatformEntry => ({
   ...planRegister({
     config: cfg(),
-    beaconPolicy: BEACON_POLICY,
+    scripts: SCRIPTS,
     custodyHash: CUSTODY_HASH,
     seedPolicy: SEED_POLICY,
     createdEpoch: 10n,
+    timeBucketWindow: { from: 10n, to: 10n },   // R-EPOCH nay vô điều kiện.
     custodyUtxo: {
       value: { [`${SEED_POLICY}|${asciiToHex("test-instance-v1")}`]: 1n, "|": 2_000_000n },
       scriptHash: CUSTODY_HASH,
@@ -53,11 +65,13 @@ const entry = (over: Partial<PlatformEntry> = {}): PlatformEntry => ({
 
 const migParams = (over: Partial<MigrateParams> = {}): MigrateParams => ({
   entryIn: entry(),
-  ownRegistryHash: OWN_HASH,
+  scripts: SCRIPTS,
   newRegistryHash: NEW_HASH,
   newSpecVersion: 3n,
-  registryAuthority: AUTHORITY,
   governanceConsent: true,
+  // M-VALUE nay vô điều kiện — mặc định là ca GIỮ NGUYÊN (đi qua); bài kiểm M-VALUE đè lên.
+  valueIn:  VALUE_OK,
+  valueOut: VALUE_OK,
   ...over,
 });
 

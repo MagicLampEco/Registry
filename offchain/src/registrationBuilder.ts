@@ -24,9 +24,30 @@
 //
 // Builder THUẦN (không cần lucid) — trả "plan" (datum + value map + redeemer cbor + nft unit).
 // Bên gọi dựng tx thật từ plan. Tách thuần để kiểm trực tiếp.
+//
+// ── BỐN RÀNG BUỘC ON-CHAIN KHÔNG GƯƠNG ĐƯỢC Ở TẦNG NÀY ─────────────────────────────────────
+// Ghi ra đây để người sau khỏi mở lại cuộc bàn: bốn thứ dưới đây KHÔNG PHẢI là gương còn
+// khuyết, chúng là thứ tầng này KHÔNG CÓ DỮ LIỆU để kiểm. Thêm một tham số tuỳ chọn cho chúng
+// còn tệ hơn im lặng — nó tạo một phép kiểm chỉ chạy khi bên gọi nhớ, tức đúng mẫu hỏng mà
+// đợt sửa này vừa gỡ khỏi bảy chỗ khác.
+//
+//   U-SINGLE (registry.ak) — tx chỉ được chi tiêu ĐÚNG MỘT ô hồ sơ.
+//   U-MINT-0 (registry.ak:186) · M-MINT-0 (registry.ak:296) — `assets.is_zero(tx.mint)`.
+//     Cả ba đếm input / output / mint CỦA GIAO DỊCH. Mọi hàm trong tệp này là hàm THUẦN trả
+//     một `plan` (datum + value + redeemer + người phải ký) cho MỘT ô; nó không dựng giao dịch
+//     và không nhìn thấy giao dịch. Ba ràng buộc này được NÓI RA trong `summary` để bên lắp
+//     giao dịch đọc — xem cảnh báo U-MINT-0 / M-MINT-0 trong `planUpdateEntry` /
+//     `planMigrateEntry`.
+//
+//   R-VALUE (registry_beacon.ak) — value ô hồ sơ đúng 1 beacon NFT + ADA.
+//     Không gương được VÌ LÝ DO KHÁC HẲN, đừng gộp: value ô hồ sơ do CHÍNH hàm này viết ra
+//     (`entryValue`), nên kiểm nó là kiểm lại dòng mình vừa gõ — luôn xanh, và xanh không
+//     nói gì. Rủi ro thật nằm ở bên lắp giao dịch nhét thêm token vào output hồ sơ, và bên đó
+//     thì hàm này không thấy. (Khác `U-VALUE`/`M-VALUE`: hai cái đó so value VÀO với value RA,
+//     cả hai đều do bên gọi cấp, nên gương được — và nay là bắt buộc.)
 
 import type {
-  AssetKey, PlatformConfig, PlatformEntry, PlatformStatus,
+  AssetKey, PlatformConfig, PlatformEntry, PlatformStatus, RegistryScripts,
 } from "./types.js";
 import { SPEC_VERSION_V2, SCRIPT_HASH_HEX_LEN, MS_PER_TIME_BUCKET } from "./types.js";
 import {
@@ -39,6 +60,8 @@ import {
 // Treasury) — nhập lại ở đây, KHÔNG khai lần hai.
 import type { AssetMap } from "./treasuryShapes.js";
 export type { AssetMap };
+// Nhập lại để bên gọi chỉ cần một đường nhập; khai gốc ở ./types.ts, KHÔNG khai lần hai.
+export type { RegistryScripts };
 
 const LOVELACE_KEY = "|";
 
@@ -446,8 +469,15 @@ export interface RegisterPlan {
 
 export interface RegisterParams {
   config: PlatformConfig;
-  /** beacon NFT policy = hash(registry_beacon(authority, registry_hash)). */
-  beaconPolicy: string;
+  /**
+   * BỘ BA script của lần triển khai registry đang đăng ký vào (xem `RegistryScripts`).
+   *
+   * Thay cho hai tham số rời `beaconPolicy` + `registryHash?` của bản trước. `registryHash`
+   * từng là TUỲ CHỌN, nên gương R-GOVSELF chỉ chạy khi bên gọi nhớ truyền — trong khi ràng
+   * buộc on-chain (registry_beacon.ak:133) là VÔ ĐIỀU KIỆN. Gói làm một bộ thì không còn
+   * "quên một tham số" nữa: thiếu là `tsc` đỏ.
+   */
+  scripts: RegistryScripts;
   /** script hash kho của platform — vào entry.custody_hash. RỖNG cho hồ sơ KHÔNG KHO. */
   custodyHash: string;
   /**
@@ -462,13 +492,17 @@ export interface RegisterParams {
    * Hồ sơ KHÔNG KHO bỏ trống (cấp vào cũng bị bỏ qua, đúng như on-chain).
    */
   custodyUtxo?: CustodyRef;
-  /** Cửa sổ ô thời gian của tx đăng ký (R-EPOCH). Cấp vào → ép created_epoch nằm trong. */
-  timeBucketWindow?: TimeBucketWindow;
   /**
-   * script hash của validator registry đích. Cấp vào → ép R-GOVSELF
-   * (`governance_ref != registry_hash`, registry_beacon.ak:133).
+   * Cửa sổ ô thời gian của tx đăng ký — BẮT BUỘC, không phải tuỳ chọn.
+   *
+   * ⚠ Ràng buộc on-chain R-EPOCH là VÔ ĐIỀU KIỆN: validator tự đọc `validity_range` của tx và
+   * đòi `created_epoch` bằng đúng ô thời gian của nó. Trường này từng để trống được, và khi
+   * trống thì builder BỎ QUA phép kiểm — trả về một plan trông hợp lệ cho một tx bị từ chối
+   * 100%. Tệ hơn: `created_epoch` BẤT BIẾN, nên một lời khai sai lọt qua đây là sai vĩnh viễn
+   * trong sổ. Dựng giá trị bằng `txValidityForTimeBucket(nowMs, ttlMs)` rồi khai
+   * `{ from: w.bucket, to: w.bucket }`.
    */
-  registryHash?: string;
+  timeBucketWindow: TimeBucketWindow;
   /**
    * R-GOVLIVE (registry_beacon.ak:138-165) — BẮT BUỘC, không phải tuỳ chọn.
    *
@@ -495,8 +529,25 @@ export interface RegisterParams {
  *               seedPolicy = ""; KHÔNG cần custodyUtxo. `governanceRef` VẪN bắt buộc.
  */
 export function planRegister(params: RegisterParams): RegisterPlan {
-  const { config, beaconPolicy, custodyHash, createdEpoch, custodyUtxo } = params;
+  const { config, scripts, custodyHash, createdEpoch, custodyUtxo } = params;
   const seedPolicy = config.seedPolicy ?? params.seedPolicy;
+  const beaconPolicy = scripts.beaconPolicy;
+
+  // REG-AUTH: `registry_authority` có HAI nguồn khai — `config.registryAuthority` (hồ sơ của
+  // platform) và `scripts.registryAuthority` (bộ script đã triển khai). Chúng phải là CÙNG MỘT
+  // sự thật: `registryHash` và `beaconPolicy` được apply TỪ giá trị thứ hai, còn chữ ký tx thì
+  // ký theo giá trị thứ nhất. Lệch nhau ⇒ tx ký bằng khoá này nhưng validator đòi khoá kia,
+  // và không phép kiểm nào khác trong tệp này nhìn thấy — cả hai giá trị đều đúng 28 byte.
+  if (normHex(config.registryAuthority) !== normHex(scripts.registryAuthority)) {
+    throw new Error(
+      `REG-AUTH: config.registryAuthority (${normHex(config.registryAuthority)}) != `
+      + `scripts.registryAuthority (${normHex(scripts.registryAuthority)}). Hai chỗ này khai `
+      + `CÙNG MỘT sự thật — key-hash mà validator đòi chữ ký. Bộ script (registryHash, `
+      + `beaconPolicy) được apply từ scripts.registryAuthority, còn plan lại khai người phải ký `
+      + `theo config.registryAuthority ⇒ lệch nhau là dựng ra một tx ký sai khoá, mà cả hai giá `
+      + `trị đều đúng 28 byte nên không gương nào khác bắt được. Sửa một trong hai cho khớp`,
+    );
+  }
 
   const platformId = normHex(config.platformId);
   const nftName = platformId;                       // R-NAME: NFT name == platform_id.
@@ -538,9 +589,9 @@ export function planRegister(params: RegisterParams): RegisterPlan {
       `REG-VER: spec_version (${entry.spec_version}) != SPEC_VERSION_V2 (${SPEC_VERSION_V2})`,
     );
   }
-  // R-EPOCH: created_epoch phải là Ô THỜI GIAN của chính tx đăng ký.
-  if (params.timeBucketWindow !== undefined
-      && !timeBucketInWindow(entry.created_epoch, params.timeBucketWindow)) {
+  // R-EPOCH: created_epoch phải là Ô THỜI GIAN của chính tx đăng ký. VÔ ĐIỀU KIỆN — bản trước
+  // chỉ kiểm khi bên gọi cấp cửa sổ, mà on-chain thì luôn kiểm.
+  if (!timeBucketInWindow(entry.created_epoch, params.timeBucketWindow)) {
     throw new Error(
       `REG-EPOCH: created_epoch (${entry.created_epoch}) không khớp cửa sổ hiệu lực `
       + `[${params.timeBucketWindow.from}, ${params.timeBucketWindow.to}] — validity_range phải `
@@ -560,8 +611,9 @@ export function planRegister(params: RegisterParams): RegisterPlan {
       + "Nửa vời bị từ chối ở CẢ hai phía",
     );
   }
-  // R-GOVSELF: cổng đồng thuận KHÔNG được là chính registry (nếu bên gọi cấp registryHash).
-  if (params.registryHash !== undefined && !governanceRefNotSelf(entry, params.registryHash)) {
+  // R-GOVSELF: cổng đồng thuận KHÔNG được là chính registry. VÔ ĐIỀU KIỆN (registry_beacon.ak:133)
+  // — bản trước chỉ kiểm khi bên gọi nhớ truyền `registryHash`.
+  if (!governanceRefNotSelf(entry, scripts.registryHash)) {
     throw new Error(
       `REG-GOVSELF: governance_ref (${entry.governance_ref}) == registry_hash — cổng đồng thuận `
       + `tự thoả vĩnh viễn (ô hồ sơ luôn nằm ở Script(registry_hash)) ⇒ authority một mình `
@@ -674,15 +726,17 @@ export interface UpdateOptions {
    * ref CŨ, còn ref MỚI chỉ nhận từ đây.
    */
   governanceProof?: GovernanceProof;
-  /** value ô hồ sơ ở input — cấp cùng valueOut để ép U-VALUE. */
-  valueIn?: AssetMap;
-  /** value ô hồ sơ ở output. */
-  valueOut?: AssetMap;
   /**
-   * script hash của CHÍNH validator registry đang giữ hồ sơ. Cấp vào → ép S-GOVSELF
-   * (`entry_in.governance_ref != own_hash`, registry.ak:174 — áp cho CẢ HAI nhánh).
+   * value ô hồ sơ ở input — BẮT BUỘC, cùng `valueOut` là hai vế của U-VALUE.
+   *
+   * ⚠ On-chain ép vô điều kiện. Hai trường này từng tuỳ chọn, nên bỏ trống là builder BỎ QUA
+   * U-VALUE. Hôm nay ô hồ sơ chỉ giữ beacon NFT + min-ADA nên chỗ đó có vẻ vô hại — nhưng
+   * "vô hại hôm nay" không phải lý do để phép kiểm chỉ chạy khi có người nhớ: bản sau đặt tiền
+   * cọc đăng ký vào ô hồ sơ thì đây là đường rút tiền, và không dòng nào tự kêu lúc đó.
    */
-  ownRegistryHash?: string;
+  valueIn: AssetMap;
+  /** value ô hồ sơ ở output. BẮT BUỘC — xem `valueIn`. */
+  valueOut: AssetMap;
 }
 
 export interface UpdatePlan {
@@ -747,18 +801,88 @@ function sameAssetList(a: AssetKey[], b: AssetKey[]): boolean {
 }
 
 /**
+ * Chuẩn hoá một bản ghi về ĐÚNG dạng mà `planUpdateEntry` ghi ra `entryOut` (hex trần thường).
+ *
+ * Chỗ này KHÔNG phải một danh sách luật, nó là một danh sách các trường DẠNG HEX — nên bỏ sót
+ * một trường mới ở đây thì phép so bên dưới chỉ NGHIÊM hơn (một hex viết hoa sẽ khác chính nó
+ * viết thường ⇒ `pureRevive` thành `false` ⇒ đòi chữ ký authority). Sai về phía đóng, có chủ ý:
+ * bỏ sót ở đây tốn một chữ ký thừa, còn bỏ sót ở danh sách luật thì mở một cửa.
+ */
+function normEntry(e: PlatformEntry): PlatformEntry {
+  return {
+    ...e,
+    platform_id:     normHex(e.platform_id),
+    instance_id:     normHex(e.instance_id),
+    custody_hash:    normHex(e.custody_hash),
+    seed_policy:     normHex(e.seed_policy),
+    beacon_policy:   normHex(e.beacon_policy),
+    governance_ref:  normHex(e.governance_ref),
+    accepted_assets: e.accepted_assets.map(normAssetKey),
+  };
+}
+
+/**
+ * Hai bản ghi giống nhau ở MỌI trường — gương phép so `entry_out == PlatformEntry {...}` của
+ * Aiken (so cả bản ghi, không liệt kê trường).
+ *
+ * Quét khoá bằng `Object.keys` của CẢ HAI bên, nên một trường thêm vào `PlatformEntry` tự động
+ * đi vào phép so. `accepted_assets` là trường duy nhất không so được bằng `!==` (mảng object),
+ * nên nó có nhánh riêng — nhánh đó khớp CẢ thứ tự, y như phép so bản ghi của Aiken.
+ */
+function sameEntry(a: PlatformEntry, b: PlatformEntry): boolean {
+  const keys = new Set<string>([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    if (k === "accepted_assets") {
+      if (!sameAssetList(a.accepted_assets, b.accepted_assets)) return false;
+      continue;
+    }
+    const x = (a as unknown as Record<string, unknown>)[k];
+    const y = (b as unknown as Record<string, unknown>)[k];
+    if (x !== y) return false;
+  }
+  return true;
+}
+
+/**
  * Dựng plan cập nhật hồ sơ. Định danh (6 trường) BẤT BIẾN — chỉ áp thay đổi khả biến.
- * Tự kiểm U-TERMINAL / U-ID / U-MUT / U-VER / U-GOV / U-VALUE fail-fast.
- * @param beaconPolicy policy beacon NFT (dựng nftUnit giữ NFT — U-NFT).
- * @param registryAuthority key-hash phải ký (U-SIG).
+ * Tự kiểm U-BEACON / S-GOVSELF / U-TERMINAL / U-ID / U-MUT / U-VER / U-GOV / U-GOVSELF-OUT /
+ * U-SHAPE / U-GOV2 / U-VALUE fail-fast.
+ *
+ * @param scripts BỘ BA script của registry đang giữ hồ sơ — thay cho hai tham số rời
+ *   `beaconPolicy` + `registryAuthority` của bản trước. `registryHash` trong bộ này là
+ *   `own_hash` của S-GOVSELF / U-GOVSELF-OUT, và nó KHÔNG còn tuỳ chọn: on-chain ép vô điều
+ *   kiện, nên một tham số tuỳ chọn ở đây chỉ có nghĩa "phép kiểm chạy khi ai đó nhớ".
  */
 export function planUpdateEntry(
   entryIn: PlatformEntry, changes: EntryChanges,
-  beaconPolicy: string, registryAuthority: string,
-  opts: UpdateOptions = {},
+  scripts: RegistryScripts,
+  opts: UpdateOptions,
 ): UpdatePlan {
+  const beaconPolicy = scripts.beaconPolicy;
+  const registryAuthority = scripts.registryAuthority;
+
+  // U-BEACON: bộ script phải là bộ ĐANG GIỮ chính hồ sơ này. `beacon_policy` nằm trong sáu
+  // trường định danh, nên nó là chỗ neo rẻ nhất và chắc nhất để nhận ra "nhầm lần triển khai".
+  //
+  // ⚠ Thiếu phép so này thì hàm KHÔNG hỏng — nó PHÁT BIỂU SAI, và đó là kiểu tệ hơn: `nftUnit`
+  // cùng `entryValue` được dựng từ `scripts.beaconPolicy`, nên truyền nhầm policy là `summary`
+  // in ra một unit token KHÔNG TỒN TẠI, còn `entryValue` mô tả một ô hồ sơ không ai tiêu nổi.
+  // Bên lắp giao dịch đọc đúng thứ đó rồi dựng tx theo. Tiền lệ cách viết: onboard.ts:104
+  // canh hàm `planSeed` được tiêm trả đúng `seedPolicy` đã yêu cầu.
+  if (normHex(scripts.beaconPolicy) !== normHex(entryIn.beacon_policy)) {
+    throw new Error(
+      `UPD-BEACON: scripts.beaconPolicy (${normHex(scripts.beaconPolicy)}) != `
+      + `entryIn.beacon_policy (${normHex(entryIn.beacon_policy)}). Hồ sơ này mang beacon của `
+      + `một lần triển khai registry KHÁC bộ script đang truyền vào — mà beacon_policy nằm `
+      + `trong sáu trường định danh, nên nó không đổi được. Dùng đúng bộ script đã đúc hồ sơ `
+      + `này; sai bộ thì plan mô tả một beacon NFT không tồn tại và mọi giá trị dẫn xuất `
+      + `(nftUnit, entryValue, summary) đều nói sai`,
+    );
+  }
+
   // S-GOVSELF: cổng đồng thuận không được là chính registry (áp cho CẢ HAI nhánh spend).
-  if (opts.ownRegistryHash !== undefined && !governanceRefNotSelf(entryIn, opts.ownRegistryHash)) {
+  // VÔ ĐIỀU KIỆN (registry.ak:174) — bản trước chỉ kiểm khi có `opts.ownRegistryHash`.
+  if (!governanceRefNotSelf(entryIn, scripts.registryHash)) {
     throw new Error(
       `UPD-GOVSELF: entryIn.governance_ref (${normHex(entryIn.governance_ref)}) == own_hash — `
       + `governance_consented tự thoả vĩnh viễn ⇒ mọi rào "hai bên" biến mất. Hồ sơ này KẸT: `
@@ -817,11 +941,10 @@ export function planUpdateEntry(
   // `mutableFieldsValid` chỉ ép ĐỘ DÀI 28 mà own_hash dài đúng 28 ⇒ thiếu dòng này thì một tx
   // hợp lệ (authority ký + platform đồng thuận một lần) ghi được `governance_ref = own_hash`
   // và ô hồ sơ KHOÁ VĨNH VIỄN. Builder NÉM, không cảnh báo: validator từ chối thẳng.
-  if (opts.ownRegistryHash !== undefined
-      && normHex(entryOut.governance_ref) === normHex(opts.ownRegistryHash)) {
+  if (normHex(entryOut.governance_ref) === normHex(scripts.registryHash)) {
     throw new Error(
       `UPD-GOVSELF-OUT: cập nhật này ghi entryOut.governance_ref == own_hash `
-      + `(${normHex(opts.ownRegistryHash)}) — cổng đồng thuận tự thoả vĩnh viễn, và hồ sơ KẸT: `
+      + `(${normHex(scripts.registryHash)}) — cổng đồng thuận tự thoả vĩnh viễn, và hồ sơ KẸT: `
       + `mọi lần chi tiêu SAU đều chết ở S-GOVSELF (cả Update lẫn Migrate). Validator đã chặn `
       + `tại registry.ak:212 — đổi giá trị này trước khi ký`,
     );
@@ -864,27 +987,25 @@ export function planUpdateEntry(
       + `được, vì mọi đường đó đều đòi đồng thuận của chính cái ref chết ấy`,
     );
   }
-  // U-VALUE: không rút token/ADA khỏi ô hồ sơ (kiểm khi bên gọi cấp cả hai value).
-  if (opts.valueIn !== undefined && opts.valueOut !== undefined
-      && !valuePreserved(opts.valueIn, opts.valueOut)) {
+  // U-VALUE: không rút token/ADA khỏi ô hồ sơ. VÔ ĐIỀU KIỆN — hai value nay bắt buộc.
+  if (!valuePreserved(opts.valueIn, opts.valueOut)) {
     throw new Error(
       "UPD-VALUE: ô hồ sơ bị rút token/ADA (token khác lovelace phải bằng nhau, lovelace ra ≥ vào)",
     );
   }
 
-  // U-REVIVE: hồi sinh THUẦN TUÝ — Paused → Active và MỌI trường khả biến khác y hệt.
+  // U-REVIVE: hồi sinh THUẦN TUÝ — Paused → Active và MỌI trường khác y hệt.
   //
-  // ⚠ CHỖ THỨ TƯ, VÀ LÀ CHỖ DUY NHẤT PHẢI SỬA BẰNG TAY. Ba chỗ kia (`mutableFieldsValid`,
-  // `changesRequireGovernance`, `identityPreserved`) cũng liệt kê từng trường, nhưng thêm một
-  // trường khả biến vào `PlatformEntry` mà quên chỗ này thì `tsc` KHÔNG kêu và không bài test
-  // cũ nào đỏ — điều kiện chỉ LỎNG ra. On-chain đã ăn đúng lỗi này một lần
-  // (`registry.ak` khối U-REVIVE tự ghi lại), vá rồi; gương ở đây thì chưa cho tới bản này.
-  const pureRevive = entryIn.status === "Paused" && entryOut.status === "Active"
-    && entryOut.spec_version === entryIn.spec_version
-    && normHex(entryOut.governance_ref) === normHex(entryIn.governance_ref)
-    && sameAssetList(entryIn.accepted_assets, entryOut.accepted_assets)
-    && entryOut.cut_bps === entryIn.cut_bps
-    && entryOut.substrate_flags === entryIn.substrate_flags;
+  // ⚠ CHỖ NÀY TRƯỚC ĐÂY LIỆT KÊ TỪNG TRƯỜNG BẰNG TAY, và chú thích cũ tự nhận là "chỗ duy nhất
+  // phải sửa bằng tay". Đó chính là hình dạng của lỗi: thêm một trường khả biến vào
+  // `PlatformEntry` mà quên chỗ này thì `tsc` KHÔNG kêu, không bài kiểm cũ nào đỏ, và điều kiện
+  // chỉ LỎNG ra — tức một hồi sinh KÈM đổi trường mới được gọi là "thuần tuý", nên đi lọt mà
+  // không cần chữ ký authority. On-chain đã ăn đúng lỗi này một lần rồi vá bằng phép so CẢ BẢN
+  // GHI: `entry_out == PlatformEntry { ..entry_in, status: Active }` (registry.ak:252-256).
+  // Bản off-chain nay gương đúng hình dạng đó — dựng bản ghi ĐÍCH rồi so mọi khoá, nên trường
+  // thứ 13 thêm sau này TỰ ĐỘNG vào luật, không ai phải nhớ.
+  const reviveTarget: PlatformEntry = { ...normEntry(entryIn), status: "Active" };
+  const pureRevive = entryIn.status === "Paused" && sameEntry(entryOut, reviveTarget);
 
   const nftUnit = normHex(beaconPolicy) + entryOut.platform_id;   // U-NFT bảo toàn.
   const entryValue: AssetMap = { [nftKey(beaconPolicy, entryOut.platform_id)]: 1n };
@@ -903,6 +1024,11 @@ export function planUpdateEntry(
         + `HOẶC đồng thuận quản trị của platform, một trong hai là đủ)`
       : `Authority:   ${normHex(registryAuthority)} (phải ký)`,
     `Đồng thuận quản trị: ${needsGovernanceConsent ? "BẮT BUỘC (thay đổi không đảo ngược được)" : "không cần (đảo ngược được)"}`,
+    `U-MINT-0:    giao dịch cập nhật KHÔNG được mint hay burn BẤT CỨ GÌ `
+      + `(assets.is_zero(tx.mint), registry.ak:186). Luật ở đây CHẶT HƠN ở cửa đăng ký: `
+      + `R-MINT-2 còn cho tx đăng ký mang đúng MỘT policy (beacon), nhánh này cấm sạch. `
+      + `Cổng quản trị mà nhánh đồng thuận CẦN mint/burn thì KHÔNG dùng được ở đây — `
+      + `đổi sang withdraw-0 hoặc một nhánh spend không-mint`,
     ...(governanceHandover
       ? [`BÀN GIAO QUẢN TRỊ (U-GOV2): tx PHẢI làm chạy CẢ HAI cổng trong cùng một tx — `
          + `cũ ${normHex(entryIn.governance_ref)}, mới ${normHex(entryOut.governance_ref)}. `
@@ -934,14 +1060,21 @@ export function planUpdateEntry(
 
 export interface MigrateParams {
   entryIn: PlatformEntry;
-  /** script hash của registry validator ĐANG giữ hồ sơ (own_hash). */
-  ownRegistryHash: string;
-  /** script hash registry validator ĐÍCH. PHẢI khác ownRegistryHash (M-DEST). */
+  /**
+   * BỘ BA script của registry ĐANG giữ hồ sơ — thay cho hai tham số rời `ownRegistryHash` +
+   * `registryAuthority` của bản trước. `scripts.registryHash` là `own_hash` của
+   * S-GOVSELF / M-DEST / M-GOVSELF-OWN; `scripts.registryAuthority` là người phải ký (M-SIG).
+   */
+  scripts: RegistryScripts;
+  /**
+   * script hash registry validator ĐÍCH. PHẢI khác `scripts.registryHash` (M-DEST).
+   *
+   * ⚠ KHÔNG thuộc bộ ba: đây là registry của một lần triển khai KHÁC — thường còn chưa có
+   * beacon policy nào ứng với nó ở tầng này. Đừng gộp vào `scripts`.
+   */
   newRegistryHash: string;
   /** phiên bản lược đồ mới — PHẢI > spec_version cũ (M-VER). */
   newSpecVersion: bigint;
-  /** key-hash authority phải ký (M-SIG). */
-  registryAuthority: string;
   /** Đồng thuận quản trị của platform (M-GOV) — di trú là đưa hồ sơ ra khỏi quyền tài phán
    *  của validator này, platform phải đồng ý. LỜI KHAI RÚT GỌN cho ref ĐƯƠNG NHIỆM; ca bàn
    *  giao (đổi ref khi di trú) phải khai `governanceProof`. */
@@ -960,9 +1093,13 @@ export interface MigrateParams {
    * `newGovernanceRef` khác ref cũ — M-GOV2 (registry.ak:316-323).
    */
   governanceProof?: GovernanceProof;
-  /** value ô hồ sơ vào/ra — cấp cả hai để ép M-VALUE. */
-  valueIn?: AssetMap;
-  valueOut?: AssetMap;
+  /**
+   * value ô hồ sơ ở input — BẮT BUỘC, cùng `valueOut` là hai vế của M-VALUE.
+   * On-chain ép vô điều kiện; xem lý do đầy đủ ở `UpdateOptions.valueIn`.
+   */
+  valueIn: AssetMap;
+  /** value ô hồ sơ ở output. BẮT BUỘC — xem `valueIn`. */
+  valueOut: AssetMap;
 }
 
 export interface MigratePlan {
@@ -992,11 +1129,10 @@ export interface MigratePlan {
  * M-STATUS: di trú KHÔNG được đổi trạng thái — nếu không nó thành một đường Retire trá hình.
  */
 export function planMigrateEntry(params: MigrateParams): MigratePlan {
-  const {
-    entryIn, ownRegistryHash, newRegistryHash, newSpecVersion, registryAuthority,
-  } = params;
+  const { entryIn, scripts, newRegistryHash, newSpecVersion } = params;
+  const registryAuthority = scripts.registryAuthority;
 
-  const ownHash = normHex(ownRegistryHash);
+  const ownHash = normHex(scripts.registryHash);
   const newHash = normHex(newRegistryHash);
 
   // S-GOVSELF: cổng đồng thuận không được là chính registry đang giữ hồ sơ (registry.ak:174 —
@@ -1106,9 +1242,8 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
   if (entryOut.status !== entryIn.status) {
     throw new Error("MIG-STATUS: di trú đổi status — đó là đường Retire trá hình, cấm");
   }
-  // M-VALUE: như U-VALUE.
-  if (params.valueIn !== undefined && params.valueOut !== undefined
-      && !valuePreserved(params.valueIn, params.valueOut)) {
+  // M-VALUE: như U-VALUE. VÔ ĐIỀU KIỆN — hai value nay bắt buộc.
+  if (!valuePreserved(params.valueIn, params.valueOut)) {
     throw new Error("MIG-VALUE: ô hồ sơ bị rút token/ADA khi di trú");
   }
 
@@ -1125,6 +1260,11 @@ export function planMigrateEntry(params: MigrateParams): MigratePlan {
     `Beacon NFT:    ${nftUnit} (có ở cả input lẫn output — M-NFT)`,
     `Authority:     ${normHex(registryAuthority)} (phải ký)`,
     `Đồng thuận quản trị: BẮT BUỘC (M-GOV)`,
+    `M-MINT-0:      giao dịch di trú KHÔNG được mint hay burn BẤT CỨ GÌ `
+      + `(assets.is_zero(tx.mint), registry.ak:296). Luật ở đây CHẶT HƠN ở cửa đăng ký: `
+      + `R-MINT-2 còn cho tx đăng ký mang đúng MỘT policy (beacon), nhánh này cấm sạch. `
+      + `Cổng quản trị mà nhánh đồng thuận CẦN mint/burn thì KHÔNG dùng được ở đây — `
+      + `đổi sang withdraw-0 hoặc một nhánh spend không-mint`,
     `Ghi chú: hồ sơ Retired VẪN di trú được — U-TERMINAL không áp ở nhánh này.`,
     governanceHandover
       ? `BÀN GIAO QUẢN TRỊ (M-GOV2): gov ref ${normHex(entryIn.governance_ref)} → `

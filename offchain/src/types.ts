@@ -75,6 +75,36 @@ export interface PlatformEntry {
   substrate_flags : bigint;
 }
 
+/**
+ * BỘ BA SCRIPT của MỘT lần triển khai registry — đi cùng nhau, không tách rời.
+ *
+ * Ba giá trị này sinh ra trong CÙNG MỘT LƯỢT `applyRegistry` (`scripts/config.ts`), theo đúng
+ * dây chuyền sau:
+ *   `registryAuthority` ──apply──▶ `registry` validator ──hash──▶ `registryHash`
+ *   (`registryAuthority`, `registryHash`) ──apply──▶ `registry_beacon` ──id──▶ `beaconPolicy`
+ *
+ * Tức `beaconPolicy` PHỤ THUỘC `registryHash`, và `registryHash` phụ thuộc `registryAuthority`.
+ * Đổi một giá trị là đổi cả ba; hai giá trị lấy từ hai lần triển khai khác nhau KHÔNG BAO GIỜ
+ * là một bộ hợp lệ.
+ *
+ * ⚠ VÌ SAO PHẢI LÀ MỘT KIỂU, KHÔNG PHẢI BA THAM SỐ RỜI: SDK trước đây nhận `beaconPolicy` và
+ * `registryHash` là hai chuỗi rời, không đối chiếu gì với nhau. Đã đo: truyền `registryHash`
+ * SAI mà vẫn đủ 28 byte thì gương R-GOVSELF **báo xanh** cho đúng ca on-chain cấm — vì nó chỉ
+ * so `governance_ref` với cái chuỗi được truyền vào, chứ không biết chuỗi ấy có phải hash của
+ * registry đang giữ hồ sơ không. Gói làm một bộ không tự nó chứng minh được quan hệ mật mã
+ * (muốn chứng minh phải apply lại validator — việc của `scripts/config.ts`), nhưng nó khiến ba
+ * giá trị ĐI CÙNG NHAU qua mọi lời gọi, nên một bộ tự mâu thuẫn phải được dựng ra CÓ CHỦ Ý
+ * chứ không xảy ra vì quên một tham số.
+ */
+export interface RegistryScripts {
+  /** payment key-hash 28-byte hex, ký mỗi đăng ký/cập nhật (registry_authority). */
+  registryAuthority: string;
+  /** script hash của registry validator (28-byte hex) — = `applyRegistry().registryHash`. */
+  registryHash: string;
+  /** policy id của beacon NFT — = `applyRegistry().beaconPolicy`, suy TỪ `registryHash`. */
+  beaconPolicy: string;
+}
+
 /** Redeemer spend của validator `registry` (v2 — hai nhánh). */
 export type RegistryRedeemer =
   | { kind: "UpdateEntry" }

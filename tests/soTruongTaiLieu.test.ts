@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PLATFORM_ENTRY_FIELDS } from "../offchain/src/registryDatum.js";
@@ -25,13 +25,20 @@ import { PLATFORM_ENTRY_FIELDS } from "../offchain/src/registryDatum.js";
 
 const GOC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+/**
+ * Mọi tệp trong `Specs/` được quét theo DANH SÁCH THƯ MỤC, không theo danh sách tên: bản trước kê
+ * tay năm tệp, và `Exec-Spec.md` nằm ngoài danh sách đã khai "9 field" ở hai dòng suốt từ lúc
+ * lược đồ lên 11 rồi 12 trường. Tệp mới thêm vào `Specs/` tự vào phạm vi quét.
+ */
 const TEP_QUET = [
-  "Specs/Tech-Spec.md",
-  "Specs/Math-Spec.md",
-  "Specs/CONTRACT.md",
+  ...readdirSync(resolve(dirname(fileURLToPath(import.meta.url)), "..", "Specs"))
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => `Specs/${f}`),
   "DevStatus.md",
   "REGISTRATION-STANDARD.md",
-] as const;
+  "README.md",
+  "OVERVIEW.md",
+];
 
 /**
  * Dấu LỊCH SỬ — một dòng mang dấu này được nói con số khác, vì nó đang kể một trạng thái
@@ -46,7 +53,9 @@ const DAU_LICH_SU = [
   "đã hết đúng",
 ];
 
-const MAU_SO_TRUONG = /(\d+)\s+trường/g;
+// Khớp cả `field`: tài liệu viết cả hai, và hai chỗ "9 field" ở `Exec-Spec.md` đã sống qua hai
+// lần đổi lược đồ chỉ vì mẫu cũ không nhận chữ đó.
+const MAU_SO_TRUONG = /(\d+)\s+(?:trường|field)\b/gi;
 
 /**
  * Ngưỡng tách khẳng định-về-TỔNG khỏi khẳng định-về-NHÓM-CON.
