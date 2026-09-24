@@ -11,6 +11,12 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-09-24 — trần dòng giá thôi chép số, trỏ về `max_op_prices`
+
+- **Đổi gì.** RD-6 và khối đếm ngân sách dòng trong `Specs/Resource-Dictionary.md` thôi viết "tối đa 16 dòng" như một hằng của sổ. Hai chỗ này nay trỏ về hằng `max_op_prices` ở `pricing.ak`, kèm giá trị đo được (16), sha `MAGIC@443859ee` và ngày đo. Ngân sách còn lại viết thành `max_op_prices − 15`. Thêm một ràng buộc đang áp khi xét đơn: cấp số không kèm cam kết nào về dòng giá. Dòng tương ứng trong `DevStatus.md` bỏ câu "đường còn lại là tách beacon".
+- **Vì sao.** ConsumeMAGIC chốt tách `demand_mult` theo từng `op_type` (`ConsumeMAGIC/CONTRACT.md` ▸ `CC-LOAD-COUNT-UNIT`). Mỗi dòng giá sẽ mang thêm một trường, nên số dòng chứa được sẽ thấp hơn 16, và chỉ biết thấp bao nhiêu sau khi trường mới có mã. Con số 16 chép tay trong sổ là một bản sao sẽ chết mà không ai báo. Còn "tách beacon" chưa phải hình dạng ConsumeMAGIC đã chọn cho nhu cầu nhiều bảng.
+- **Cái gì gãy.** Bên nào đang lập lịch xin mã theo phép tính "16 − 15 = còn 1 dòng, sau đó tách một beacon là xong" đang dựa trên hai giả định đều đã hết đúng. Khi trần xuống dưới 15, các mã đã cấp không còn nằm vừa trong một bảng.
+
 ## 2026-09-24 — sổ `op_type` khớp lại với bảng giá on-chain; `ID-3` trỏ về nguồn personhood thật
 
 - **Đổi gì.** Sáu việc trong `Specs/Resource-Dictionary.md`:
