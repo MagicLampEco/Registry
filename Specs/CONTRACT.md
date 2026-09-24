@@ -77,8 +77,20 @@ param-validator = bất biến đời instance; datum = DAO chỉnh):
 
 **Identity bất biến — SÁU field từ v2** (`platform_id, instance_id, custody_hash, seed_policy,
 beacon_policy, created_epoch`) — khóa cứng on-chain ở CẢ `UpdateEntry` (U-ID) lẫn `MigrateEntry`
-(M-ID), `registry.ak`. Đổi một field này = một platform KHÁC, phải đăng ký mới. Mutable 4 field đổi
-qua `UpdateEntry` (authority ký; ba trong bốn field đòi thêm đồng thuận quản trị — U-GOV).
+(M-ID), `registry.ak`. Đổi một field này = một platform KHÁC, phải đăng ký mới.
+
+Sáu field còn lại KHÔNG cùng một hạng, và chỗ này từng bị đọc gộp:
+
+| field | đổi qua `UpdateEntry`? | cần gì |
+|---|---|---|
+| `governance_ref`, `accepted_assets`, `cut_bps`, `substrate_flags` | có | authority ký **và** đồng thuận quản trị (U-GOV — `governed_fields_changed` @ `platform.ak`) |
+| `status` | có | authority ký; riêng `→ Retired` đòi thêm đồng thuận (không đảo ngược được) |
+| `spec_version` | **không** | U-VER khoá ở đường Update; chỉ đổi qua `MigrateEntry` (M-VER, chỉ tiến) |
+
+⚠ Bản trước ghi *"Mutable 4 field… ba trong bốn field đòi thêm đồng thuận"* — đó là số của lược đồ
+v2, trước khi `substrate_flags` vào ngày 2026-09-02. Đếm lại từ mã chứ đừng chép số từ đây: tập đòi
+đồng thuận đọc ở `pub fn governed_fields_changed`, tập bất biến ở `pub fn identity_preserved`, cả
+hai trong `platform.ak`.
 
 > **Đổi so với v1:** v1 khoá **năm** field (không có `beacon_policy`, vì khi đó `beacon_policy` là
 > tham số validator chứ không nằm trong datum). v2 đưa nó vào datum để phá vòng phụ thuộc theo chiều

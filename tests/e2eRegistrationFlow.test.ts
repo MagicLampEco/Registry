@@ -103,10 +103,17 @@ function planFromDeclaration(declaration: Record<string, any>) {
   };
   return planRegister({
     config: cfg,
-    beaconPolicy: BEACON_POLICY,
+    // BỘ BA đi cùng nhau. `registryAuthority` lấy đúng giá trị đã khai vào `cfg` (REG-AUTH),
+    // và `registryHash` nay là bắt buộc nên R-GOVSELF chạy ở CẢ đường này.
+    scripts: {
+      registryAuthority: AUTHORITY,
+      registryHash:      REGISTRY_HASH,
+      beaconPolicy:      BEACON_POLICY,
+    },
     custodyHash: String(p.custody_hash),
     seedPolicy: String(p.seed_policy),
     createdEpoch: 10n,
+    timeBucketWindow: { from: 10n, to: 10n },   // R-EPOCH nay vô điều kiện.
     // R-GOVLIVE: cổng quản trị phải chạy thật trong tx đăng ký.
     governanceProof: { spends: [{ scriptHash: String(p.governance_ref) }] },
     custodyUtxo: {

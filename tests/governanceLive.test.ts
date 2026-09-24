@@ -21,9 +21,9 @@ import { describe, it, expect } from "vitest";
 import {
   planRegister, planUpdateEntry, planMigrateEntry,
   governanceConsented, governanceConsentKind,
-  type GovernanceProof,
+  type GovernanceProof, type EntryChanges, type UpdateOptions, type MigrateParams,
 } from "../offchain/src/registrationBuilder.js";
-import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
+import type { PlatformConfig, PlatformEntry, RegistryScripts } from "../offchain/src/types.js";
 import { MS_PER_TIME_BUCKET } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
 
@@ -35,6 +35,20 @@ const GOV_OLD       = "cc".repeat(28);
 const GOV_NEW       = "dd".repeat(28);
 const OWN_HASH      = "77".repeat(28);
 const NEW_HASH      = "88".repeat(28);
+
+/** BỘ BA của lần triển khai đang giữ hồ sơ (`OWN_HASH` là own_hash của S-GOVSELF). */
+const SCRIPTS: RegistryScripts = {
+  registryAuthority: AUTHORITY,
+  registryHash:      OWN_HASH,
+  beaconPolicy:      BEACON_POLICY,
+};
+
+/** Cửa sổ ô thời gian khớp `createdEpoch: 10n` — R-EPOCH nay vô điều kiện. */
+const WINDOW_10 = { from: 10n, to: 10n };
+
+/** Value ô hồ sơ giữ nguyên ⇒ U-VALUE / M-VALUE (nay vô điều kiện) đi qua. */
+const entryVal = (platformIdHex: string) =>
+  ({ [`${BEACON_POLICY}|${platformIdHex}`]: 1n, "|": 2_000_000n });
 
 const bySpend = (h: string): GovernanceProof => ({ spends: [{ scriptHash: h }] });
 const byWithdrawal = (h: string): GovernanceProof =>
@@ -62,15 +76,25 @@ const okCustody = (c: PlatformConfig) => ({
 
 const regParams = (c: PlatformConfig, proof: GovernanceProof) => ({
   config: c,
-  beaconPolicy: BEACON_POLICY,
+  scripts: SCRIPTS,
   custodyHash: CUSTODY_HASH,
   seedPolicy: SEED_POLICY,
   createdEpoch: 10n,
+  timeBucketWindow: WINDOW_10,
   custodyUtxo: okCustody(c),
   governanceProof: proof,
 });
 
 const entryIn = (): PlatformEntry => planRegister(regParams(cfg(), bySpend(GOV_OLD))).entry;
+
+/** `opts` nay bắt buộc — điền hai value GIỮ NGUYÊN để mỗi bài chỉ nói ra thứ nó đang kiểm. */
+const upd = (
+  e: PlatformEntry, changes: EntryChanges, opts: Partial<UpdateOptions> = {},
+) => planUpdateEntry(e, changes, SCRIPTS, {
+  valueIn:  entryVal(e.platform_id),
+  valueOut: entryVal(e.platform_id),
+  ...opts,
+});
 
 // ═══ Vị từ thuần — gương util.governance_consented ══════════════════════════
 
@@ -144,8 +168,8 @@ describe("planRegister · R-GOVLIVE là VÔ ĐIỀU KIỆN", () => {
   it("hồ sơ KHÔNG KHO cũng phải có R-GOVLIVE — hạng không kho không được miễn", () => {
     const nonCust = cfg({ instanceId: "", acceptedAssets: [], cutBps: 0n });
     const params = {
-      config: nonCust, beaconPolicy: BEACON_POLICY, custodyHash: "", seedPolicy: "",
-      createdEpoch: 10n,
+      config: nonCust, scripts: SCRIPTS, custodyHash: "", seedPolicy: "",
+      createdEpoch: 10n, timeBucketWindow: WINDOW_10,
     };
     expect(() => planRegister({ ...params, governanceProof: {} })).toThrow(/REG-GOVLIVE/);
     expect(planRegister({ ...params, governanceProof: byWithdrawal(GOV_OLD) })
@@ -158,9 +182,9 @@ describe("planRegister · R-GOVLIVE là VÔ ĐIỀU KIỆN", () => {
     expect(() => planRegister(regParams(cfg({ governanceRef: "cc".repeat(27) }), {})))
       .toThrow(/REG-WF/);
     const selfCfg = cfg({ governanceRef: OWN_HASH });
-    expect(() => planRegister({
-      ...regParams(selfCfg, bySpend(OWN_HASH)), registryHash: OWN_HASH,
-    })).toThrow(/REG-GOVSELF/);
+    // R-GOVSELF nay VÔ ĐIỀU KIỆN: `own_hash` đến từ `SCRIPTS.registryHash`, không còn là một
+    // tham số phải nhớ truyền thêm.
+    expect(() => planRegister(regParams(selfCfg, bySpend(OWN_HASH)))).toThrow(/REG-GOVSELF/);
   });
 });
 
@@ -168,29 +192,26 @@ describe("planRegister · R-GOVLIVE là VÔ ĐIỀU KIỆN", () => {
 
 describe("planUpdateEntry · U-GOV2 (bàn giao) và U-GOVSELF-OUT", () => {
   it("đổi governance_ref mà chỉ khai boolean → UPD-GOV2 (boolean không nói được ref nào)", () => {
-    expect(() => planUpdateEntry(
-      entryIn(), { governance_ref: GOV_NEW }, BEACON_POLICY, AUTHORITY,
-      { governanceConsent: true },
+    expect(() => upd(
+      entryIn(), { governance_ref: GOV_NEW }, { governanceConsent: true },
     )).toThrow(/UPD-GOV2/);
   });
 
   it("đổi governance_ref mà chỉ chứng minh ref CŨ → UPD-GOV2", () => {
-    expect(() => planUpdateEntry(
-      entryIn(), { governance_ref: GOV_NEW }, BEACON_POLICY, AUTHORITY,
-      { governanceProof: bySpend(GOV_OLD) },
+    expect(() => upd(
+      entryIn(), { governance_ref: GOV_NEW }, { governanceProof: bySpend(GOV_OLD) },
     )).toThrow(/UPD-GOV2/);
   });
 
   it("đổi governance_ref mà chỉ chứng minh ref MỚI → UPD-GOV (thiếu bên đương nhiệm)", () => {
-    expect(() => planUpdateEntry(
-      entryIn(), { governance_ref: GOV_NEW }, BEACON_POLICY, AUTHORITY,
-      { governanceProof: bySpend(GOV_NEW) },
+    expect(() => upd(
+      entryIn(), { governance_ref: GOV_NEW }, { governanceProof: bySpend(GOV_NEW) },
     )).toThrow(/UPD-GOV(?!2)/);
   });
 
   it("đủ CẢ HAI ref → qua; plan liệt đúng hai ref tx phải làm chạy", () => {
-    const plan = planUpdateEntry(
-      entryIn(), { governance_ref: GOV_NEW }, BEACON_POLICY, AUTHORITY,
+    const plan = upd(
+      entryIn(), { governance_ref: GOV_NEW },
       { governanceProof: { spends: [{ scriptHash: GOV_OLD }], withdrawals: [{ scriptHash: GOV_NEW }] } },
     );
     expect(plan.entryOut.governance_ref).toBe(GOV_NEW);
@@ -200,53 +221,60 @@ describe("planUpdateEntry · U-GOV2 (bàn giao) và U-GOVSELF-OUT", () => {
   });
 
   it("KHÔNG đổi ref thì KHÔNG phát sinh nghĩa vụ nào thêm (chỉ ref đương nhiệm)", () => {
-    const plan = planUpdateEntry(
-      entryIn(), { cut_bps: 800n }, BEACON_POLICY, AUTHORITY,
-      { governanceProof: byWithdrawal(GOV_OLD) },
+    const plan = upd(
+      entryIn(), { cut_bps: 800n }, { governanceProof: byWithdrawal(GOV_OLD) },
     );
     expect(plan.governanceHandover).toBe(false);
     expect(plan.governanceConsentRefs).toEqual([GOV_OLD]);
   });
 
   it("thay đổi đảo ngược được (Active ↔ Paused) không đòi ref nào", () => {
-    const plan = planUpdateEntry(entryIn(), { status: "Paused" }, BEACON_POLICY, AUTHORITY);
+    const plan = upd(entryIn(), { status: "Paused" });
     expect(plan.needsGovernanceConsent).toBe(false);
     expect(plan.governanceConsentRefs).toEqual([]);
   });
 
   it("bằng chứng withdrawal thay được lời khai boolean cho ref đương nhiệm", () => {
-    const plan = planUpdateEntry(
-      entryIn(), { status: "Retired" }, BEACON_POLICY, AUTHORITY,
-      { governanceProof: byWithdrawal(GOV_OLD) },
+    const plan = upd(
+      entryIn(), { status: "Retired" }, { governanceProof: byWithdrawal(GOV_OLD) },
     );
     expect(plan.entryOut.status).toBe("Retired");
     expect(plan.needsGovernanceConsent).toBe(true);
   });
 
   it("U-GOVSELF-OUT: ghi ra governance_ref == own_hash → ném, kể cả khi đủ bằng chứng", () => {
-    expect(() => planUpdateEntry(
-      entryIn(), { governance_ref: OWN_HASH }, BEACON_POLICY, AUTHORITY,
-      {
-        ownRegistryHash: OWN_HASH,
-        governanceProof: { spends: [{ scriptHash: GOV_OLD }, { scriptHash: OWN_HASH }] },
-      },
+    expect(() => upd(
+      entryIn(), { governance_ref: OWN_HASH },
+      { governanceProof: { spends: [{ scriptHash: GOV_OLD }, { scriptHash: OWN_HASH }] } },
     )).toThrow(/UPD-GOVSELF-OUT/);
+  });
+
+  it("U-MINT-0: tóm tắt NÓI RA lệnh cấm mint/burn — im lặng ở đây đọc thành 'không có luật'", () => {
+    // Luật ở nhánh này CHẶT HƠN cửa đăng ký (R-MINT-2 còn cho một policy), mà bản trước
+    // `planUpdateEntry` không in gì trong khi `planRegister` có cảnh báo — người đọc so hai
+    // tóm tắt sẽ hiểu ngược.
+    const plan = upd(entryIn(), { status: "Paused" });
+    expect(plan.summary).toMatch(/U-MINT-0/);
+    expect(plan.summary).toMatch(/KHÔNG được mint hay burn/);
   });
 });
 
 // ═══ M-GOV2 — bàn giao quản trị NGAY TRONG tx di trú ════════════════════════
 
 describe("planMigrateEntry · M-GOV2 + M-GOVSELF-OUT", () => {
-  const mig = (over: Record<string, unknown> = {}) => ({
-    entryIn: entryIn(),
-    ownRegistryHash: OWN_HASH,
-    newRegistryHash: NEW_HASH,
-    newSpecVersion: 3n,
-    registryAuthority: AUTHORITY,
-    governanceConsent: true,
-    substrateFlags: 0n,
-    ...over,
-  });
+  const mig = (over: Partial<MigrateParams> = {}): MigrateParams => {
+    const e = over.entryIn ?? entryIn();
+    return {
+      entryIn: e,
+      scripts: SCRIPTS,             // registryHash = OWN_HASH, registryAuthority = AUTHORITY.
+      newRegistryHash: NEW_HASH,
+      newSpecVersion: 3n,
+      governanceConsent: true,
+      valueIn:  entryVal(e.platform_id),
+      valueOut: entryVal(e.platform_id),
+      ...over,
+    };
+  };
 
   it("KHÔNG đổi ref: nghĩa vụ đúng bằng M-GOV, không hơn", () => {
     const plan = planMigrateEntry(mig());
@@ -301,5 +329,11 @@ describe("planMigrateEntry · M-GOV2 + M-GOVSELF-OUT", () => {
     expect(() => planMigrateEntry(mig({
       newGovernanceRef: "dd".repeat(27), governanceProof: bySpend("dd".repeat(27)),
     }))).toThrow(/MIG-MUT/);
+  });
+
+  it("M-MINT-0: tóm tắt NÓI RA lệnh cấm mint/burn (cùng lý do với U-MINT-0)", () => {
+    const plan = planMigrateEntry(mig());
+    expect(plan.summary).toMatch(/M-MINT-0/);
+    expect(plan.summary).toMatch(/KHÔNG được mint hay burn/);
   });
 });

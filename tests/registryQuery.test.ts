@@ -44,8 +44,14 @@ function mkEntry(name: string, status: PlatformEntry["status"] = "Active"): Plat
       registryAuthority: "ab".repeat(28),
       genesisRef: { transaction_id: "ff".repeat(32), output_index: 0n },
     },
-    beaconPolicy: BEACON, custodyHash: CUSTODY_HASH, seedPolicy: SEED_POLICY,
+    scripts: {
+      registryAuthority: "ab".repeat(28),   // khớp config.registryAuthority (REG-AUTH).
+      registryHash:      REGISTRY_HASH,
+      beaconPolicy:      BEACON,
+    },
+    custodyHash: CUSTODY_HASH, seedPolicy: SEED_POLICY,
     createdEpoch: 1n,
+    timeBucketWindow: { from: 1n, to: 1n },   // R-EPOCH nay vô điều kiện.
     // R-GOVLIVE: cổng quản trị chạy thật trong tx đăng ký (gương util.governance_consented).
     governanceProof: { spends: [{ scriptHash: "cc".repeat(28) }] },
     custodyUtxo: {

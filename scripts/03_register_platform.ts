@@ -34,7 +34,7 @@ import {
 } from "../offchain/src/registrationBuilder.js";
 import { onboardPlatform } from "../offchain/src/onboard.js";
 import type { PlanSeedFn } from "../offchain/src/treasuryShapes.js";
-import type { PlatformConfig } from "../offchain/src/types.js";
+import type { PlatformConfig, RegistryScripts } from "../offchain/src/types.js";
 // Hồ sơ mẫu nằm ở examples/ — mỗi đội tự viết hồ sơ của mình theo khung _template.ts.
 import { phoenixKeyConfig } from "../examples/phoenixkey.js";
 import { oriLifeConfig } from "../examples/orilife.js";
@@ -118,6 +118,15 @@ async function main(): Promise<void> {
       + `lại (registry TRƯỚC, rồi registry_beacon với registry_hash MỚI) trước khi đăng ký.`,
     );
   }
+
+  // BỘ BA đi cùng nhau (RegistryScripts). Dựng MỘT lần từ ảnh chụp đã đối chiếu với build hiện
+  // tại ngay bên trên, rồi truyền nguyên bộ xuống builder — không rải ba chuỗi rời ra các lời
+  // gọi, vì rải rời chính là chỗ một giá trị lạc bộ đi lọt mà không gương nào bắt.
+  const scripts: RegistryScripts = {
+    registryAuthority: registry.registryAuthority,
+    registryHash:      registry.registryHash,
+    beaconPolicy:      registry.beaconPolicy,
+  };
 
   const custody  = resolveCustodyHash();
   const seed     = resolveSeedPolicy();
@@ -257,24 +266,23 @@ async function main(): Promise<void> {
   const register = injectedPlanSeed
     ? onboardPlatform({
         config, planSeed: injectedPlanSeed,
-        beaconPolicy: registry.beaconPolicy,
+        // Bộ ba đi cùng nhau ⇒ hai đường vào (onboard / planRegister thẳng) nay ép GIỐNG HỆT
+        // nhau. Bản trước phải nhớ truyền thêm `registryHash` cho đường onboard, và quên là
+        // R-GOVSELF im lặng không chạy ở đúng đường đó.
+        scripts,
         custodyHash: custody.value,
         seedPolicy: seed.value,
         createdEpoch, timeBucketWindow,
         governanceProof,
-        // R-GOVSELF: đường onboard trước đây KHÔNG truyền registryHash nên bỏ qua kiểm này —
-        // hai đường vào cùng một builder mà ép khác nhau. Nay truyền cả hai đường.
-        registryHash: registry.registryHash,
         ...(custodyOutRef ? { custodyOutRef } : {}),
       }).register
     : planRegister({
         config,
-        beaconPolicy: registry.beaconPolicy,
+        scripts,
         custodyHash: custody.value,
         seedPolicy: seed.value,
         createdEpoch, timeBucketWindow,
         custodyUtxo: custodyRef,
-        registryHash: registry.registryHash,
         governanceProof,
       });
 

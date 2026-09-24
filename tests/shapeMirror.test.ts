@@ -24,11 +24,12 @@ import {
   entryWellFormed, mutableFieldsValid, isScriptHash28, changesRequireGovernance,
   shapeCustodial, shapeNonCustodial, entryShapeValid, governanceRefNotSelf,
   timeBucketOf, txValidityForTimeBucket, validityFitsOneBucket, timeBucketInWindow,
+  type EntryChanges, type UpdateOptions, type MigrateParams,
 } from "../offchain/src/registrationBuilder.js";
 import { decodePlatformEntry } from "../offchain/src/registryDatum.js";
 import { verifyEntryAgainstCustody, safeToRouteFees } from "../offchain/src/registryQuery.js";
 import { Data } from "@lucid-evolution/lucid";
-import type { PlatformConfig, PlatformEntry } from "../offchain/src/types.js";
+import type { PlatformConfig, PlatformEntry, RegistryScripts } from "../offchain/src/types.js";
 import { MS_PER_TIME_BUCKET, SPEC_VERSION_V2 } from "../offchain/src/types.js";
 import { asciiToHex } from "../offchain/src/encoding.js";
 
@@ -38,6 +39,32 @@ const SEED_POLICY   = "56".repeat(28);
 const AUTHORITY     = "ab".repeat(28);
 const GOV_REF       = "cc".repeat(28);
 const REGISTRY_HASH = "77".repeat(28);
+
+/**
+ * BỘ BA của MỘT lần triển khai giả định, dùng chung cho cả tệp.
+ *
+ * ⚠ Ba giá trị này là hằng số bịa, KHÔNG có quan hệ mật mã thật với nhau (thật thì
+ * `beaconPolicy` phải là policy id của `registry_beacon` đã apply đúng `registryHash` — muốn
+ * dựng được phải chạy `applyRegistry`, tức phải có lucid + blueprint). SDK KHÔNG kiểm được
+ * quan hệ đó và không giả vờ kiểm. Cái nó kiểm là ba giá trị ĐI CÙNG NHAU: một lời gọi lấy
+ * `beaconPolicy` của bộ này và `registryHash` của bộ khác nay là lỗi kiểu, không còn là một
+ * đối số bị quên.
+ *
+ * Bản trước của tệp này rải `BEACON_POLICY` và `REGISTRY_HASH` ra từng lời gọi như hai chuỗi
+ * không liên quan, và bộ kiểm vẫn xanh — đó chính là hình dạng của lỗ đang vá.
+ */
+const SCRIPTS: RegistryScripts = {
+  registryAuthority: AUTHORITY,
+  registryHash:      REGISTRY_HASH,
+  beaconPolicy:      BEACON_POLICY,
+};
+
+/** Cửa sổ ô thời gian khớp `createdEpoch: 10n` của mọi fixture dưới đây (R-EPOCH nay bắt buộc). */
+const WINDOW_10 = { from: 10n, to: 10n };
+
+/** Value ô hồ sơ VÀO/RA mặc định — U-VALUE / M-VALUE nay bắt buộc, giữ nguyên là qua. */
+const entryVal = (platformIdHex: string) =>
+  ({ [`${BEACON_POLICY}|${platformIdHex}`]: 1n, "|": 2_000_000n });
 
 /** R-GOVLIVE: mọi tx đăng ký hợp lệ phải làm cổng quản trị chạy thật (util.ak:204-216). */
 const GOV_PROOF = { spends: [{ scriptHash: GOV_REF }] };
@@ -67,10 +94,11 @@ const okCustody = (cfg: PlatformConfig) => ({
 
 const custodialEntry = (): PlatformEntry => planRegister({
   config: custodialConfig(),
-  beaconPolicy: BEACON_POLICY,
+  scripts: SCRIPTS,
   custodyHash: CUSTODY_HASH,
   seedPolicy: SEED_POLICY,
   createdEpoch: 10n,
+  timeBucketWindow: WINDOW_10,
   custodyUtxo: okCustody(custodialConfig()),
   governanceProof: GOV_PROOF,
 }).entry;
@@ -95,14 +123,43 @@ const nonCustodialConfig = (over: Partial<PlatformConfig> = {}): PlatformConfig 
 
 const nonCustodialParams = (over: Record<string, unknown> = {}) => ({
   config: nonCustodialConfig(),
-  beaconPolicy: BEACON_POLICY,
+  scripts: SCRIPTS,
   custodyHash: "",
   seedPolicy: "",
   createdEpoch: 10n,
+  timeBucketWindow: WINDOW_10,
   governanceProof: GOV_PROOF,
   substrateFlags: 0n,
   ...over,
 });
+
+// ── Hai lối tắt cho hai nhánh spend ────────────────────────────────────────
+// `opts` của `planUpdateEntry` và hai `value` của `planMigrateEntry` nay BẮT BUỘC (gương
+// U-VALUE / M-VALUE vô điều kiện). Hai hàm dưới đây điền value GIỮ NGUYÊN — tức ca đi qua
+// U-VALUE — để mỗi bài chỉ phải nói ra thứ nó thật sự đang kiểm. Bài nào kiểm chính U-VALUE
+// thì khai `valueIn`/`valueOut` tường minh, đè lên mặc định này.
+
+const upd = (
+  entryIn: PlatformEntry, changes: EntryChanges, opts: Partial<UpdateOptions> = {},
+) => planUpdateEntry(entryIn, changes, SCRIPTS, {
+  valueIn:  entryVal(entryIn.platform_id),
+  valueOut: entryVal(entryIn.platform_id),
+  ...opts,
+});
+
+const mig = (over: Partial<MigrateParams> = {}) => {
+  const entryIn = over.entryIn ?? custodialEntry();
+  return planMigrateEntry({
+    entryIn,
+    scripts: SCRIPTS,
+    newRegistryHash: "88".repeat(28),
+    newSpecVersion: 3n,
+    governanceConsent: true,
+    valueIn:  entryVal(entryIn.platform_id),
+    valueOut: entryVal(entryIn.platform_id),
+    ...over,
+  });
+};
 
 // ═══ LỆCH 1 — hồ sơ KHÔNG KHO phải dựng được giao dịch ═══════════════════════
 
@@ -138,9 +195,7 @@ describe("LỆCH 1 · hồ sơ KHÔNG KHO (CU-N) dựng được giao dịch đ�
   });
 
   it("hồ sơ KHÔNG KHO vẫn qua R-EPOCH và R-GOVSELF như hồ sơ có kho", () => {
-    const plan = planRegister(nonCustodialParams({
-      timeBucketWindow: { from: 10n, to: 10n }, registryHash: REGISTRY_HASH,
-    }));
+    const plan = planRegister(nonCustodialParams());
     expect(plan.entry.created_epoch).toBe(10n);
     expect(() => planRegister(nonCustodialParams({
       timeBucketWindow: { from: 11n, to: 11n },
@@ -150,8 +205,9 @@ describe("LỆCH 1 · hồ sơ KHÔNG KHO (CU-N) dựng được giao dịch đ�
   it("hồ sơ CÓ KHO vẫn phải có custodyUtxo — mở hạng mới không nới hạng cũ", () => {
     const cfg = custodialConfig();
     expect(() => planRegister({
-      config: cfg, beaconPolicy: BEACON_POLICY, custodyHash: CUSTODY_HASH,
-      seedPolicy: SEED_POLICY, createdEpoch: 10n, governanceProof: GOV_PROOF,
+      config: cfg, scripts: SCRIPTS, custodyHash: CUSTODY_HASH,
+      seedPolicy: SEED_POLICY, createdEpoch: 10n, timeBucketWindow: WINDOW_10,
+      governanceProof: GOV_PROOF,
     })).toThrow(/REG-BIND/);
   });
 });
@@ -171,14 +227,16 @@ describe("LỆCH 1 · NỬA VỜI bị từ chối — hình dạng chính là h
       { ...nonCustodialParams(), config: nonCustodialConfig({ cutBps: 700n }) }],
     ["khai có kho nhưng accepted_assets rỗng",
       {
-        config: custodialConfig({ acceptedAssets: [] }), beaconPolicy: BEACON_POLICY,
+        config: custodialConfig({ acceptedAssets: [] }), scripts: SCRIPTS,
         custodyHash: CUSTODY_HASH, seedPolicy: SEED_POLICY, createdEpoch: 10n,
+        timeBucketWindow: WINDOW_10, governanceProof: GOV_PROOF,
         custodyUtxo: okCustody(custodialConfig()),
       }],
     ["khai có kho nhưng custody_hash rỗng",
       {
-        config: custodialConfig(), beaconPolicy: BEACON_POLICY,
+        config: custodialConfig(), scripts: SCRIPTS,
         custodyHash: "", seedPolicy: SEED_POLICY, createdEpoch: 10n,
+        timeBucketWindow: WINDOW_10, governanceProof: GOV_PROOF,
         custodyUtxo: okCustody(custodialConfig()),
       }],
   ];
@@ -193,14 +251,14 @@ describe("LỆCH 1 · NỬA VỜI bị từ chối — hình dạng chính là h
     const cfg = custodialConfig();
     // 27 byte: trỏ tới một script KHÔNG THỂ tồn tại — on-chain ép độ dài, off-chain nay cũng.
     expect(() => planRegister({
-      config: cfg, beaconPolicy: BEACON_POLICY, custodyHash: "34".repeat(27),
-      seedPolicy: SEED_POLICY, createdEpoch: 10n, custodyUtxo: okCustody(cfg),
-      governanceProof: GOV_PROOF,
+      config: cfg, scripts: SCRIPTS, custodyHash: "34".repeat(27),
+      seedPolicy: SEED_POLICY, createdEpoch: 10n, timeBucketWindow: WINDOW_10,
+      custodyUtxo: okCustody(cfg), governanceProof: GOV_PROOF,
     })).toThrow(/REG-WF/);
     expect(() => planRegister({
-      config: cfg, beaconPolicy: BEACON_POLICY, custodyHash: CUSTODY_HASH,
-      seedPolicy: "56".repeat(29), createdEpoch: 10n, custodyUtxo: okCustody(cfg),
-      governanceProof: GOV_PROOF,
+      config: cfg, scripts: SCRIPTS, custodyHash: CUSTODY_HASH,
+      seedPolicy: "56".repeat(29), createdEpoch: 10n, timeBucketWindow: WINDOW_10,
+      custodyUtxo: okCustody(cfg), governanceProof: GOV_PROOF,
     })).toThrow(/REG-WF/);
   });
 
@@ -225,7 +283,7 @@ describe("LỆCH 1 · NỬA VỜI bị từ chối — hình dạng chính là h
 describe("LỆCH 1 · U-SHAPE / M-SHAPE — không đổi hạng bằng đường cập nhật", () => {
   it("hồ sơ KHÔNG KHO cập nhật status vẫn qua (cut_bps 0 + accepted rỗng KHÔNG còn bị chặn)", () => {
     const non = planRegister(nonCustodialParams()).entry;
-    const plan = planUpdateEntry(non, { status: "Paused" }, BEACON_POLICY, AUTHORITY);
+    const plan = upd(non, { status: "Paused" });
     expect(plan.entryOut.status).toBe("Paused");
     expect(plan.entryOut.accepted_assets).toEqual([]);
     expect(plan.entryOut.cut_bps).toBe(0n);
@@ -233,34 +291,25 @@ describe("LỆCH 1 · U-SHAPE / M-SHAPE — không đổi hạng bằng đườn
 
   it("hồ sơ KHÔNG KHO mà nhét accepted_assets vào → UPD-MUT (nửa vời)", () => {
     const non = planRegister(nonCustodialParams()).entry;
-    expect(() => planUpdateEntry(
-      non, { accepted_assets: [{ policy: "", name: "" }] }, BEACON_POLICY, AUTHORITY,
-      { governanceConsent: true },
+    expect(() => upd(
+      non, { accepted_assets: [{ policy: "", name: "" }] }, { governanceConsent: true },
     )).toThrow(/UPD-MUT/);
   });
 
   it("hồ sơ CÓ KHO mà rút hết accepted_assets → UPD-MUT (không lách thành không-kho)", () => {
-    expect(() => planUpdateEntry(
-      custodialEntry(), { accepted_assets: [] }, BEACON_POLICY, AUTHORITY,
-      { governanceConsent: true },
+    expect(() => upd(
+      custodialEntry(), { accepted_assets: [] }, { governanceConsent: true },
     )).toThrow(/UPD-MUT/);
   });
 
   it("di trú giữ nguyên hạng, và datum đích phải qua M-MUT", () => {
     const non = planRegister(nonCustodialParams()).entry;
-    const plan = planMigrateEntry({
-      entryIn: non, ownRegistryHash: REGISTRY_HASH, newRegistryHash: "88".repeat(28),
-      newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
-    });
+    const plan = mig({ entryIn: non });
     expect(plan.summary).toMatch(/KHÔNG KHO/);
     expect(plan.entryOut.spec_version).toBe(3n);
 
     // M-MUT: hồ sơ vào đã nửa vời thì di trú KHÔNG được dùng làm đường rửa hình dạng.
-    expect(() => planMigrateEntry({
-      entryIn: { ...non, custody_hash: CUSTODY_HASH },
-      ownRegistryHash: REGISTRY_HASH, newRegistryHash: "88".repeat(28),
-      newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
-    })).toThrow(/MIG-MUT/);
+    expect(() => mig({ entryIn: { ...non, custody_hash: CUSTODY_HASH } })).toThrow(/MIG-MUT/);
   });
 });
 
@@ -280,17 +329,17 @@ describe("LỆCH 2 · governance_ref phải ĐÚNG 28 byte", () => {
   it("đăng ký với governance_ref 27 byte → REG-WF (giá trị rác = hồ sơ tự khoá chết)", () => {
     const cfg = custodialConfig({ governanceRef: "cc".repeat(27) });
     expect(() => planRegister({
-      config: cfg, beaconPolicy: BEACON_POLICY, custodyHash: CUSTODY_HASH,
-      seedPolicy: SEED_POLICY, createdEpoch: 10n, custodyUtxo: okCustody(cfg),
+      config: cfg, scripts: SCRIPTS, custodyHash: CUSTODY_HASH,
+      seedPolicy: SEED_POLICY, createdEpoch: 10n, timeBucketWindow: WINDOW_10,
+      custodyUtxo: okCustody(cfg),
       governanceProof: { spends: [{ scriptHash: "cc".repeat(27) }] },
     })).toThrow(/REG-WF/);
   });
 
   it("cập nhật sang governance_ref rác → UPD-MUT (không chỉ 'khác rỗng')", () => {
     for (const bad of ["", "cc".repeat(27), "cc".repeat(29), "00"]) {
-      expect(() => planUpdateEntry(
-        custodialEntry(), { governance_ref: bad }, BEACON_POLICY, AUTHORITY,
-        { governanceConsent: true },
+      expect(() => upd(
+        custodialEntry(), { governance_ref: bad }, { governanceConsent: true },
       )).toThrow(/UPD-MUT/);
     }
   });
@@ -318,26 +367,37 @@ describe("LỆCH 2 · governance_ref != hash của chính registry (R-GOVSELF / 
   it("đăng ký khai governance_ref = registry_hash → REG-GOVSELF", () => {
     const cfg = custodialConfig({ governanceRef: REGISTRY_HASH });
     expect(() => planRegister({
-      config: cfg, beaconPolicy: BEACON_POLICY, custodyHash: CUSTODY_HASH,
-      seedPolicy: SEED_POLICY, createdEpoch: 10n, custodyUtxo: okCustody(cfg),
-      registryHash: REGISTRY_HASH,
+      config: cfg, scripts: SCRIPTS, custodyHash: CUSTODY_HASH,
+      seedPolicy: SEED_POLICY, createdEpoch: 10n, timeBucketWindow: WINDOW_10,
+      custodyUtxo: okCustody(cfg),
       governanceProof: { spends: [{ scriptHash: REGISTRY_HASH }] },
     })).toThrow(/REG-GOVSELF/);
   });
 
   it("cập nhật một hồ sơ đã khai governance_ref = own_hash → UPD-GOVSELF", () => {
     const bad: PlatformEntry = { ...custodialEntry(), governance_ref: REGISTRY_HASH };
-    expect(() => planUpdateEntry(
-      bad, { status: "Paused" }, BEACON_POLICY, AUTHORITY, { ownRegistryHash: REGISTRY_HASH },
-    )).toThrow(/UPD-GOVSELF/);
+    // ⚠ Dấu HAI CHẤM không thừa: `/UPD-GOVSELF/` trần cũng khớp `UPD-GOVSELF-OUT`, nên bài này
+    // từng xanh cả khi S-GOVSELF bị gỡ hẳn — nó trượt xuống chốt kế tiếp và chết ở đó, đúng
+    // màu, đúng tên. Đo bằng đột biến: gỡ S-GOVSELF ⇒ 254/254 vẫn xanh.
+    expect(() => upd(bad, { status: "Paused" })).toThrow(/UPD-GOVSELF:/);
+  });
+
+  it("S-GOVSELF soi entryIn, KHÔNG phải entryOut — hồ sơ kẹt không tự cứu bằng đổi ref", () => {
+    // Ca này là thứ tách được S-GOVSELF khỏi U-GOVSELF-OUT: hồ sơ VÀO khai own_hash, còn hồ sơ
+    // RA thì không. Chỉ chốt soi `entryIn` mới bắt được, nên gỡ nó ra là bài này đỏ.
+    //
+    // Ý nghĩa thật của ca: một hồ sơ đã lỡ khai `governance_ref = own_hash` thì KẸT — validator
+    // từ chối mọi lần chi tiêu, kể cả chính lần chi tiêu định sửa giá trị đó. Builder phải nói
+    // ra điều ấy chứ không dựng plan cho một tx chắc chắn trượt.
+    const bad: PlatformEntry = { ...custodialEntry(), governance_ref: REGISTRY_HASH };
+    expect(() => upd(bad, { governance_ref: GOV_REF }, {
+      governanceProof: { spends: [{ scriptHash: REGISTRY_HASH }, { scriptHash: GOV_REF }] },
+    })).toThrow(/UPD-GOVSELF:/);
   });
 
   it("di trú một hồ sơ như vậy cũng bị chặn — S-GOVSELF ép TRƯỚC khi rẽ nhánh", () => {
     const bad: PlatformEntry = { ...custodialEntry(), governance_ref: REGISTRY_HASH };
-    expect(() => planMigrateEntry({
-      entryIn: bad, ownRegistryHash: REGISTRY_HASH, newRegistryHash: "88".repeat(28),
-      newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
-    })).toThrow(/MIG-GOVSELF/);
+    expect(() => mig({ entryIn: bad })).toThrow(/MIG-GOVSELF/);
   });
 
   it("cập nhật ghi governance_ref = own_hash → UPD-GOVSELF-OUT (nay NÉM, không còn cảnh báo)", () => {
@@ -345,28 +405,21 @@ describe("LỆCH 2 · governance_ref != hash của chính registry (R-GOVSELF / 
     // (S-GOVSELF chỉ soi entry_in)". Lời khai đó nay SAI: validator có U-GOVSELF-OUT
     // (`expect entry_out.governance_ref != own_hash`, registry.ak:217). Trả plan kèm cảnh báo
     // là trả một tx chắc chắn bị từ chối cho người gọi nào bỏ qua chuỗi cảnh báo.
-    expect(() => planUpdateEntry(
-      custodialEntry(), { governance_ref: REGISTRY_HASH }, BEACON_POLICY, AUTHORITY,
-      { governanceConsent: true, ownRegistryHash: REGISTRY_HASH },
+    expect(() => upd(
+      custodialEntry(), { governance_ref: REGISTRY_HASH }, { governanceConsent: true },
     )).toThrow(/UPD-GOVSELF-OUT/);
   });
 
   it("M-DEST: hash đích không đủ 28 byte → MIG-DEST (mất beacon vĩnh viễn)", () => {
     for (const bad of ["", "00", "88".repeat(27), "88".repeat(29), "zz".repeat(28)]) {
-      expect(() => planMigrateEntry({
-        entryIn: custodialEntry(), ownRegistryHash: REGISTRY_HASH, newRegistryHash: bad,
-        newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
-      })).toThrow(/MIG-DEST/);
+      expect(() => mig({ newRegistryHash: bad })).toThrow(/MIG-DEST/);
     }
   });
 
   it("di trú tới registry đích == governance_ref → MIG-GOVSELF-DEST (nay NÉM)", () => {
     // ⚠ CA NÀY ĐÃ LẬT, cùng lý do với ca trên: validator có M-GOVSELF-OUT
     // (`entry_out.governance_ref != new_registry_hash`, registry.ak:314).
-    expect(() => planMigrateEntry({
-      entryIn: custodialEntry(), ownRegistryHash: REGISTRY_HASH, newRegistryHash: GOV_REF,
-      newSpecVersion: 3n, registryAuthority: AUTHORITY, governanceConsent: true,
-    })).toThrow(/MIG-GOVSELF-DEST/);
+    expect(() => mig({ newRegistryHash: GOV_REF })).toThrow(/MIG-GOVSELF-DEST/);
   });
 });
 
@@ -567,9 +620,9 @@ describe("substrate_flags — gương off-chain của trường thứ 12", () =>
 
   it("planUpdateEntry: đổi substrate_flags KHÔNG được đi lọt bằng chữ ký authority", () => {
     const a: PlatformEntry = { ...custodialEntry(), status: "Active" };
-    const plan = planUpdateEntry(
-      a, { substrate_flags: a.substrate_flags + 8n }, BEACON_POLICY, AUTHORITY,
-      { ownRegistryHash: REGISTRY_HASH, governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
+    const plan = upd(
+      a, { substrate_flags: a.substrate_flags + 8n },
+      { governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
     );
     // Hở cũ: SDK trả `false` ở đây, nên bên tích hợp không đi xin đồng thuận, rồi tx trượt
     // ở U-GOV mà không có lời giải thích nào từ SDK.
@@ -580,17 +633,124 @@ describe("substrate_flags — gương off-chain của trường thứ 12", () =>
   it("hồi sinh KÈM đổi substrate_flags KHÔNG còn là hồi sinh THUẦN TUÝ", () => {
     const paused: PlatformEntry = { ...custodialEntry(), status: "Paused" };
     // Hồi sinh thuần tuý: chỉ đổi status.
-    const sach = planUpdateEntry(
-      paused, { status: "Active" }, BEACON_POLICY, AUTHORITY,
-      { ownRegistryHash: REGISTRY_HASH },
-    );
+    const sach = upd(paused, { status: "Active" });
     expect(sach.pureRevive).toBe(true);
     // Hồi sinh KÈM đổi lời khai nền — on-chain không coi là thuần tuý, off-chain phải theo.
-    const kem = planUpdateEntry(
+    const kem = upd(
       paused, { status: "Active", substrate_flags: paused.substrate_flags + 1n },
-      BEACON_POLICY, AUTHORITY,
-      { ownRegistryHash: REGISTRY_HASH, governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
+      { governanceProof: { spends: [{ scriptHash: GOV_REF }] } },
     );
     expect(kem.pureRevive).toBe(false);
+  });
+
+  it("pureRevive so CẢ BẢN GHI — mọi trường khác status đều làm nó thành false", () => {
+    // Bản trước liệt kê từng trường bằng tay; nay dựng bản ghi ĐÍCH rồi so mọi khoá. Bài này
+    // quét TỪNG trường khả biến để một trường thứ 13 thêm sau vẫn nằm trong luật mà không ai
+    // phải nhớ — thêm trường thì `changes` không compile được nếu quên, còn phép so thì tự phủ.
+    const paused: PlatformEntry = { ...custodialEntry(), status: "Paused" };
+    const gov = { governanceProof: { spends: [{ scriptHash: GOV_REF }] } };
+    const kemThem: Array<[string, EntryChanges]> = [
+      ["cut_bps",         { status: "Active", cut_bps: paused.cut_bps + 1n }],
+      ["accepted_assets", { status: "Active", accepted_assets: [{ policy: "", name: "" },
+                                                                { policy: "ee".repeat(28), name: "01" }] }],
+      ["substrate_flags", { status: "Active", substrate_flags: paused.substrate_flags + 2n }],
+      ["governance_ref",  { status: "Active", governance_ref: "dd".repeat(28) }],
+    ];
+    for (const [ten, changes] of kemThem) {
+      const plan = upd(paused, changes, {
+        ...gov,
+        governanceProof: {
+          spends: [{ scriptHash: GOV_REF }, { scriptHash: "dd".repeat(28) }],
+        },
+      });
+      expect(plan.pureRevive, `${ten} kèm hồi sinh vẫn bị coi là thuần tuý`).toBe(false);
+    }
+  });
+
+  it("pureRevive QUÉT KHOÁ chứ không đọc một danh sách — mô phỏng trường thứ 13", () => {
+    // ⚠ ĐỌC KỸ BÀI NÀY LÀM GÌ, vì bốn ca ngay trên KHÔNG phân biệt được hai bản.
+    //
+    // Bản cũ liệt kê tay đúng sáu trường (status · spec_version · governance_ref ·
+    // accepted_assets · cut_bps · substrate_flags). Với lược đồ 12 trường HÔM NAY, bản cũ và
+    // bản mới cho kết quả GIỐNG HỆT nhau ở mọi đầu vào hợp lệ — sáu trường còn lại là định
+    // danh, mà U-ID ném trước khi tới đây. Nên bốn ca trên xanh ở CẢ HAI bản: chúng không đo
+    // được cái đang sửa.
+    //
+    // Cái đang sửa là CƠ CHẾ: phép so nay quét `Object.keys` của cả hai bản ghi thay vì đọc
+    // một danh sách cứng. Ca này đo đúng cơ chế đó bằng cách gắn một trường KHÔNG có trong
+    // danh sách cũ vào bản ghi vào — đứng thay cho trường thứ 13 mà ai đó sẽ thêm. Bản quét
+    // khoá thấy nó và trả `false` (sai về phía ĐÓNG: đòi chữ ký authority). Bản danh sách
+    // cứng không thấy gì và trả `true` — tức mở một đường hồi sinh không cần chữ ký, kèm một
+    // thay đổi mà không ai kiểm.
+    const paused = { ...custodialEntry(), status: "Paused" as const, truong_thu_13: 7n };
+    const plan = upd(paused as PlatformEntry, { status: "Active" });
+    expect(plan.pureRevive).toBe(false);
+
+    // Đối chứng — KHÔNG có trường lạ thì vẫn là hồi sinh thuần tuý. Thiếu vế này thì bài trên
+    // xanh cả khi ai đó làm `pureRevive` thành hằng `false`.
+    const sach = upd({ ...custodialEntry(), status: "Paused" }, { status: "Active" });
+    expect(sach.pureRevive).toBe(true);
+  });
+});
+
+// ── BỘ BA SCRIPT ĐI CÙNG NHAU — hai phép đối chiếu mới ──────────────────────────────────────
+//
+// Vì sao có khối này: `registryAuthority` / `registryHash` / `beaconPolicy` sinh ra trong CÙNG
+// một lượt `applyRegistry` (`scripts/config.ts`), nhưng SDK nhận chúng là những chuỗi rời và
+// không đối chiếu gì. Hai chỗ dưới đây là hai chỗ mà một giá trị lạc bộ đi lọt HOÀN TOÀN im
+// lặng — không lỗi kiểu, không gương nào đỏ, chỉ có một plan nói sai.
+//
+// Mỗi phép có MỘT ca âm tính (truyền lệch → phải ném) và MỘT ca dương tính (truyền khớp →
+// không ném). Ca dương tính không phải để cho đẹp: nó là thứ chứng minh cổng không kêu oan,
+// tức phân biệt được hai cực chứ không phải luôn đỏ.
+describe("bộ ba script — REG-AUTH và UPD-BEACON", () => {
+  it("REG-AUTH · config.registryAuthority lệch scripts.registryAuthority → ném", () => {
+    const khac = "99".repeat(28);
+    expect(() => planRegister({
+      ...nonCustodialParams(),
+      scripts: { ...SCRIPTS, registryAuthority: khac },
+    })).toThrow(/REG-AUTH/);
+    // Chiều ngược lại: giữ bộ script, đổi hồ sơ. Cùng một lệch, hai đường vào.
+    expect(() => planRegister({
+      ...nonCustodialParams({ config: nonCustodialConfig({ registryAuthority: khac }) }),
+    })).toThrow(/REG-AUTH/);
+  });
+
+  it("REG-AUTH · khớp thì KHÔNG ném, và người phải ký đúng là giá trị đó (ca dương tính)", () => {
+    const plan = planRegister(nonCustodialParams());
+    expect(plan.requiredSigner).toBe(AUTHORITY);
+    // Hoa/thường không phải một lệch — phép so chuẩn hoá hex trước.
+    expect(planRegister({
+      ...nonCustodialParams(),
+      scripts: { ...SCRIPTS, registryAuthority: AUTHORITY.toUpperCase() },
+    }).requiredSigner).toBe(AUTHORITY);
+  });
+
+  it("UPD-BEACON · scripts.beaconPolicy lệch entryIn.beacon_policy → ném", () => {
+    // Đây là ca mà bản trước đi lọt: `nftUnit` và `entryValue` dựng TỪ tham số truyền vào, nên
+    // truyền nhầm policy thì hàm chạy êm và `summary` in ra một unit token không tồn tại.
+    const lech = "99".repeat(28);
+    expect(() => planUpdateEntry(
+      custodialEntry(), { status: "Paused" },
+      { ...SCRIPTS, beaconPolicy: lech },
+      { valueIn: entryVal(asciiToHex("TestPlat")), valueOut: entryVal(asciiToHex("TestPlat")) },
+    )).toThrow(/UPD-BEACON/);
+  });
+
+  it("UPD-BEACON · khớp thì KHÔNG ném, nftUnit trỏ đúng beacon của hồ sơ (ca dương tính)", () => {
+    const plan = upd(custodialEntry(), { status: "Paused" });
+    expect(plan.nftUnit).toBe(BEACON_POLICY + asciiToHex("TestPlat"));
+    expect(plan.entryValue[`${BEACON_POLICY}|${asciiToHex("TestPlat")}`]).toBe(1n);
+  });
+
+  it("hai cực phân biệt được: cùng một hồ sơ, chỉ đổi beaconPolicy là đảo kết quả", () => {
+    // Bài này là phép đo "đầu vào có phân biệt được hai bên không". Cùng entryIn, cùng changes,
+    // cùng opts — khác duy nhất một trường của bộ script, và kết quả phải ngược nhau.
+    const e = custodialEntry();
+    const opts = { valueIn: entryVal(e.platform_id), valueOut: entryVal(e.platform_id) };
+    expect(() => planUpdateEntry(e, { status: "Paused" }, SCRIPTS, opts)).not.toThrow();
+    expect(() => planUpdateEntry(
+      e, { status: "Paused" }, { ...SCRIPTS, beaconPolicy: SEED_POLICY }, opts,
+    )).toThrow(/UPD-BEACON/);
   });
 });

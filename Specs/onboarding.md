@@ -109,17 +109,27 @@ Trước khi đăng ký, custody instance phải tồn tại trên chain. Treasu
 ## (d) Đăng ký vào Registry (authority ký, R-BIND ép custody thật)
 
 ```ts
-import { onboardPlatform } from "@magiclamp/platform-kit"; // offchain/src/index.ts
+// Gói `@magiclamp/registry-kit` CHƯA phát hành lên npm và chưa khai điểm vào — nhập theo đường tệp.
+import { onboardPlatform } from "./offchain/src/index.js";
 
 const plan = onboardPlatform({
-  config,                    // PlatformConfig của bạn (mục a)
-  beaconPolicy,              // = hash(registry_beacon(authority)) — sau aiken build + apply
-  custodyHash,               // script hash custody.ak của bạn (đã apply)
-  seedPolicy,                // = seedPolicyId(custodySeed)  (mục c)
-  createdEpoch,              // epoch đăng ký
-  custodyOutRef,             // txHash#idx output custody bước (c) — điền SAU khi seed đã submit
+  config,            // PlatformConfig của bạn (mục a)
+  planSeed,          // hàm dựng kho, tiêm từ Treasury SDK (mục c)
+  scripts,           // RegistryScripts { registryAuthority, registryHash, beaconPolicy } —
+                     //   ba giá trị sinh CÙNG MỘT lượt từ `applyRegistry` (scripts/config.ts);
+                     //   đừng ghép tay: beaconPolicy phụ thuộc registryHash
+  custodyHash,       // script hash custody.ak của bạn (đã apply)
+  seedPolicy,        // = seedPolicyId(custodySeed)  (mục c)
+  createdEpoch,      // ô thời gian đăng ký — đọc cảnh báo tên trường ở `PlatformEntry` (platform.ak)
+  timeBucketWindow,  // cửa sổ validity của tx đăng ký — R-EPOCH
+  governanceProof,   // bằng chứng cổng quản trị của bạn chạy thật trong tx — R-GOVLIVE
+  custodyOutRef,     // txHash#idx output custody bước (c) — điền SAU khi seed đã submit
 });
 ```
+
+Bốn tham số `scripts`, `timeBucketWindow`, `governanceProof`, `planSeed` đều **bắt buộc**, vì ràng
+buộc on-chain tương ứng là vô điều kiện. `config.registryAuthority` phải trùng
+`scripts.registryAuthority` — lệch thì hàm ném `ONBOARD-AUTH` **trước** khi gọi `planSeed`.
 
 `onboardPlatform` trả plan 2 bước (`seed` rồi `register`) + tự kiểm mọi gương validator fail-fast:
 - **R-WF** (`entryWellFormed`): entry well-formed (id/instance/custody/gov/seed khác rỗng, accepted khác rỗng,
@@ -132,11 +142,13 @@ Thứ tự BẮT BUỘC: **BƯỚC 1 (seed) submit trước → BƯỚC 2 (regis
 vào instance không tồn tại. `register` cần `registryAuthority` (trong config) **ký** tx (R-SIG).
 
 Builder thuần (`planRegister`) trả datum + value map + redeemer cbor + required signer; deploy script của bạn
-dựng tx thật từ plan. Xem `scripts/03_onboard_platform.ts` (dùng config từ `examples/`) làm mẫu end-to-end.
+dựng tx thật từ plan. Mẫu end-to-end của bước đăng ký: `scripts/03_register_platform.ts`.
 
-Cập nhật entry về sau (đổi `status`/`governance_ref`/`accepted_assets`/`cut_bps`): `planUpdateEntry(...)`.
-5 field identity (platform_id, instance_id, custody_hash, seed_policy, created_epoch) **bất biến** (U-ID);
-`Retired` là trạng thái cuối, không revive (U-TERMINAL).
+Cập nhật entry về sau: `planUpdateEntry(entryIn, changes, scripts, opts)`. Trường nào đổi được, đổi
+cần những gì, trường nào bất biến — đọc bảng ở [CONTRACT.md](CONTRACT.md) PK4, không chép lại ở đây.
+`scripts.beaconPolicy` phải trùng `entryIn.beacon_policy` (lệch thì ném `UPD-BEACON`), và `opts`
+bắt buộc mang `valueIn`/`valueOut` (U-VALUE). `Retired` là trạng thái cuối, không hồi sinh
+(U-TERMINAL).
 
 ## (e) Tích hợp collect (adapter → collectBuilder)
 
