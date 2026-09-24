@@ -122,7 +122,7 @@ mới là vế quyết định (đính chính 2026-09-24, MAGIC đo và báo; nh
 - **Dòng giá có trần, và trần đó là của CẢ HỆ.** `PriceParam` là một datum mang một danh sách
   `op_prices`; `max_op_prices = 16` chặn độ dài danh sách đó. Không có bảng riêng cho từng platform.
 - **Đếm ngân sách dòng** (2026-09-24, đếm từ bảng dưới): số còn sống đã cấp = 1, 2, 3, 4, 7, 8, 9,
-  11, 13–18 = **14**. Nếu mỗi số cần một dòng giá thì còn **2**. Đây là ngân sách thật để xét đơn,
+  11, 13–19 = **15**. Nếu mỗi số cần một dòng giá thì còn **1**. Đây là ngân sách thật để xét đơn,
   không phải con số 8/16 hay "không giới hạn" của các bản trước.
 
 Hệ quả cho người xét đơn: **cấp số ≠ cấp dòng giá.** Một mã có số mà chưa có dòng giá thì chưa thu
@@ -161,6 +161,7 @@ Kiểm chéo mã 1 và 2 vẫn đứng: `MAGIC/ConsumeMAGIC/tests/codec.test.ts:
 | **16** | `AI_TOKEN_OUT` | ai | 1000 token **đầu ra** | *(dời từ số 6)* `usage.output_tokens` | Mới |
 | **17** | `AI_TOKEN_CACHE_W` | ai | 1000 token **ghi cache** | *(dời từ số 7)* `usage.cache_creation_input_tokens` | Mới |
 | **18** | `AI_TOKEN_CACHE_R` | ai | 1000 token **đọc cache** | *(dời từ số 8)* `usage.cache_read_input_tokens` | Mới |
+| **19** | `CAVE_FUEL_K` | cave | 1000 **fuel** của runtime Cave (wasmtime) | Cấp 2026-09-24 cho Dhost; chủ dự án chốt đơn vị. **`op_count = ⌈fuel_used / 1000⌉`, làm tròn lên MỖI JOB** — không gộp theo giao dịch hay theo lô, vì cách gộp do bên ký giao dịch chọn. `fuel_used = fuel_limit − fuel còn lại` do wasmtime đếm. **Job lỗi vẫn đếm**, vì chi phí đã tiêu rồi (cùng tiền lệ mã 11): hết fuel thì đếm trọn `fuel_limit`; quá hạn hoặc bẫy thì đếm số fuel đã tiêu tới lúc dừng. ⚠ Hôm nay Dhost **chưa** trả `fuel_used` ở nhánh lỗi — phải sửa trước khi nối giá. **Không phải mã COMPUTE chung** (§2.1): fuel chỉ so được trong cùng một bảng tính fuel của runtime. Đổi bản wasmtime mà cách tính fuel đổi theo thì phải cấp mã mới (RD-1). Lệch RD-3 có trần: tối đa 999 fuel mỗi job | Mới |
 
 Lớp (`class`) không phải để trang trí: nó là khoá của hệ số cầu per-platform per-class
 (PC-5, bản nháp cơ chế phí), nên hai `op_type` cùng lớp thì cùng chịu một hệ số cầu.

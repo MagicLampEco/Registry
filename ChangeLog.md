@@ -13,12 +13,14 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ## 2026-09-24 — sổ `op_type` khớp lại với bảng giá on-chain; `ID-3` trỏ về nguồn personhood thật
 
-- **Đổi gì.** Năm việc trong `Specs/Resource-Dictionary.md`:
+- **Đổi gì.** Sáu việc trong `Specs/Resource-Dictionary.md`:
   - (1) **RD-6** viết lại: trần 16 dòng giá là của **cả hệ**, không phải của từng platform.
   - (2) Mã 3/4 đổi tên thành `recognition_{storage,compute}_event`, đơn vị "1 lần" thay cho "1 MB".
   - (3) Mã 5/6 thành **bia mộ**: rút 2026-09-21, số không cấp lại.
   - (4) `geo_dispatch` vào §5 danh sách hở, chưa cấp số.
   - (5) Khối đếm số còn trống thay bằng phép đếm dòng giá.
+  - (6) Cấp **mã 19 `CAVE_FUEL_K`** cho Dhost: `op_count = ⌈fuel_used/1000⌉` mỗi job, job lỗi vẫn đếm.
+    Còn 1/16 dòng giá.
 
   Ngoài từ điển:
   - `REGISTRATION-STANDARD.md` §2.1 (đoạn `ID-3`), dòng "một-người-một-DID" ở §7, và `codes.json` ▸ `_id3_doc` thôi chép tập mệnh đề personhood, chuyển sang trỏ `PhoenixKey-Knowme-Math.md` §4.2 @ `ca13914`.
@@ -26,6 +28,9 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 - **Vì sao.**
   - Nguồn của bảng giá là `PriceParam` (`ConsumeMAGIC/.../types.ak`): **một** beacon, **một** danh sách `op_prices`, trần `max_op_prices = 16` (`pricing.ak`). Bản cũ của RD-6 đọc trần đó thành hạn mức riêng của từng platform, sai theo chiều đắt: người xét đơn tưởng còn dư dòng giá, thật ra 14 mã còn sống chỉ để lại 2 dòng.
+  - Mã 19: đơn vị bị RD-1 khoá từ giao dịch đầu tiên, còn `base_price` thì DAO đổi lúc nào cũng được. Nên chọn đơn vị mịn
+    nhất mà không khoá bước chỉnh giá: 1000 fuel. Đơn vị 10⁶ fuel thu job nhỏ như job 10⁶ fuel — gấp tới 1000 lần giá theo fuel.
+    Cùng giá theo fuel với đơn vị 10⁶ ở mọi job ≥ 10⁶ fuel (lệch ≤ 0,1%, tính bằng `required_for`).
   - Mã 3/4: `required_for` nhân thẳng `op_count`, không quy đổi byte, nên "MB" chưa bao giờ đúng.
   - `geo_dispatch` xin số 9, nhưng số 9 đã có chủ ở §2. Nó cũng chưa có mã đếm (RD-5).
   - Tập personhood được chép từ một thư trao đổi 2026-08-14 đã bị §4.2 của PhoenixKey thay bằng bảng `kind`/`family`. Bản chép không có đường về nguồn nên chết im lặng. Câu "0 lần trong `PhoenixKey-Specs`" hết đúng từ 2026-09-12.
@@ -34,7 +39,8 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
   - Bên nào gọi `pricePerOp(5|6, …)` sẽ không còn dòng giá tương ứng.
   - Bên nào tính phí mã 3/4 theo MB đang tính sai từ đầu.
   - Bên nào dựng bộ kiểm personhood theo tập `{did-chain, hardware-rooted-key, person-in-jurisdiction}` đang kiểm một tập không còn tồn tại ở nguồn. Chuyển sang hỏi `can(d, c, τ)` cho đúng năng lực cần.
-  - Bên nào xin mã mới với giả định mỗi platform có 16 dòng: con số thật là 2 dòng cho cả hệ.
+  - Bên nào xin mã mới với giả định mỗi platform có 16 dòng: con số thật là 2 dòng cho cả hệ trước mã 19, 1 dòng sau mã 19.
+  - Bên nào đã dựng theo đơn vị ⌈fuel/10⁶⌉ đề xuất trước đó cho Dhost: đơn vị chính thức là 1000 fuel.
 
 ## 2026-09-06 — phép đo độ phủ vào kho, và nó cắt phạm vi bằng ngoặc chứ không bằng thụt lề
 
