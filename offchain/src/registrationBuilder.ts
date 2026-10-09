@@ -283,7 +283,7 @@ export function identityPreserved(a: PlatformEntry, b: PlatformEntry): boolean {
 // Retire được, không di trú tiếp được, không đổi được bốn trường quản trị.
 // Và dùng lại `shape_*` để hồ sơ sau cập nhật vẫn thuộc đúng MỘT hạng — cấm nửa vời.
 
-/** Trần số phần tử `accepted_assets` — gương `platform.max_accepted_assets` (`platform.ak:90`). */
+/** R-CAP: trần số phần tử `accepted_assets` — gương `platform.max_accepted_assets` (`platform.ak:90`). */
 export const MAX_ACCEPTED_ASSETS = 32;
 
 /**
@@ -297,7 +297,7 @@ export const MAX_ACCEPTED_ASSETS = 32;
 export const SUBSTRATE_FLAGS_MAX = 65535n;
 
 /**
- * Gương `platform.governance_ref_distinct` (`platform.ak:188`).
+ * R-GOVDIST: gương `platform.governance_ref_distinct` (`platform.ak:188`).
  *
  * `governance_ref` trùng `custody_hash` là GIẢ MẠO ĐỒNG THUẬN: `custody.ak` nhánh `Collect`
  * là permissionless (đo: `grep -c "extra_signatories" custody.ak` → 0), nên ai cũng dựng

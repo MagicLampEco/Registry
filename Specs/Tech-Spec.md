@@ -333,6 +333,25 @@ R-WF      platform.entry_well_formed(entry)  — v2, nguồn `platform.ak:209-21
             Không phải để gác tiền — hồ sơ không kho chẳng có tiền để gác — mà để hồ sơ luôn có MỘT BÊN
             đồng thuận được. Hồ sơ thiếu nó là hồ sơ mà authority một mình Retire vĩnh viễn được.
 
+R-GOVDIST entry.governance_ref ∉ {custody_hash, seed_policy, beacon_policy}
+          — nguồn `platform.governance_ref_distinct`, gọi từ `platform.mutable_fields_valid`
+          ⇒ áp CẢ BA cửa: R-WF (entry_well_formed gọi mutable_fields_valid), U-MUT, M-MUT.
+          ⇒ `== custody_hash` là GIẢ MẠO ĐỒNG THUẬN: nhánh `Collect` của kho custody không đòi chữ
+            ký, nên ai cũng ghép được một input ở Script(custody_hash), và `governance_consented`
+            đọc nó thành "quản trị đã cho phép" ⇒ authority MỘT MÌNH Retire / đổi cut_bps / di trú.
+            `== seed_policy` / `== beacon_policy` là TỰ KHOÁ: minting policy không có nhánh spend
+            ⇒ đồng thuận hằng False ⇒ hồ sơ kẹt vĩnh viễn. Anh em của R-GOVSELF, khác giá trị bị cấm.
+          Gương off-chain: `governanceRefDistinct` (`offchain/src/registrationBuilder.ts`).
+
+R-CAP     len(entry.accepted_assets) ≤ platform.max_accepted_assets (= 32)
+          — cùng đường ép với R-GOVDIST (`platform.mutable_fields_valid`) ⇒ cũng áp đủ ba cửa.
+          ⇒ `accepted_assets` là kênh duy nhất bên đăng ký bơm dài tuỳ ý. Quá trần thì MỌI đường
+            cần đồng thuận chết vì validator quản trị chạy cùng tx và chia chung ngân sách ExUnit —
+            kể cả đường cứu là rút ngắn chính danh sách đó. Chú thích tại `max_accepted_assets`
+            trong `platform.ak` giữ cả số đo MEM theo số phần tử (tại 32 ≈ 5,7% ngân sách tx) lẫn
+            lý do chọn 32: trần thấp chỉ phiền, trần cao làm hồ sơ kẹt vĩnh viễn, nên chọn phía rẻ.
+          Gương off-chain: `MAX_ACCEPTED_ASSETS` trong `mutableFieldsValid`.
+
 R-GOVSELF entry.governance_ref != registry_hash                          (`:136`)
           ⇒ nếu hồ sơ khai cổng quản trị CHÍNH LÀ registry thì `governance_consented` (quét tx.inputs
             tìm input ở Script(governance_ref), mà ô hồ sơ LUÔN nằm ở đó) thành hằng True vĩnh viễn ⇒
