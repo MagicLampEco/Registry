@@ -11,6 +11,17 @@ cái gì gãy nếu ai đó đang bám bản cũ**. Vế ba là vế hay bị b�
 
 ---
 
+## 2026-10-09 — cấp mã 20 `platform_fee_unit`; mã 1 đếm ảnh đã nhúng; mã 7 ghi thuộc tính giá cố định
+
+- **Đổi gì.** Bốn việc trong `Specs/Resource-Dictionary.md`:
+  - (1) Cấp mã **20** `platform_fee_unit`, lớp `fee`, đơn vị 10⁶ nanogic. Một mã dùng chung cho phí của mọi nền tảng. Kèm hai ràng buộc: `base_price` đúng bằng 10⁶ và `demand_mult` đúng bằng `Q` là một phần định nghĩa đơn vị; mã chỉ mang phần phí không phải tài nguyên.
+  - (2) Mã **1** đổi lời tả từ "ảnh đã nhận tại biên" sang "ảnh đã nhúng" (video: khung đã nhúng). Không đổi số, không đổi giá.
+  - (3) Mã **7** ghi thêm thuộc tính giá cố định mà validator ConsumeMAGIC đã ép (`fixed_price_op_types`).
+  - (4) §5 thêm dòng "lưu trữ theo byte, đếm một lần": chưa cấp, vì bên xin duy nhất đã rút đơn.
+  Khối đếm ngân sách dòng cập nhật thành 16 mã sống.
+- **Vì sao.** (1) Chủ dự án chốt 2026-09-26 phí nền tảng định giá bằng MAGIC và đi qua ConsumeMAGIC. Các route phí của AladinWork đóng (trả 503) cho tới khi có số. Một mã chung thì nền tảng thứ N không xin thêm dòng giá. (2) Bên đếm duy nhất đang chạy, OriLife Core, đếm số vector đã nhúng; lời tả cũ lệch với mã. (3) Thuộc tính đó đã có hiệu lực ở validator, sổ chưa ghi.
+- **Cái gì gãy.** Bên nào đếm mã 1 theo số ảnh nhận về (kể cả ảnh không nhúng được) sẽ đếm nhiều hơn cách đếm của sổ. Mã 20 chưa được validator ép giá cố định; bên nào đăng dòng giá cho mã 20 trước khi ép thì keeper co giãn được dòng đó, và `op_count` thôi có nghĩa là 0,001 MAGIC.
+
 ## 2026-09-24 — trần dòng giá thôi chép số, trỏ về `max_op_prices`
 
 - **Đổi gì.** RD-6 và khối đếm ngân sách dòng trong `Specs/Resource-Dictionary.md` thôi viết "tối đa 16 dòng" như một hằng của sổ. Hai chỗ này nay trỏ về hằng `max_op_prices` ở `pricing.ak`, kèm giá trị đo được (16), sha `MAGIC@443859ee` và ngày đo. Ngân sách còn lại viết thành `max_op_prices − 15`. Thêm một ràng buộc đang áp khi xét đơn: cấp số không kèm cam kết nào về dòng giá. Dòng tương ứng trong `DevStatus.md` bỏ câu "đường còn lại là tách beacon".
